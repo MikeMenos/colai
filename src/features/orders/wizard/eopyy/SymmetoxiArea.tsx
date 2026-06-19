@@ -2,11 +2,10 @@ import { setDraftProperty } from "@/store/orders/ordersSlice";
 import { formatCurrencyGR } from "@/lib/utils/number";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { FormSelect } from "react-bootstrap";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef } from "react";
 import FormErrorsContext from "@/components/ui/FormErrorContect";
 import OrderField from "@/components/ui/OrderField";
 import OrderSwitchField from "@/components/ui/OrdeSwitchField";
-import PrepaidOrderConfirmModal from "../modals/PrepaidOrderConfirmModal";
 import type { SymmetoxiAreaProps } from "./componentProps";
 import {
   isAllowedSymmPercentage,
@@ -77,7 +76,6 @@ const SymmetoxiArea = ({ errors, clearError }: SymmetoxiAreaProps) => {
   };
 
   const prevPosoSymmetoxisRef = useRef<number | null>(null);
-  const [showPrepaidConfirm, setShowPrepaidConfirm] = useState(false);
 
   const showIsPaidToggle =
     isAllowedSymmPercentage(data.symmPercentage) && data.symmPercentage !== 0;
@@ -161,403 +159,413 @@ const SymmetoxiArea = ({ errors, clearError }: SymmetoxiAreaProps) => {
 
   return (
     <>
-    <div className="app-card px-3 py-2">
-      <FormErrorsContext.Provider value={{ errors: errors ?? {}, clearError }}>
-        <div
-          style={{ height: 51 }}
-          className="d-flex align-items-center justify-content-between border-bottom mb-2 pb-2"
+      <div className="app-card px-3 py-2">
+        <FormErrorsContext.Provider
+          value={{ errors: errors ?? {}, clearError }}
         >
-          <div className="fw-semibold">Συμμετοχή ασθενή</div>
-        </div>
-
-        <OrderField label="%">
-          <FormSelect
-            name="symmPercentage"
-            value={
-              isAllowedSymmPercentage(data.symmPercentage)
-                ? String(data.symmPercentage)
-                : ""
-            }
-            onChange={(e) => {
-              const raw = e.target.value;
-
-              if (raw === "") {
-                dispatch(
-                  setDraftProperty({ key: "symmPercentage", value: null }),
-                );
-                dispatch(setDraftProperty({ key: "isPaid", value: 0 }));
-                setShowPrepaidConfirm(false);
-                return;
-              }
-
-              const n = Number(raw);
-              if (!isAllowedSymmPercentage(n)) return;
-
-              dispatch(setDraftProperty({ key: "symmPercentage", value: n }));
-              if (n === 0) {
-                dispatch(setDraftProperty({ key: "isPaid", value: 0 }));
-                setShowPrepaidConfirm(false);
-              }
-            }}
+          <div
+            style={{ height: 51 }}
+            className="d-flex align-items-center justify-content-between border-bottom mb-2 pb-2"
           >
-            <option value="" />
-            {SYMM_PERCENTAGE_OPTIONS.map((value) => (
-              <option key={value} value={value}>
-                {value}
-              </option>
-            ))}
-          </FormSelect>
-        </OrderField>
-
-        <div className="row g-2">
-          <div className="col-6">
-            <OrderField label="Αξία υλικών">
-              <input
-                className="form-control"
-                name="kostos"
-                inputMode="numeric"
-                disabled
-                readOnly
-                value={formatCurrencyGR(data.kostos ?? "")}
-              />
-            </OrderField>
+            <div className="fw-semibold">Συμμετοχή ασθενή</div>
           </div>
-          <div className="col-6">
-            <OrderField label="Συμμετοχή ΕΟΠΥΥ">
-              <input
-                className="form-control"
-                name="posoSymmetoxisOld"
-                inputMode="numeric"
-                disabled
-                readOnly
-                value={formatCurrencyGR(symmetoxiEoppy)}
-              />
-            </OrderField>
-          </div>
-        </div>
 
-        {data.eidos_Egkrisis == 1 && (
-          <>
-            <div className="row g-2">
-              <div className="col-6">
-                <OrderField label="Πλαφόν">
-                  <input
-                    className="form-control"
-                    name="maxPosoKostousGiaSymmetoxi"
-                    inputMode="numeric"
-                    disabled
-                    readOnly
-                    value={formatCurrencyGR(
-                      data.maxPosoKostousGiaSymmetoxi ?? 0,
-                    )}
-                  />
-                </OrderField>
-              </div>
+          <OrderField label="%">
+            <FormSelect
+              name="symmPercentage"
+              value={
+                isAllowedSymmPercentage(data.symmPercentage)
+                  ? String(data.symmPercentage)
+                  : ""
+              }
+              onChange={(e) => {
+                const raw = e.target.value;
 
-              <div className="col-6">
-                <OrderField label="Υπέρβαση πλαφόν">
-                  <input
-                    className="form-control"
-                    name="ypervasiPlafon"
-                    inputMode="numeric"
-                    disabled
-                    readOnly
-                    value={formatCurrencyGR(
-                      ypervasiPlafon > 0 ? ypervasiPlafon : 0,
-                    )}
-                  />
-                </OrderField>
-              </div>
+                if (raw === "") {
+                  dispatch(
+                    setDraftProperty({ key: "symmPercentage", value: null }),
+                  );
+                  dispatch(setDraftProperty({ key: "isPaid", value: 0 }));
+                  return;
+                }
+
+                const n = Number(raw);
+                if (!isAllowedSymmPercentage(n)) return;
+
+                dispatch(setDraftProperty({ key: "symmPercentage", value: n }));
+                if (n === 0) {
+                  dispatch(setDraftProperty({ key: "isPaid", value: 0 }));
+                }
+              }}
+            >
+              <option value="" />
+              {SYMM_PERCENTAGE_OPTIONS.map((value) => (
+                <option key={value} value={value}>
+                  {value}
+                </option>
+              ))}
+            </FormSelect>
+          </OrderField>
+
+          <div className="row g-2">
+            <div className="col-6">
+              <OrderField label="Αξία υλικών">
+                <input
+                  className="form-control"
+                  name="kostos"
+                  inputMode="numeric"
+                  disabled
+                  readOnly
+                  value={formatCurrencyGR(data.kostos ?? "")}
+                />
+              </OrderField>
             </div>
-            {showParticipationFinalAmount ? (
-              <div className="col-12">
-                <OrderField
-                  label={
-                    <span style={{ fontSize: "0.95rem", letterSpacing: 0.2 }}>
-                      Τελικό ποσό πληρωμής
-                    </span>
-                  }
-                >
-                  <div style={prominentAmountWrapStyle}>
+            <div className="col-6">
+              <OrderField label="Συμμετοχή ΕΟΠΥΥ">
+                <input
+                  className="form-control"
+                  name="posoSymmetoxisOld"
+                  inputMode="numeric"
+                  disabled
+                  readOnly
+                  value={formatCurrencyGR(symmetoxiEoppy)}
+                />
+              </OrderField>
+            </div>
+          </div>
+
+          {data.eidos_Egkrisis == 1 && (
+            <>
+              <div className="row g-2">
+                <div className="col-6">
+                  <OrderField label="Πλαφόν">
                     <input
-                      className={prominentAmountInputClass}
-                      style={prominentAmountInputStyle}
-                      name="posoSymmetoxis"
+                      className="form-control"
+                      name="maxPosoKostousGiaSymmetoxi"
                       inputMode="numeric"
                       disabled
                       readOnly
-                      value={formatCurrencyGR(data.posoSymmetoxis ?? 0)}
+                      value={formatCurrencyGR(
+                        data.maxPosoKostousGiaSymmetoxi ?? 0,
+                      )}
                     />
-                    <span style={prominentAmountSuffixStyle} aria-hidden>
-                      €
-                    </span>
-                  </div>
-                </OrderField>
+                  </OrderField>
+                </div>
+
+                <div className="col-6">
+                  <OrderField label="Υπέρβαση πλαφόν">
+                    <input
+                      className="form-control"
+                      name="ypervasiPlafon"
+                      inputMode="numeric"
+                      disabled
+                      readOnly
+                      value={formatCurrencyGR(
+                        ypervasiPlafon > 0 ? ypervasiPlafon : 0,
+                      )}
+                    />
+                  </OrderField>
+                </div>
               </div>
-            ) : null}
-          </>
-        )}
+              {showParticipationFinalAmount ? (
+                <div className="col-12">
+                  <OrderField
+                    label={
+                      <span style={{ fontSize: "0.95rem", letterSpacing: 0.2 }}>
+                        Τελικό ποσό πληρωμής
+                      </span>
+                    }
+                  >
+                    <div style={prominentAmountWrapStyle}>
+                      <input
+                        className={prominentAmountInputClass}
+                        style={prominentAmountInputStyle}
+                        name="posoSymmetoxis"
+                        inputMode="numeric"
+                        disabled
+                        readOnly
+                        value={formatCurrencyGR(data.posoSymmetoxis ?? 0)}
+                      />
+                      <span style={prominentAmountSuffixStyle} aria-hidden>
+                        €
+                      </span>
+                    </div>
+                  </OrderField>
+                </div>
+              ) : null}
+            </>
+          )}
 
-        {data.posoSymmetoxis > 0 && (
-          <>
-            <div className="form-check form-switch switch-lg mb-2">
-              <input
-                className="form-check-input"
-                type="checkbox"
-                checked={data.payFullOrDiscount == 1}
-                onChange={(e) => {
-                  dispatch(
-                    setDraftProperty({
-                      key: "payFullOrDiscount",
-                      value: e.target.checked ? 1 : 2,
-                    }),
-                  );
-                  if (!e.target.checked) {
-                    dispatch(
-                      setDraftProperty({
-                        key: "discount_reason_id",
-                        value: discountReasons?.[0]?.value,
-                      }),
-                    );
-                    dispatch(
-                      setDraftProperty({
-                        key: "posoDiscounted",
-                        value: formatCurrencyGR(data.posoSymmetoxis ?? 0),
-                      }),
-                    );
-                  } else {
-                    dispatch(
-                      setDraftProperty({
-                        key: "discount_reason_id",
-                        value: null,
-                      }),
-                    );
-                    dispatch(
-                      setDraftProperty({ key: "posoDiscounted", value: null }),
-                    );
-                    dispatch(
-                      setDraftProperty({
-                        key: "hasConfirmedMidenikiPliromi",
-                        value: null,
-                      }),
-                    );
-                  }
-                }}
-                id="payFullOrDiscount"
-              />
-              <label className="form-check-label" htmlFor="payFullOrDiscount">
-                Επιβεβαίωση συνολικού ποσού
-              </label>
-            </div>
-            <div className="form-check form-switch switch-lg mb-2">
-              <input
-                className="form-check-input"
-                type="checkbox"
-                checked={data.payFullOrDiscount == 2}
-                onChange={(e) => {
-                  dispatch(
-                    setDraftProperty({
-                      key: "payFullOrDiscount",
-                      value: e.target.checked ? 2 : 1,
-                    }),
-                  );
-                  if (e.target.checked) {
-                    dispatch(
-                      setDraftProperty({
-                        key: "discount_reason_id",
-                        value: discountReasons?.[0]?.value,
-                      }),
-                    );
-                    dispatch(
-                      setDraftProperty({
-                        key: "posoDiscounted",
-                        value: formatCurrencyGR(data.posoSymmetoxis ?? 0),
-                      }),
-                    );
-                  } else {
-                    dispatch(
-                      setDraftProperty({
-                        key: "discount_reason_id",
-                        value: null,
-                      }),
-                    );
-                    dispatch(
-                      setDraftProperty({ key: "posoDiscounted", value: null }),
-                    );
-                    dispatch(
-                      setDraftProperty({
-                        key: "hasConfirmedMidenikiPliromi",
-                        value: null,
-                      }),
-                    );
-                  }
-                }}
-                id="payFullOrDiscount"
-              />
-              <label className="form-check-label" htmlFor="payFullOrDiscount">
-                Εφαρμογή έκπτωσης
-              </label>
-            </div>
-            {showIsPaidToggle ? (
-              <OrderSwitchField
-                name="isPaid"
-                id="isPaid"
-                label="Προπληρωμένο"
-                checked={data.isPaid == 1}
-                onChange={(checked) => {
-                  if (checked) {
-                    setShowPrepaidConfirm(true);
-                    return;
-                  }
-
-                  dispatch(
-                    setDraftProperty({
-                      key: "isPaid",
-                      value: 0,
-                    }),
-                  );
-                }}
-              />
-            ) : null}
-          </>
-        )}
-        {!(data.posoSymmetoxis > 0) && (
-          <OrderSwitchField
-            name="eopyyVerifyNoParticipation"
-            id="eopyyVerifyNoParticipation"
-            label="Επιβεβαίωση μηδενικής πληρωμής"
-            checked={data.eopyyVerifyNoParticipation == 1}
-            onChange={(checked) => {
-              dispatch(
-                setDraftProperty({
-                  key: "eopyyVerifyNoParticipation",
-                  value: checked ? 1 : 0,
-                }),
-              );
-              dispatch(
-                setDraftProperty({
-                  key: "hasConfirmedMidenikiPliromi",
-                  value: checked ? true : null,
-                }),
-              );
-              !data.eidos_Egkrisis &&
-                dispatch(setDraftProperty({ key: "eidos_Egkrisis", value: 1 }));
-            }}
-          />
-        )}
-        {data.payFullOrDiscount == 2 && (
-          <>
-            <div className="app-divider my-2" />
-            <OrderField label="Λόγος έκπτωσης">
-              <FormSelect
-                name=""
-                value={data.discount_reason_id}
-                onChange={(e) =>
-                  dispatch(
-                    setDraftProperty({
-                      key: "discount_reason_id",
-                      value: e.target.value,
-                    }),
-                  )
-                }
-              >
-                {discountReasons.map((d) => (
-                  <option key={d.value} value={d.value}>
-                    {d.text}
-                  </option>
-                ))}
-              </FormSelect>
-            </OrderField>
-            <OrderField
-              label={
-                <span style={{ fontSize: "0.95rem", letterSpacing: 0.2 }}>
-                  Τελικό ποσό πληρωμής
-                </span>
-              }
-            >
-              <div style={prominentAmountWrapStyle}>
+          {data.posoSymmetoxis > 0 && (
+            <>
+              <div className="form-check form-switch switch-lg mb-2">
                 <input
-                  className={prominentAmountInputClass}
-                  style={prominentAmountInputStyle}
-                  name="posoDiscounted"
-                  inputMode="decimal"
-                  value={data.posoDiscounted ?? 0}
+                  className="form-check-input"
+                  type="checkbox"
+                  checked={data.payFullOrDiscount == 1}
                   onChange={(e) => {
-                    const raw = e.target.value
-                      .replaceAll("€", "")
-                      .trim()
-                      .replaceAll(".", "")
-                      .replaceAll(",", ".");
-                    const maxAllowed = data.posoSymmetoxis ?? 0;
-
-                    if (raw === "") {
+                    dispatch(
+                      setDraftProperty({
+                        key: "payFullOrDiscount",
+                        value: e.target.checked ? 1 : 2,
+                      }),
+                    );
+                    if (!e.target.checked) {
+                      dispatch(
+                        setDraftProperty({
+                          key: "discount_reason_id",
+                          value: discountReasons?.[0]?.value,
+                        }),
+                      );
+                      dispatch(
+                        setDraftProperty({
+                          key: "posoDiscounted",
+                          value: formatCurrencyGR(data.posoSymmetoxis ?? 0),
+                        }),
+                      );
+                    } else {
+                      dispatch(
+                        setDraftProperty({
+                          key: "discount_reason_id",
+                          value: null,
+                        }),
+                      );
                       dispatch(
                         setDraftProperty({
                           key: "posoDiscounted",
                           value: null,
                         }),
                       );
-                      return;
-                    }
-
-                    if (parseFloat(raw) <= maxAllowed) {
                       dispatch(
                         setDraftProperty({
-                          key: "posoDiscounted",
-                          value: raw.replace(".", ","),
+                          key: "hasConfirmedMidenikiPliromi",
+                          value: null,
                         }),
                       );
                     }
                   }}
-                  onBlur={(e) => {
+                  id="payFullOrDiscount"
+                />
+                <label className="form-check-label" htmlFor="payFullOrDiscount">
+                  Επιβεβαίωση συνολικού ποσού
+                </label>
+              </div>
+              <div className="form-check form-switch switch-lg mb-2">
+                <input
+                  className="form-check-input"
+                  type="checkbox"
+                  checked={data.payFullOrDiscount == 2}
+                  onChange={(e) => {
                     dispatch(
                       setDraftProperty({
-                        key: "posoDiscounted",
-                        value: formatCurrencyGR(
-                          e.target.value
-                            .replaceAll("€", "")
-                            .trim()
-                            .replaceAll(".", "")
-                            .replaceAll(",", "."),
-                        ),
+                        key: "payFullOrDiscount",
+                        value: e.target.checked ? 2 : 1,
+                      }),
+                    );
+                    if (e.target.checked) {
+                      dispatch(
+                        setDraftProperty({
+                          key: "discount_reason_id",
+                          value: discountReasons?.[0]?.value,
+                        }),
+                      );
+                      dispatch(
+                        setDraftProperty({
+                          key: "posoDiscounted",
+                          value: formatCurrencyGR(data.posoSymmetoxis ?? 0),
+                        }),
+                      );
+                    } else {
+                      dispatch(
+                        setDraftProperty({
+                          key: "discount_reason_id",
+                          value: null,
+                        }),
+                      );
+                      dispatch(
+                        setDraftProperty({
+                          key: "posoDiscounted",
+                          value: null,
+                        }),
+                      );
+                      dispatch(
+                        setDraftProperty({
+                          key: "hasConfirmedMidenikiPliromi",
+                          value: null,
+                        }),
+                      );
+                    }
+                  }}
+                  id="payFullOrDiscount"
+                />
+                <label className="form-check-label" htmlFor="payFullOrDiscount">
+                  Εφαρμογή έκπτωσης
+                </label>
+              </div>
+              {showIsPaidToggle ? (
+                <>
+                  <OrderSwitchField
+                    name="isPaid"
+                    id="isPaid"
+                    label="Πληρωμή μέσω κατάθεσης"
+                    checked={data.isPaid == 1}
+                    onChange={(checked) => {
+                      dispatch(
+                        setDraftProperty({
+                          key: "isPaid",
+                          value: checked ? 1 : 0,
+                        }),
+                      );
+                    }}
+                  />
+                  <OrderSwitchField
+                    name="isPaidCod"
+                    id="isPaidCod"
+                    label="Πληρωμή με αντικαταβολή"
+                    checked={data.isPaid != 1}
+                    onChange={(checked) => {
+                      dispatch(
+                        setDraftProperty({
+                          key: "isPaid",
+                          value: checked ? 0 : 1,
+                        }),
+                      );
+                    }}
+                  />
+                </>
+              ) : null}
+            </>
+          )}
+          {!(data.posoSymmetoxis > 0) && (
+            <OrderSwitchField
+              name="eopyyVerifyNoParticipation"
+              id="eopyyVerifyNoParticipation"
+              label="Επιβεβαίωση μηδενικής πληρωμής"
+              checked={data.eopyyVerifyNoParticipation == 1}
+              onChange={(checked) => {
+                dispatch(
+                  setDraftProperty({
+                    key: "eopyyVerifyNoParticipation",
+                    value: checked ? 1 : 0,
+                  }),
+                );
+                dispatch(
+                  setDraftProperty({
+                    key: "hasConfirmedMidenikiPliromi",
+                    value: checked ? true : null,
+                  }),
+                );
+                !data.eidos_Egkrisis &&
+                  dispatch(
+                    setDraftProperty({ key: "eidos_Egkrisis", value: 1 }),
+                  );
+              }}
+            />
+          )}
+          {data.payFullOrDiscount == 2 && (
+            <>
+              <div className="app-divider my-2" />
+              <OrderField label="Λόγος έκπτωσης">
+                <FormSelect
+                  name=""
+                  value={data.discount_reason_id}
+                  onChange={(e) =>
+                    dispatch(
+                      setDraftProperty({
+                        key: "discount_reason_id",
+                        value: e.target.value,
+                      }),
+                    )
+                  }
+                >
+                  {discountReasons.map((d) => (
+                    <option key={d.value} value={d.value}>
+                      {d.text}
+                    </option>
+                  ))}
+                </FormSelect>
+              </OrderField>
+              <OrderField
+                label={
+                  <span style={{ fontSize: "0.95rem", letterSpacing: 0.2 }}>
+                    Τελικό ποσό πληρωμής
+                  </span>
+                }
+              >
+                <div style={prominentAmountWrapStyle}>
+                  <input
+                    className={prominentAmountInputClass}
+                    style={prominentAmountInputStyle}
+                    name="posoDiscounted"
+                    inputMode="decimal"
+                    value={data.posoDiscounted ?? 0}
+                    onChange={(e) => {
+                      const raw = e.target.value
+                        .replaceAll("€", "")
+                        .trim()
+                        .replaceAll(".", "")
+                        .replaceAll(",", ".");
+                      const maxAllowed = data.posoSymmetoxis ?? 0;
+
+                      if (raw === "") {
+                        dispatch(
+                          setDraftProperty({
+                            key: "posoDiscounted",
+                            value: null,
+                          }),
+                        );
+                        return;
+                      }
+
+                      if (parseFloat(raw) <= maxAllowed) {
+                        dispatch(
+                          setDraftProperty({
+                            key: "posoDiscounted",
+                            value: raw.replace(".", ","),
+                          }),
+                        );
+                      }
+                    }}
+                    onBlur={(e) => {
+                      dispatch(
+                        setDraftProperty({
+                          key: "posoDiscounted",
+                          value: formatCurrencyGR(
+                            e.target.value
+                              .replaceAll("€", "")
+                              .trim()
+                              .replaceAll(".", "")
+                              .replaceAll(",", "."),
+                          ),
+                        }),
+                      );
+                    }}
+                  />
+                  <span style={prominentAmountSuffixStyle} aria-hidden>
+                    €
+                  </span>
+                </div>
+              </OrderField>
+              {isFinalAmountZero && (
+                <OrderSwitchField
+                  name="hasConfirmedMidenikiPliromi"
+                  id="hasConfirmedMidenikiPliromi"
+                  label="Επιβεβαίωση μηδενικής πληρωμής"
+                  checked={Boolean(data.hasConfirmedMidenikiPliromi)}
+                  onChange={(checked) => {
+                    dispatch(
+                      setDraftProperty({
+                        key: "hasConfirmedMidenikiPliromi",
+                        value: checked,
                       }),
                     );
                   }}
                 />
-                <span style={prominentAmountSuffixStyle} aria-hidden>
-                  €
-                </span>
-              </div>
-            </OrderField>
-            {isFinalAmountZero && (
-              <OrderSwitchField
-                name="hasConfirmedMidenikiPliromi"
-                id="hasConfirmedMidenikiPliromi"
-                label="Επιβεβαίωση μηδενικής πληρωμής"
-                checked={Boolean(data.hasConfirmedMidenikiPliromi)}
-                onChange={(checked) => {
-                  dispatch(
-                    setDraftProperty({
-                      key: "hasConfirmedMidenikiPliromi",
-                      value: checked,
-                    }),
-                  );
-                }}
-              />
-            )}
-          </>
-        )}
-      </FormErrorsContext.Provider>
-    </div>
-
-    <PrepaidOrderConfirmModal
-      show={showPrepaidConfirm && showIsPaidToggle}
-      onCancel={() => setShowPrepaidConfirm(false)}
-      onConfirm={() => {
-        setShowPrepaidConfirm(false);
-        dispatch(setDraftProperty({ key: "isPaid", value: 1 }));
-      }}
-    />
+              )}
+            </>
+          )}
+        </FormErrorsContext.Provider>
+      </div>
     </>
   );
 };

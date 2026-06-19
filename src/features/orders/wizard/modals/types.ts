@@ -10,6 +10,7 @@ export type SubmitOrderConfirmModalProps = {
   orderAsSeller?: string | null;
   isVoiceConsent?: boolean;
   isPaid?: boolean;
+  showPaymentMethodInfo?: boolean;
   onClose: () => void;
   onConfirm: () => void;
 };

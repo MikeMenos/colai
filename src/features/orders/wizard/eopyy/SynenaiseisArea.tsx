@@ -21,6 +21,7 @@ import { formatFileSizeMB } from "@/lib/utils/number";
 import type { UploadStatus, UploadingInfo } from "./wizard/types";
 
 const CONSENT_BACK_CATEGORY = "consent_form_back";
+const CONSENT_UPLOAD_CARD_CLASS = "app-card mb-1 px-3 py-2";
 
 function isPdf(name: string, mimeType?: string) {
   return mimeType === "application/pdf" || name.toLowerCase().endsWith(".pdf");
@@ -92,7 +93,7 @@ export default function SynenaiseisArea() {
 
       {showConsentUploads ? (
         <>
-      <div className="app-card mb-1 px-3 py-2">
+      <div className={CONSENT_UPLOAD_CARD_CLASS}>
         <div className="d-flex align-items-center justify-content-between border-bottom mb-2 pb-2">
           <div className="fw-semibold">Αρχείo συναίνεσης</div>
 
@@ -236,7 +237,7 @@ export default function SynenaiseisArea() {
         ) : null}
       </div>
 
-      <div className="app-card px-3 py-2">
+      <div className={CONSENT_UPLOAD_CARD_CLASS}>
         <div className="d-flex align-items-center justify-content-between border-bottom mb-2 pb-2">
           <div className="fw-semibold">Πίσω σελίδα</div>
 
