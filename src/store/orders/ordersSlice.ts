@@ -22,13 +22,15 @@ import {
   buildOrderListSearchParams,
   DEFAULT_ORDER_LIST_PAGE,
   DEFAULT_ORDER_LIST_PAGE_SIZE,
+  PENDING_ORDER_STATUS_ID,
+  sortOrdersPendingFirst,
 } from "@/lib/api/orderListQuery";
 import type {
   IDoctorFormData,
   IPatientFormData,
   IRecipientFormData,
 } from "@/lib/interface";
-import { RootState } from "@/store/store";
+import { AppDispatch, RootState } from "@/store/store";
 import { formatStringToISODDateTime, formatUIDate } from "@/lib/utils/date";
 import { parseGreekDecimal } from "@/lib/utils/number";
 import { pickFirstNonBlankString } from "@/lib/utils/string";
@@ -71,6 +73,41 @@ export interface DraftState {
   customerAmkaGateCompleted?: boolean;
 }
 
+/** Isolated draft payload used by bulk ΕΟΠΥΥ slot processing (not persisted to localStorage). */
+export type BulkDraftSnapshot = Pick<
+  DraftState,
+  | "order"
+  | "ylika"
+  | "files"
+  | "ai_ylika"
+  | "list_AddressesPersons"
+  | "preselected_address_GID"
+  | "preselected_person_GID"
+  | "lastOrderInfoCustomerErpGID"
+  | "customerProsEbs"
+  | "customerSelectedFromList"
+  | "customerIsCompletelyNew"
+  | "lastWebOrderFromLoadInfo"
+>;
+
+export function captureBulkDraftSnapshot(state: RootState): BulkDraftSnapshot {
+  const { draft } = state.orders;
+  return {
+    order: { ...draft.order },
+    ylika: [...draft.ylika],
+    files: [...draft.files],
+    ai_ylika: [...draft.ai_ylika],
+    list_AddressesPersons: [...draft.list_AddressesPersons],
+    preselected_address_GID: draft.preselected_address_GID,
+    preselected_person_GID: draft.preselected_person_GID,
+    lastOrderInfoCustomerErpGID: draft.lastOrderInfoCustomerErpGID,
+    customerProsEbs: draft.customerProsEbs,
+    customerSelectedFromList: draft.customerSelectedFromList,
+    customerIsCompletelyNew: draft.customerIsCompletelyNew,
+    lastWebOrderFromLoadInfo: draft.lastWebOrderFromLoadInfo,
+  };
+}
+
 export interface SelectedOrderState {
   order: Order;
   ylika: OrderYlika[];
@@ -94,6 +131,8 @@ export interface OrdersState {
   ordersPageSize: number;
   ordersPaging: PagingResults | null;
   ordersFetchedAt: number;
+  pendingOrdersCount: number;
+  loadingPendingOrdersCount: boolean;
 }
 
 export const fetchOrders = createAsyncThunk<
@@ -134,7 +173,7 @@ export const fetchOrders = createAsyncThunk<
     );
 
     return {
-      orders: (data.orders ?? []) as Order[],
+      orders: sortOrdersPendingFirst((data.orders ?? []) as Order[]),
       paging: data.paging ?? null,
     };
   },
@@ -172,6 +211,44 @@ export const fetchOrders = createAsyncThunk<
   },
 );
 
+export const fetchPendingOrdersCount = createAsyncThunk<
+  number,
+  void | { force?: boolean },
+  { state: RootState }
+>(
+  "orders/fetchPendingOrdersCount",
+  async () => {
+    const params = buildOrderListSearchParams({
+      page: 1,
+      pagesize: 500,
+      _ts: Date.now(),
+    });
+
+    const res = await fetch(`/api/orders?${params.toString()}`, {
+      cache: "no-store",
+      headers: {
+        "Cache-Control": "no-cache",
+        Pragma: "no-cache",
+      },
+    });
+
+    const data = await parseProxyJson<GetOrdersSuccess>(
+      res,
+      "Failed to load pending orders count",
+    );
+
+    return (data.orders ?? []).filter(
+      (o) => o.statusId === PENDING_ORDER_STATUS_ID,
+    ).length;
+  },
+  {
+    condition: (arg, { getState }) => {
+      if (arg && typeof arg === "object" && arg.force) return true;
+      return !getState().orders.loadingPendingOrdersCount;
+    },
+  },
+);
+
 export const fetchOrderById = createAsyncThunk<
   GetOrderViewSuccess,
   { orderId: number; orderUID: string }
@@ -185,8 +262,9 @@ export const fetchOrderById = createAsyncThunk<
 
 export const deleteOrderAsync = createAsyncThunk<
   DeleteOrderSuccess & { orderId: number; orderUID: string },
-  { orderId: number; orderUID: string }
->("orders/deleteOrder", async ({ orderId, orderUID }) => {
+  { orderId: number; orderUID: string },
+  { dispatch: AppDispatch }
+>("orders/deleteOrder", async ({ orderId, orderUID }, { dispatch }) => {
   const res = await fetch(`/api/orders/${orderId}?uid=${orderUID}`, {
     method: "DELETE",
     cache: "no-store",
@@ -195,6 +273,7 @@ export const deleteOrderAsync = createAsyncThunk<
     res,
     "Failed to delete order",
   );
+  void dispatch(fetchPendingOrdersCount({ force: true }));
   return { ...data, orderId, orderUID };
 });
 
@@ -355,6 +434,8 @@ const initialStateBase: OrdersState = {
   ordersPageSize: DEFAULT_ORDER_LIST_PAGE_SIZE,
   ordersPaging: null,
   ordersFetchedAt: 0,
+  pendingOrdersCount: 0,
+  loadingPendingOrdersCount: false,
 };
 
 const LS_KEY = "orders";
@@ -493,6 +574,23 @@ const ordersSlice = createSlice({
       state.draft.lastWebOrderFromLoadInfo = undefined;
       state.draft.customerAmkaGateCompleted = undefined;
       persistStateToLocalStorage(state);
+    },
+    /** Hydrate Redux draft from a bulk slot snapshot for AI apply (does not persist). */
+    replaceDraftSnapshot(state, action: PayloadAction<BulkDraftSnapshot>) {
+      const snapshot = action.payload;
+      state.draft.order = snapshot.order;
+      state.draft.ylika = snapshot.ylika;
+      state.draft.files = snapshot.files;
+      state.draft.ai_ylika = snapshot.ai_ylika;
+      state.draft.list_AddressesPersons = snapshot.list_AddressesPersons;
+      state.draft.preselected_address_GID = snapshot.preselected_address_GID;
+      state.draft.preselected_person_GID = snapshot.preselected_person_GID;
+      state.draft.lastOrderInfoCustomerErpGID =
+        snapshot.lastOrderInfoCustomerErpGID;
+      state.draft.customerProsEbs = snapshot.customerProsEbs;
+      state.draft.customerSelectedFromList = snapshot.customerSelectedFromList;
+      state.draft.customerIsCompletelyNew = snapshot.customerIsCompletelyNew;
+      state.draft.lastWebOrderFromLoadInfo = snapshot.lastWebOrderFromLoadInfo;
     },
     clearDraftAddressesList(state) {
       state.draft.list_AddressesPersons = [] as OrderListOfAddressPersons[];
@@ -885,6 +983,16 @@ const ordersSlice = createSlice({
 
       state.ordersError = action.error.message || "Failed to load orders";
     });
+    b.addCase(fetchPendingOrdersCount.pending, (state) => {
+      state.loadingPendingOrdersCount = true;
+    });
+    b.addCase(fetchPendingOrdersCount.fulfilled, (state, action) => {
+      state.loadingPendingOrdersCount = false;
+      state.pendingOrdersCount = action.payload;
+    });
+    b.addCase(fetchPendingOrdersCount.rejected, (state) => {
+      state.loadingPendingOrdersCount = false;
+    });
     b.addCase(fetchOrderById.pending, (state) => {
       if (!state.selected) state.selected = {} as SelectedOrderState;
       state.selected.loading = true;
@@ -1053,7 +1161,12 @@ const ordersSlice = createSlice({
         (x) =>
           x.id === action.payload.orderId && x.uid === action.payload.orderUID,
       );
-      if (idx !== -1) state.orders.splice(idx, 1);
+      if (idx !== -1) {
+        const [deleted] = state.orders.splice(idx, 1);
+        if (deleted.statusId === PENDING_ORDER_STATUS_ID) {
+          state.pendingOrdersCount = Math.max(0, state.pendingOrdersCount - 1);
+        }
+      }
     });
     b.addCase(loadCustomerAddressesAsync.fulfilled, (state, action) => {
       if (!action.payload.ok) return;
@@ -1141,6 +1254,7 @@ export const {
   setLastWebOrderFromLoadInfo,
   setCustomerAmkaGateCompleted,
   resetEntireDraft,
+  replaceDraftSnapshot,
   resetOrdersListCache,
   clearDraftAddressesList,
   deletedDraftTemplate,

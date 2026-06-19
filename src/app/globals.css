@@ -379,20 +379,16 @@ html[data-bs-theme="dark"] .app-bottom-nav {
 }
 
 a:active .app-card-pressable,
-a:focus-visible .app-card-pressable,
-.app-card-pressable:active,
-.app-card-pressable:focus-visible {
+a:focus-visible .app-card-pressable {
   transform: scale(0.985);
 }
 
-a:hover .app-card-pressable,
-.app-card-pressable:hover {
+a:hover .app-card-pressable {
   border-color: rgba(var(--bs-primary-rgb), 0.35);
   box-shadow: var(--app-shadow-tight), 0 0 0 1px rgba(var(--bs-primary-rgb), 0.12);
 }
 
-html[data-bs-theme="dark"] a:hover .app-card-pressable,
-html[data-bs-theme="dark"] .app-card-pressable:hover {
+html[data-bs-theme="dark"] a:hover .app-card-pressable {
   border-color: rgba(var(--bs-primary-rgb), 0.45);
 }
 

@@ -85,9 +85,16 @@ export default function OrderStartPage() {
         <PlatformCard
           title="ΕΟΠΥΥ"
           type="eopyy"
-          description="Ανέβασε παραπεμπτικό/γνωμάτευση"
+          description="Ανέβασε παραγγελία"
           icon="bi-cloud-upload"
           onClick={(x) => handleContinue(x)}
+        />
+        <PlatformCard
+          title="ΕΟΠΥΥ μαζικό (μόνο επαναληπτικά)"
+          type="eopyy-bulk"
+          description="Ανέβασε πολλές παραγγελίες ταυτόχρονα"
+          icon="bi-files"
+          onClick={() => router.push("/orders/0/eopyy-bulk/new")}
         />
         <PlatformCard
           title="Λιανικής"

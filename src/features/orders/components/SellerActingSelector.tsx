@@ -5,11 +5,7 @@ import React from "react";
 import SearchableSelect, {
   type SearchableSelectOption,
 } from "@/components/ui/SearchableSelect";
-import {
-  getAccessibleSellers,
-  hasSellerAccessList,
-  resolveActingSeller,
-} from "@/lib/sellerAccess";
+import { getAccessibleSellers, hasSellerAccessList, resolveActingSeller } from "@/lib/sellerAccess";
 import { setActingSellerCode } from "@/features/auth/authSlice";
 import { setDraftProperty } from "@/store/orders/ordersSlice";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
@@ -108,7 +104,7 @@ export default function SellerActingSelector({
       />
       <div className="flex-grow-1" style={{ minWidth: 0 }}>
         <div className="text-secondary mb-1" style={{ fontSize: 11 }}>
-          Παραγγελία ως (προαιρετικό)
+          Παραγγελία ως
         </div>
         <SearchableSelect
           size="sm"

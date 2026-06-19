@@ -14,7 +14,7 @@ import {
 } from "@/lib/api/orderListQuery";
 import { getListPaginationState } from "@/lib/pagination/listPagination";
 import { useUrlListNavigation } from "@/hooks/useUrlListNavigation";
-import { fetchOrders } from "@/store/orders/ordersSlice";
+import { fetchOrders, fetchPendingOrdersCount } from "@/store/orders/ordersSlice";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 
 export default function OrdersPage() {
@@ -45,6 +45,7 @@ export default function OrdersPage() {
         pagesize: urlPageSize,
       }),
     );
+    void dispatch(fetchPendingOrdersCount());
   }, [dispatch, urlSearch, urlPage, urlPageSize]);
 
   const onRefresh = React.useCallback(async () => {

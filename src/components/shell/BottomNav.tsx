@@ -7,9 +7,10 @@ import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import LeaveOrderWizardConfirmModal from "@/features/orders/components/LeaveOrderWizardConfirmModal";
 import BottomToast from "@/components/ui/BottomToast";
 import { hasOrderWizardDraftContent } from "@/lib/orderWizardDraftContent";
-import { isOrderWizardPath } from "@/lib/orderWizardRoute";
+import { shouldGuardOrderWizardLeave } from "@/lib/orderWizardRoute";
 import {
   fetchOrders,
+  fetchPendingOrdersCount,
   setDraftProperty,
   submitDraftAsync,
 } from "@/store/orders/ordersSlice";
@@ -19,6 +20,7 @@ type Item = {
   icon: string;
   label: string;
   badge?: number;
+  badgeVariant?: "danger" | "warning";
 };
 
 function isActive(pathname: string, href: string): boolean {
@@ -33,6 +35,7 @@ export default function BottomNav() {
   const pendingDiscounts = useAppSelector(
     (s) => s.discountRequests.requests.filter((r) => r.statusId == -1).length,
   );
+  const pendingOrders = useAppSelector((s) => s.orders.pendingOrdersCount);
   const draft = useAppSelector((s) => s.orders.draft);
   const submitState = useAppSelector((s) => s.orders.draft.submitState);
   const hasDraftContent = React.useMemo(
@@ -41,11 +44,21 @@ export default function BottomNav() {
   );
   const [pendingHref, setPendingHref] = React.useState<string | null>(null);
   const [tempSaveToast, setTempSaveToast] = React.useState<string | null>(null);
-  const guardWizardLeave = isOrderWizardPath(pathname);
+  const guardWizardLeave = shouldGuardOrderWizardLeave(pathname);
+
+  React.useEffect(() => {
+    void dispatch(fetchPendingOrdersCount());
+  }, [dispatch]);
 
   const items: Item[] = [
     { href: "/", icon: "bi-house", label: "Αρχική" },
-    { href: "/orders", icon: "bi-list-check", label: "Παραγγελίες" },
+    {
+      href: "/orders",
+      icon: "bi-list-check",
+      label: "Παραγγελίες",
+      badge: pendingOrders || undefined,
+      badgeVariant: "warning",
+    },
     { href: "/diadikasia-wc", icon: "bi-calendar-check", label: "WC" },
     { href: "/salesWC", icon: "bi-receipt", label: "Πωλήσεις" },
     {
@@ -112,7 +125,7 @@ export default function BottomNav() {
                   <i className={`nav-icon bi ${it.icon}`} />
                   {it.badge ? (
                     <span
-                      className="position-absolute translate-middle badge rounded-pill bg-danger start-100 top-0"
+                      className={`position-absolute translate-middle badge rounded-pill bg-${it.badgeVariant ?? "danger"} start-100 top-0`}
                       style={{ fontSize: "0.65rem" }}
                     >
                       {it.badge}

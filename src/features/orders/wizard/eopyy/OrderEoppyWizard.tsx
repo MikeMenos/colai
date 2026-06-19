@@ -31,8 +31,9 @@ import {
   hasCustomerFieldErrors,
   isCustomerTouchdownOnlyField,
 } from "./wizard/customerFieldValidation";
-import { focusWizardField, isAllowedSymmPercentage } from "./wizard/wizardUtils";
+import { focusWizardField } from "./wizard/wizardUtils";
 import { runEoppyAi } from "./wizard/runEoppyAi";
+import { EOPPY_AI_TIMEOUT_MS } from "./wizard/runEoppyAiWithFallback";
 import {
   buildStepOrderMap,
   prepareTouchdownIssues,
@@ -170,8 +171,7 @@ export default function OrderEoppyWizard() {
       setAiMessage(null);
 
       const controller = new AbortController();
-      const pendingTimeoutMs = 120_000;
-      const t = window.setTimeout(() => controller.abort(), pendingTimeoutMs);
+      const t = window.setTimeout(() => controller.abort(), EOPPY_AI_TIMEOUT_MS);
 
       try {
         await runEoppyAi({
@@ -378,11 +378,6 @@ export default function OrderEoppyWizard() {
         orderAsSeller={submitConfirmOrderAsSeller}
         isVoiceConsent={isVoiceConsentOrder(draftOrder)}
         isPaid={draftOrder.isPaid == 1}
-        showPaymentMethodInfo={
-          Number(draftOrder.posoSymmetoxis ?? 0) > 0 &&
-          isAllowedSymmPercentage(draftOrder.symmPercentage) &&
-          draftOrder.symmPercentage !== 0
-        }
         onClose={() => {
           if (!submitState.loading) {
             setShowSubmitConfirm(false);

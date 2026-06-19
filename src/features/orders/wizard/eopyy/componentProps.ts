@@ -15,6 +15,11 @@ export type GnomateuseisAreaProps = {
   aiRunningClient: AiClient | null;
   aiDisabledClients?: AiClient[];
   onRunAiWithClient: (aiclient: AiClient) => void;
+  /** Local file list for bulk upload mode. Omit to use Redux draft files. */
+  localFiles?: OrderFile[];
+  onFilesChange?: (files: OrderFile[]) => void;
+  orderUid?: string;
+  uploadDisabled?: boolean;
 };
 
 export type StepOrderEntry = {
