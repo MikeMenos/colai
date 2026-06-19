@@ -1,10 +1,11 @@
 import type { AppDispatch } from "@/store/store";
 import type { AiClient } from "@/lib/utils/ai";
+import { DEFAULT_AI_CLIENTS } from "@/lib/utils/ai";
 import { runEoppyAi } from "./runEoppyAi";
 
 export const EOPPY_AI_TIMEOUT_MS = 120_000;
 
-export const EOPPY_AI_CLIENTS: AiClient[] = ["Claude", "Gemini"];
+export const EOPPY_AI_CLIENTS: AiClient[] = DEFAULT_AI_CLIENTS;
 
 export async function runEoppyAiWithFallback({
   dispatch,

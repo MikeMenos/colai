@@ -2,6 +2,7 @@
 export const USER_SESSION_STORAGE_KEYS = [
   "auth",
   "orders",
+  "eopyyBulk",
   "staticData",
   "discountRequests",
   "wc",

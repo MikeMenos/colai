@@ -11,8 +11,9 @@ import {
   patchBulkSlotJob,
   type BulkSlotJob,
 } from "./bulkSlotJobs";
+import { patchPersistedBulkSlotFromJob } from "./bulkStorage";
 import { loadSlotDraft } from "./loadSlotDraft";
-import { fetchRunAi } from "./fetchRunAi";
+import { fetchRunAi, type BulkRunAiResult } from "./fetchRunAi";
 import { applyAiToSlotDraft } from "./slotDraftReduxBridge";
 import { submitSlotDraft } from "./submitSlotDraft";
 import {
@@ -47,7 +48,10 @@ function patchAndNotify(
 ) {
   patchBulkSlotJob(slotId, patch);
   const job = getBulkSlotJob(slotId);
-  if (job && onJobChange) onJobChange(job);
+  if (job) {
+    patchPersistedBulkSlotFromJob(job);
+    if (onJobChange) onJobChange(job);
+  }
 }
 
 async function saveBulkSlotDraft(
@@ -94,46 +98,110 @@ async function saveBulkSlotDraft(
   );
 }
 
+function isSuccessfulAiResult(result: BulkRunAiResult): boolean {
+  return Boolean(result.data?.isSuccess && result.data.jsonDoc);
+}
+
+async function runAiWithFallback(
+  slotId: string,
+  orderUid: string,
+  groupEoppyId: number,
+  aiclients: AiClient[],
+  runSeq: number,
+  onJobChange?: BulkSlotJobListener,
+): Promise<BulkRunAiResult> {
+  let lastResult: BulkRunAiResult = {
+    statusCode: 0,
+    data: null,
+    errorMessage: "Το αίτημα ΑΙ δεν ήταν επιτυχές.",
+  };
+
+  for (const aiclient of aiclients) {
+    if (isStaleSlotRun(slotId, runSeq)) return lastResult;
+
+    patchAndNotify(
+      slotId,
+      {
+        phase: "running-ai",
+        aiRunningClient: aiclient,
+        message: null,
+        aiErrorMessage: null,
+      },
+      onJobChange,
+    );
+
+    const controller = new AbortController();
+    const parentSignal = getSlotAbortSignal(slotId);
+    const onParentAbort = () => controller.abort();
+    parentSignal?.addEventListener("abort", onParentAbort);
+
+    const timeout = window.setTimeout(
+      () => controller.abort(),
+      EOPPY_AI_TIMEOUT_MS,
+    );
+
+    try {
+      const aiResult = await fetchRunAi(
+        orderUid,
+        groupEoppyId,
+        aiclient,
+        controller.signal,
+      );
+
+      if (isSuccessfulAiResult(aiResult)) {
+        return aiResult;
+      }
+
+      lastResult = aiResult;
+    } catch (e: unknown) {
+      if (e instanceof DOMException && e.name === "AbortError") {
+        throw e;
+      }
+
+      const message =
+        e instanceof Error
+          ? e.message
+          : "Το αίτημα ΑΙ δεν ήταν επιτυχές.";
+      lastResult = {
+        statusCode: 0,
+        data: null,
+        errorMessage: message,
+      };
+    } finally {
+      window.clearTimeout(timeout);
+      parentSignal?.removeEventListener("abort", onParentAbort);
+    }
+  }
+
+  return lastResult;
+}
+
 export function startBulkSlotPipeline(
   dispatch: AppDispatch,
   slotId: string,
   orderUid: string,
   groupEoppyId: number,
-  aiclient: AiClient,
+  aiclients: AiClient[],
   auth: BulkSlotAuth,
   onJobChange?: BulkSlotJobListener,
 ): void {
-  const runSeq = beginSlotRun(slotId, orderUid, aiclient);
+  const runSeq = beginSlotRun(slotId, orderUid);
   patchAndNotify(
     slotId,
-    { phase: "running-ai", aiRunningClient: aiclient, message: null, aiErrorMessage: null },
+    { phase: "running-ai", aiRunningClient: null, message: null, aiErrorMessage: null },
     onJobChange,
   );
 
   void (async () => {
     try {
-      const controller = new AbortController();
-      const parentSignal = getSlotAbortSignal(slotId);
-      const onParentAbort = () => controller.abort();
-      parentSignal?.addEventListener("abort", onParentAbort);
-
-      const timeout = window.setTimeout(
-        () => controller.abort(),
-        EOPPY_AI_TIMEOUT_MS,
+      const aiResult = await runAiWithFallback(
+        slotId,
+        orderUid,
+        groupEoppyId,
+        aiclients,
+        runSeq,
+        onJobChange,
       );
-
-      let aiResult;
-      try {
-        aiResult = await fetchRunAi(
-          orderUid,
-          groupEoppyId,
-          aiclient,
-          controller.signal,
-        );
-      } finally {
-        window.clearTimeout(timeout);
-        parentSignal?.removeEventListener("abort", onParentAbort);
-      }
 
       if (isStaleSlotRun(slotId, runSeq)) return;
 

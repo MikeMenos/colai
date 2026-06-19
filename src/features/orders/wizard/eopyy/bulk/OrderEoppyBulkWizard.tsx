@@ -45,7 +45,7 @@ export default function OrderEoppyBulkWizard() {
             canRemove={slots.length > 1}
             onRemove={() => removeSlot(slot.id)}
             onFilesChange={(files) => handleFilesChange(slot.id, files)}
-            onRunAi={(client) => void handleRunAi(slot.id, client)}
+            onRunAi={() => void handleRunAi(slot.id)}
           />
         ))}
       </div>

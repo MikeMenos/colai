@@ -2,7 +2,7 @@
 
 import React from "react";
 import BulkSlotUploadFields from "./BulkSlotUploadFields";
-import CompactRunAiButtons from "./CompactRunAiButtons";
+import BulkUploadButton from "./BulkUploadButton";
 import {
   getBulkSlotStatusBadge,
   isBulkSlotUploadDisabled,
@@ -10,7 +10,6 @@ import {
   slotHasRecipeFiles,
 } from "./bulkSlotUtils";
 import type { BulkOrderSlot } from "./types";
-import type { AiClient } from "@/lib/utils/ai";
 
 type BulkOrderUploadSlotProps = {
   index: number;
@@ -18,7 +17,7 @@ type BulkOrderUploadSlotProps = {
   canRemove: boolean;
   onRemove: () => void;
   onFilesChange: (files: BulkOrderSlot["files"]) => void;
-  onRunAi: (client: AiClient) => void;
+  onRunAi: () => void;
 };
 
 export default function BulkOrderUploadSlot({
@@ -72,12 +71,11 @@ export default function BulkOrderUploadSlot({
 
           {showAiButtons ? (
             <div className="mt-2">
-              <CompactRunAiButtons
+              <BulkUploadButton
                 aiStatus={slot.aiStatus}
-                aiRunningClient={slot.aiRunningClient}
-                aiDisabledClients={slot.aiDisabledClients}
                 hasFiles={hasRecipeFiles}
-                onRunAiWithClient={onRunAi}
+                disabled={isBulkSlotUploadDisabled(slot)}
+                onClick={onRunAi}
               />
             </div>
           ) : null}

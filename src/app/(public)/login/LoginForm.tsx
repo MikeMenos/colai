@@ -51,7 +51,12 @@ export default function LoginPage({ appVersion }: { appVersion: string }) {
         throw new Error("Missing user info from login response.");
       }
 
-      dispatch(loginOk({ userInfos: data.userInfos }));
+      dispatch(
+        loginOk({
+          userInfos: data.userInfos,
+          availableAiClients: data.availableAiClients ?? null,
+        }),
+      );
       dispatch(resetDiscountRequestsUserSession());
       router.replace(next);
     } catch (err) {

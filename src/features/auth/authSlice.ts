@@ -1,13 +1,14 @@
 import { createSlice, createAsyncThunk, PayloadAction } from "@reduxjs/toolkit";
 import { clearUserSessionOnLogout } from "@/store/clearUserSessionOnLogout";
 import type { AppDispatch } from "@/store/store";
-import type { ApiUserInfo } from "@/types/api/schemas";
+import type { ApiAvailableAiClient, ApiUserInfo } from "@/types/api/schemas";
 
 type AuthStatus = "unknown" | "authenticated" | "unauthenticated";
 
 export type AuthState = {
   status: AuthStatus;
   userInfos: ApiUserInfo | null;
+  availableAiClients: ApiAvailableAiClient[] | null;
   actingSellerCode: string | null;
   error: string | null;
 };
@@ -15,6 +16,7 @@ export type AuthState = {
 const initialState: AuthState = {
   status: "unknown",
   userInfos: null,
+  availableAiClients: null,
   actingSellerCode: null,
   error: null,
 };
@@ -71,9 +73,16 @@ const authSlice = createSlice({
   name: "auth",
   initialState: () => loadStateFromLocalStorage() ?? initialState,
   reducers: {
-    loginOk(state, action: PayloadAction<{ userInfos: ApiUserInfo }>) {
+    loginOk(
+      state,
+      action: PayloadAction<{
+        userInfos: ApiUserInfo;
+        availableAiClients?: ApiAvailableAiClient[] | null;
+      }>,
+    ) {
       state.status = "authenticated";
       state.userInfos = action.payload.userInfos;
+      state.availableAiClients = action.payload.availableAiClients ?? null;
       state.actingSellerCode = null;
       state.error = null;
       persistStateToLocalStorage(state);
@@ -81,6 +90,7 @@ const authSlice = createSlice({
     loginFail(state, action: PayloadAction<string>) {
       state.status = "unauthenticated";
       state.userInfos = null;
+      state.availableAiClients = null;
       state.actingSellerCode = null;
       state.error = action.payload;
       persistStateToLocalStorage(state);
@@ -102,6 +112,7 @@ const authSlice = createSlice({
       } else {
         state.status = "unauthenticated";
         state.userInfos = null;
+        state.availableAiClients = null;
         state.actingSellerCode = null;
         persistStateToLocalStorage(state);
       }
@@ -109,12 +120,14 @@ const authSlice = createSlice({
     b.addCase(hydrateAuth.rejected, (state) => {
       state.status = "unauthenticated";
       state.userInfos = null;
+      state.availableAiClients = null;
       state.actingSellerCode = null;
       persistStateToLocalStorage(state);
     });
     b.addCase(logoutAsync.fulfilled, (state) => {
       state.status = "unauthenticated";
       state.userInfos = null;
+      state.availableAiClients = null;
       state.actingSellerCode = null;
       persistStateToLocalStorage(state);
     });

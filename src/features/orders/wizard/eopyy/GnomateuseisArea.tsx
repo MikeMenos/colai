@@ -13,6 +13,37 @@ import Image from "next/image";
 import type { GnomateuseisAreaProps } from "./componentProps";
 import GnomateuseisUploadSection from "./wizard/GnomateuseisUploadSection";
 import { useDualFileUploadState } from "./wizard/useFileUploadState";
+import {
+  getAiClientsByPriority,
+  type AiClient,
+} from "@/lib/utils/ai";
+
+const AI_CLIENT_CONFIG: Record<
+  AiClient,
+  { label: string; icon: React.ReactNode }
+> = {
+  Claude: {
+    label: "Run AI (Claude)",
+    icon: <Image src="/claude.svg" alt="Claude" width={18} height={18} />,
+  },
+  Gemini: {
+    label: "Run AI (Gemini)",
+    icon: <SiGooglegemini size={18} />,
+  },
+};
+
+function AiClientSeparator() {
+  return (
+    <div
+      className="d-flex align-items-center text-secondary small gap-2 px-1"
+      aria-hidden
+    >
+      <hr className="m-0 flex-grow-1" />
+      <span className="text-uppercase fw-semibold">ή</span>
+      <hr className="m-0 flex-grow-1" />
+    </div>
+  );
+}
 
 export default function GnomateuseisArea({
   aiMessage,
@@ -27,6 +58,11 @@ export default function GnomateuseisArea({
 }: GnomateuseisAreaProps) {
   const dispatch = useAppDispatch();
   const isLocalMode = localFiles !== undefined;
+  const availableAiClients = useAppSelector((s) => s.auth.availableAiClients);
+  const aiClients = React.useMemo(
+    () => getAiClientsByPriority(availableAiClients),
+    [availableAiClients],
+  );
 
   const draftFiles = useAppSelector((s) => s.orders?.draft?.files) ?? [];
   const draftOrderUid = useAppSelector((s) => s.orders?.draft?.order?.uid);
@@ -118,40 +154,30 @@ export default function GnomateuseisArea({
 
       {!isLocalMode && aiStatus !== "done" ? (
         <div className="d-flex flex-column mt-1 gap-1">
-          <RunAiButton
-            label="Run AI (Claude)"
-            running={aiStatus === "running" && aiRunningClient === "Claude"}
-            failed={aiDisabledClients.includes("Claude")}
-            disabled={
-              !hasFiles ||
-              aiDisabledClients.includes("Claude") ||
-              (aiStatus === "running" && aiRunningClient !== "Claude")
-            }
-            onClick={() => onRunAiWithClient("Claude")}
-            icon={
-              <Image src="/claude.svg" alt="Claude" width={18} height={18} />
-            }
-          />
-          <div
-            className="d-flex align-items-center text-secondary small gap-2 px-1"
-            aria-hidden
-          >
-            <hr className="m-0 flex-grow-1" />
-            <span className="text-uppercase fw-semibold">ή</span>
-            <hr className="m-0 flex-grow-1" />
-          </div>
-          <RunAiButton
-            label="Run AI (Gemini)"
-            running={aiStatus === "running" && aiRunningClient === "Gemini"}
-            failed={aiDisabledClients.includes("Gemini")}
-            disabled={
-              !hasFiles ||
-              aiDisabledClients.includes("Gemini") ||
-              (aiStatus === "running" && aiRunningClient !== "Gemini")
-            }
-            onClick={() => onRunAiWithClient("Gemini")}
-            icon={<SiGooglegemini size={18} />}
-          />
+          {aiClients.map((client, index) => {
+            const config = AI_CLIENT_CONFIG[client];
+            if (!config) return null;
+
+            return (
+              <React.Fragment key={client}>
+                {index > 0 ? <AiClientSeparator /> : null}
+                <RunAiButton
+                  label={config.label}
+                  running={
+                    aiStatus === "running" && aiRunningClient === client
+                  }
+                  failed={aiDisabledClients.includes(client)}
+                  disabled={
+                    !hasFiles ||
+                    aiDisabledClients.includes(client) ||
+                    (aiStatus === "running" && aiRunningClient !== client)
+                  }
+                  onClick={() => onRunAiWithClient(client)}
+                  icon={config.icon}
+                />
+              </React.Fragment>
+            );
+          })}
         </div>
       ) : null}
     </>

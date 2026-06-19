@@ -24,5 +24,3 @@ export type BulkOrderSlot = {
 };
 
 export const MAX_BULK_SLOTS = 10;
-
-export const BULK_AI_CLIENTS: AiClient[] = ["Claude", "Gemini"];

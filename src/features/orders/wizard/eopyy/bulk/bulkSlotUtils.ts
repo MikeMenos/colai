@@ -11,14 +11,35 @@ export function isBulkNewPersonFromRunAi(jsonDoc: EopyDocument): boolean {
   return isBlank(jsonDoc.person_erpid);
 }
 
-const ACTIVE_PHASES: BulkSlotPhase[] = [
-  "running-ai",
-  "applying-ai",
-  "saving",
-];
+const ACTIVE_PHASES: BulkSlotPhase[] = ["running-ai", "applying-ai", "saving"];
 
 export function isBulkSlotBusy(phase: BulkSlotPhase): boolean {
   return ACTIVE_PHASES.includes(phase);
+}
+
+export function isBulkSlotPendingRunAi(slot: BulkOrderSlot): boolean {
+  return (
+    slot.status === "processing" ||
+    isBulkSlotBusy(slot.phase) ||
+    slot.aiStatus === "running"
+  );
+}
+
+export function hasBulkSlotsPendingRunAi(slots: BulkOrderSlot[]): boolean {
+  return slots.some(isBulkSlotPendingRunAi);
+}
+
+export function hasPersistedBulkSession(slots: BulkOrderSlot[]): boolean {
+  if (hasBulkSlotsPendingRunAi(slots)) return true;
+  if (slots.length > 1) return true;
+
+  return slots.some(
+    (slot) =>
+      slot.files.length > 0 ||
+      slot.orderUid != null ||
+      slot.status === "saved" ||
+      slot.status === "error",
+  );
 }
 
 export function shouldShowBulkAiButtons(slot: BulkOrderSlot): boolean {
@@ -52,7 +73,7 @@ export function getBulkSlotStatusBadge(
   status: BulkSlotStatus,
 ): { label: string; variant: string } | null {
   if (status === "saved") {
-    return { label: "Σε αναμονή", variant: "warning" };
+    return { label: "Ανέβηκε - Σε αναμονή", variant: "warning" };
   }
   return null;
 }

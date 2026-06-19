@@ -3,13 +3,20 @@
 import React from "react";
 import { usePathname, useSearchParams } from "next/navigation";
 import { useAppDispatch } from "@/store/hooks";
-import { ORDER_WIZARD_PATH_RE } from "@/lib/orderWizardRoute";
+import {
+  ORDER_EOPPY_BULK_PATH_RE,
+  ORDER_WIZARD_PATH_RE,
+} from "@/lib/orderWizardRoute";
+import { clearBulkSlotsStorageIfNothingPending } from "@/features/orders/wizard/eopyy/bulk/bulkStorage";
 import { resetEntireDraft } from "@/store/orders/ordersSlice";
 
 /**
  * Clears persisted draft (order `{}`, ai_ylika/files `[]`, etc.) when navigating away from
  * the order wizard or switching order / mode / uid. Uses route transitions, not wizard unmount,
  * so React Strict Mode does not clear state right after editDraftAsync loads.
+ *
+ * Clears persisted bulk EOPYY slots when leaving `/orders/:id/eopyy-bulk/new` unless a run-AI
+ * pipeline is still in progress.
  */
 export default function OrderDraftResetOnRouteLeave() {
     const pathname = usePathname();
@@ -47,6 +54,20 @@ export default function OrderDraftResetOnRouteLeave() {
 
         if (wasOnWizard && !sameWizardOrder) {
             dispatch(resetEntireDraft());
+        }
+
+        const prevBulkMatch = before.pathname.match(ORDER_EOPPY_BULK_PATH_RE);
+        const currBulkMatch = pathname.match(ORDER_EOPPY_BULK_PATH_RE);
+        const wasOnBulk = !!prevBulkMatch;
+        const onBulk = !!currBulkMatch;
+        const sameBulkOrder =
+            onBulk &&
+            prevBulkMatch &&
+            currBulkMatch &&
+            prevBulkMatch[1] === currBulkMatch[1];
+
+        if (wasOnBulk && !sameBulkOrder) {
+            clearBulkSlotsStorageIfNothingPending();
         }
     }, [pathname, uid, dispatch]);
 

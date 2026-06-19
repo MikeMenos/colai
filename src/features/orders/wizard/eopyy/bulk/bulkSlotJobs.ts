@@ -50,17 +50,13 @@ export function ensureBulkSlotJob(slotId: string, orderUid: string): BulkSlotJob
   return job;
 }
 
-export function beginSlotRun(
-  slotId: string,
-  orderUid: string,
-  aiclient: AiClient,
-): number {
+export function beginSlotRun(slotId: string, orderUid: string): number {
   const job = ensureBulkSlotJob(slotId, orderUid);
   job.abortController?.abort();
   job.runSeq += 1;
   job.orderUid = orderUid;
   job.phase = "running-ai";
-  job.aiRunningClient = aiclient;
+  job.aiRunningClient = null;
   job.message = null;
   job.aiErrorMessage = null;
   job.abortController = new AbortController();
