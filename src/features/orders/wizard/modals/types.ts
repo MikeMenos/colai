@@ -8,8 +8,8 @@ export type SubmitOrderConfirmModalProps = {
   customerIsCompletelyNew?: boolean;
   suggestedDoctorName?: string | null;
   orderAsSeller?: string | null;
-  isVoiceConsent?: boolean;
   isPaid?: boolean;
+  showPaymentMethodInfo?: boolean;
   onClose: () => void;
   onConfirm: () => void;
 };

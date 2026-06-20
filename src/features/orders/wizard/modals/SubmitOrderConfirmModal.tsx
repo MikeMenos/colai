@@ -59,43 +59,37 @@ function OrderAsSellerHighlight({ value }: { value: string }) {
   );
 }
 
+function SubmitConfirmInfoBanner({ label }: { label: string }) {
+  return (
+    <div
+      className="d-flex align-items-center rounded-3 gap-2 px-3 py-2"
+      style={{
+        background: "rgba(var(--bs-warning-rgb), 0.12)",
+        border: "1px solid rgba(var(--bs-warning-rgb), 0.28)",
+      }}
+    >
+      <i className="bi bi-exclamation-triangle-fill text-warning flex-shrink-0" />
+      <span className="small fw-semibold">{label}</span>
+    </div>
+  );
+}
+
 function SubmitConfirmToggleWarnings({
-  isVoiceConsent = false,
   isPaid = false,
+  showPaymentMethodInfo = false,
 }: {
-  isVoiceConsent?: boolean;
   isPaid?: boolean;
+  showPaymentMethodInfo?: boolean;
 }) {
-  if (!isVoiceConsent && !isPaid) return null;
+  if (!showPaymentMethodInfo) return null;
 
   return (
     <div className="d-flex flex-column mb-3 gap-2">
-      {isVoiceConsent ? (
-        <div
-          className="d-flex align-items-center rounded-3 gap-2 px-3 py-2"
-          style={{
-            background: "rgba(var(--bs-warning-rgb), 0.12)",
-            border: "1px solid rgba(var(--bs-warning-rgb), 0.28)",
-          }}
-        >
-          <i className="bi bi-exclamation-triangle-fill text-warning flex-shrink-0" />
-          <span className="small fw-semibold">
-            Τηλ. επικοινωνία για συναίνεση
-          </span>
-        </div>
-      ) : null}
-      {isPaid ? (
-        <div
-          className="d-flex align-items-center rounded-3 gap-2 px-3 py-2"
-          style={{
-            background: "rgba(var(--bs-warning-rgb), 0.12)",
-            border: "1px solid rgba(var(--bs-warning-rgb), 0.28)",
-          }}
-        >
-          <i className="bi bi-exclamation-triangle-fill text-warning flex-shrink-0" />
-          <span className="small fw-semibold">Προπληρωμένο</span>
-        </div>
-      ) : null}
+      <SubmitConfirmInfoBanner
+        label={
+          isPaid ? "Πληρωμή μέσω κατάθεσης" : "Πληρωμή με αντικαταβολή"
+        }
+      />
     </div>
   );
 }
@@ -110,8 +104,8 @@ export default function SubmitOrderConfirmModal({
   customerIsCompletelyNew = false,
   suggestedDoctorName,
   orderAsSeller,
-  isVoiceConsent = false,
   isPaid = false,
+  showPaymentMethodInfo = false,
   onClose,
   onConfirm,
 }: SubmitOrderConfirmModalProps) {
@@ -162,8 +156,8 @@ export default function SubmitOrderConfirmModal({
             <OrderAsSellerHighlight value={orderAsSeller} />
           ) : null}
           <SubmitConfirmToggleWarnings
-            isVoiceConsent={isVoiceConsent}
             isPaid={isPaid}
+            showPaymentMethodInfo={showPaymentMethodInfo}
           />
           <SummaryRow label="OTP" value={otp} />
           <SummaryRow label="ΑΜΚΑ παραλήπτη" value={amka} />

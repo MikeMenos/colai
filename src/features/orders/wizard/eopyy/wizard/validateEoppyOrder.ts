@@ -145,11 +145,7 @@ export function validateEoppyOrder({
       );
     }
 
-    if (
-      validateSynainesiPanel &&
-      draftOrder.isVoiceConsent != 1 &&
-      !hasConsentFormFiles
-    ) {
+    if (validateSynainesiPanel && !hasConsentFormFiles) {
       add(
         "synenaiseis",
         "consent_form",

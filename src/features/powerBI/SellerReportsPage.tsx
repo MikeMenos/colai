@@ -101,7 +101,7 @@ export default function SellerReportsPage({
           <div className="min-w-0 flex-grow-1">
             <div className="d-flex align-items-center flex-nowrap gap-2">
               <h1 className="h4 fw-bold text-truncate mb-0">
-                Αναφορές πωλητών
+                Αναφορές πωλήσεων
               </h1>
               <span
                 className="badge rounded-pill flex-shrink-0"
