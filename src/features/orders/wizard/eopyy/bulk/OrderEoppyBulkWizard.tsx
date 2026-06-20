@@ -42,18 +42,6 @@ export default function OrderEoppyBulkWizard() {
   return (
     <>
       <div className="d-flex flex-column gap-2">
-        <div>
-          <button
-            type="button"
-            className="btn btn-link text-secondary text-decoration-none small mb-1 p-0"
-            onClick={() => requestLeave("/orders/0")}
-          >
-            <i className="bi bi-chevron-left me-1" />
-            Πίσω
-          </button>
-          <h1 className="h6 fw-semibold my-2">ΕΟΠΥΥ μαζικό</h1>
-        </div>
-
         <SellerActingSelector />
 
         <div className="d-flex flex-column gap-2">

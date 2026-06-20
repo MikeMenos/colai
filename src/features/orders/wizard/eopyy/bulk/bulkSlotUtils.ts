@@ -60,7 +60,7 @@ export function getBulkSlotStatusBadge(
   status: BulkSlotStatus,
 ): { label: string; variant: string } | null {
   if (status === "saved") {
-    return { label: "Ανέβηκε - Σε αναμονή", variant: "warning" };
+    return { label: "Προσωρινά αποθηκευμένο", variant: "warning" };
   }
   return null;
 }

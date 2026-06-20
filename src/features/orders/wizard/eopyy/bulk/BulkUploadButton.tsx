@@ -22,7 +22,7 @@ export default function BulkUploadButton({
   return (
     <button
       type="button"
-      className="btn btn-sm btn-primary w-100 d-inline-flex align-items-center justify-content-center gap-2"
+      className="btn btn-sm btn-primary d-inline-flex align-items-center justify-content-center w-100 gap-2"
       disabled={isDisabled}
       onClick={onClick}
     >
@@ -33,8 +33,8 @@ export default function BulkUploadButton({
         </>
       ) : (
         <>
-          <i className="bi bi-cloud-upload" />
-          Ανέβασμα
+          <i className="bi bi-file-save" />
+          Αποθήκευση
         </>
       )}
     </button>
