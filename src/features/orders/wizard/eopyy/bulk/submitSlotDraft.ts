@@ -15,20 +15,6 @@ type SubmitSlotDraftAuth = {
   actingSellerCode: string | null;
 };
 
-/** TEMP TEST — tweak last 3 barcode digits so save passes; remove before release. */
-function tempTweakBarcodeForTesting(
-  barcode: string | null | undefined,
-): string | null | undefined {
-  const value = barcode?.trim();
-  if (!value || value.length < 3) return barcode ?? null;
-
-  const suffix = value.slice(-3);
-  if (!/^\d{3}$/.test(suffix)) return value;
-
-  const nextSuffix = String((parseInt(suffix, 10) + 1) % 1000).padStart(3, "0");
-  return value.slice(0, -3) + nextSuffix;
-}
-
 export function buildSlotSubmitPayload(
   snapshot: BulkDraftSnapshot,
   auth: SubmitSlotDraftAuth,
@@ -61,8 +47,6 @@ export function buildSlotSubmitPayload(
     parsedFinalAmount === 0;
   const zeroParticipationConfirmed = order.eopyyVerifyNoParticipation == 1;
 
-  order.barcode = tempTweakBarcodeForTesting(order.barcode) ?? order.barcode;
-
   return {
     order: {
       ...order,
@@ -86,12 +70,14 @@ export function buildSlotSubmitPayload(
 export async function submitSlotDraft(
   snapshot: BulkDraftSnapshot,
   auth: SubmitSlotDraftAuth,
+  signal?: AbortSignal,
 ): Promise<PostOrderSuccess> {
   const payload = buildSlotSubmitPayload(snapshot, auth);
   const res = await fetch("/api/orders", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(payload),
+    signal,
   });
 
   return parseProxyJson<PostOrderSuccess>(res, "Failed to submit order");

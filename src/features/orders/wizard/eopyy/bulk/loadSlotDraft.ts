@@ -82,9 +82,10 @@ export function mapOrderEditVmToSnapshot(
 export async function loadSlotDraft(
   orderUid: string,
   auth: LoadSlotDraftAuth,
+  signal?: AbortSignal,
 ): Promise<BulkDraftSnapshot> {
   const params = buildOrderEditParams("eopyy", 4, auth, orderUid);
-  const response = await fetchOrderEdit(params);
+  const response = await fetchOrderEdit(params, signal);
 
   if (!response.ok || !response.data?.order) {
     throw new Error("Αποτυχία φόρτωσης παραγγελίας.");

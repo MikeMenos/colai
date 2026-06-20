@@ -80,7 +80,7 @@ function BulkUploadRow({
       <div className="small text-secondary">{emptyHint}</div>
 
       {sectionFiles.length > 0 ? (
-        <div className="d-flex flex-wrap gap-1 mt-2">
+        <div className="d-flex mt-2 flex-wrap gap-1">
           {sectionFiles.map((file) => {
             const name = getOrderFileDisplayName(file);
             return (
@@ -138,16 +138,6 @@ export default function BulkSlotUploadFields({
         disabled={disabled}
         onFileAdded={handleFileAdded}
         maxFiles={MAX_RECIPE_FILES}
-      />
-      <BulkUploadRow
-        title="Άλλα αρχεία (δεν αφορούν γνωμάτευση)"
-        emptyHint="Πάτα + για να ανεβάσεις επιπλέον αρχεία που δεν αφορούν γνωμάτευση."
-        orderUid={orderUid}
-        files={files}
-        documentCategory="recipe_aux"
-        position={files.length}
-        disabled={disabled}
-        onFileAdded={handleFileAdded}
       />
     </div>
   );

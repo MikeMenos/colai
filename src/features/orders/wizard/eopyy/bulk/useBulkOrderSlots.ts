@@ -7,23 +7,21 @@ import {
   fetchOrderEdit,
 } from "@/lib/api/orderDraft";
 import { getAiClientsByPriority } from "@/lib/utils/ai";
+import { registerBulkLeaveGuard } from "./bulkLeaveGuard";
 import { startBulkSlotPipeline } from "./processBulkOrderSlot";
 import {
-  bulkJobToSlotPatch,
-  countSavedBulkSlots,
-  createEmptyBulkSlot,
-} from "./bulkSlotUtils";
-import {
+  abortAllBulkSlotJobs,
   ensureBulkSlotJob,
   getBulkSlotJob,
   patchBulkSlotJob,
   removeBulkSlotJob,
 } from "./bulkSlotJobs";
 import {
-  getInitialBulkSlots,
-  mergePersistedBulkSlotsWithJobs,
-  persistBulkSlotsToStorage,
-} from "./bulkStorage";
+  bulkJobToSlotPatch,
+  countSavedBulkSlots,
+  createEmptyBulkSlot,
+  hasBulkWizardUploadedContent,
+} from "./bulkSlotUtils";
 import type { BulkOrderSlot } from "./types";
 import { MAX_BULK_SLOTS } from "./types";
 
@@ -34,82 +32,52 @@ function slotsChanged(a: BulkOrderSlot[], b: BulkOrderSlot[]): boolean {
 export function useBulkOrderSlots() {
   const dispatch = useAppDispatch();
   const auth = useAppSelector((s) => s.auth);
-  const [slots, setSlots] = React.useState<BulkOrderSlot[]>(getInitialBulkSlots);
+  const [slots, setSlots] = React.useState<BulkOrderSlot[]>([
+    createEmptyBulkSlot(),
+  ]);
   const slotsRef = React.useRef(slots);
   const initStartedRef = React.useRef(new Set<string>());
-  const jobsHydratedRef = React.useRef(false);
 
   React.useEffect(() => {
     slotsRef.current = slots;
   }, [slots]);
 
-  const commitSlots = React.useCallback(
-    (updater: (prev: BulkOrderSlot[]) => BulkOrderSlot[]) => {
-      setSlots((prev) => {
-        const next = updater(prev);
-        if (next === prev) return prev;
-        slotsRef.current = next;
-        persistBulkSlotsToStorage(next);
-        return next;
-      });
-    },
-    [],
-  );
+  React.useEffect(() => {
+    return registerBulkLeaveGuard({
+      hasContent: () => hasBulkWizardUploadedContent(slotsRef.current),
+      abortAll: abortAllBulkSlotJobs,
+    });
+  }, []);
 
   const syncSlotFromJob = React.useCallback((slotId: string) => {
     return (job: Parameters<typeof bulkJobToSlotPatch>[0]) => {
-      const patch = bulkJobToSlotPatch(job);
-      const next = slotsRef.current.map((slot) =>
-        slot.id === slotId ? { ...slot, ...patch } : slot,
+      setSlots((prev) =>
+        prev.map((slot) =>
+          slot.id === slotId ? { ...slot, ...bulkJobToSlotPatch(job) } : slot,
+        ),
       );
-      slotsRef.current = next;
-      persistBulkSlotsToStorage(next);
-      setSlots(next);
     };
   }, []);
 
   const updateSlot = React.useCallback(
     (slotId: string, patch: Partial<BulkOrderSlot>) => {
-      commitSlots((prev) =>
+      setSlots((prev) =>
         prev.map((slot) =>
           slot.id === slotId ? { ...slot, ...patch } : slot,
         ),
       );
     },
-    [commitSlots],
+    [],
   );
 
   React.useEffect(() => {
-    if (jobsHydratedRef.current) return;
-    jobsHydratedRef.current = true;
-
-    for (const slot of slotsRef.current) {
-      if (slot.orderUid) {
-        initStartedRef.current.add(slot.id);
-        ensureBulkSlotJob(slot.id, slot.orderUid);
-      }
-    }
-
-    const synced = mergePersistedBulkSlotsWithJobs(
-      slotsRef.current,
-      getBulkSlotJob,
-    );
-    if (slotsChanged(slotsRef.current, synced)) {
-      slotsRef.current = synced;
-      persistBulkSlotsToStorage(synced);
-      setSlots(synced);
-    }
-  }, []);
-
-  React.useEffect(() => {
     const interval = window.setInterval(() => {
-      const synced = mergePersistedBulkSlotsWithJobs(
-        slotsRef.current,
-        getBulkSlotJob,
-      );
+      const synced = slotsRef.current.map((slot) => {
+        const job = getBulkSlotJob(slot.id);
+        if (!job || job.phase === "idle") return slot;
+        return { ...slot, ...bulkJobToSlotPatch(job) };
+      });
       if (!slotsChanged(slotsRef.current, synced)) return;
-      slotsRef.current = synced;
-      persistBulkSlotsToStorage(synced);
       setSlots(synced);
     }, 1000);
 
@@ -160,22 +128,19 @@ export function useBulkOrderSlots() {
   }, [slots, initializeSlot]);
 
   const addSlot = React.useCallback(() => {
-    commitSlots((prev) => {
+    setSlots((prev) => {
       if (prev.length >= MAX_BULK_SLOTS) return prev;
       return [...prev, createEmptyBulkSlot()];
     });
-  }, [commitSlots]);
+  }, []);
 
-  const removeSlot = React.useCallback(
-    (slotId: string) => {
-      removeBulkSlotJob(slotId);
-      commitSlots((prev) => {
-        if (prev.length <= 1) return prev;
-        return prev.filter((slot) => slot.id !== slotId);
-      });
-    },
-    [commitSlots],
-  );
+  const removeSlot = React.useCallback((slotId: string) => {
+    removeBulkSlotJob(slotId);
+    setSlots((prev) => {
+      if (prev.length <= 1) return prev;
+      return prev.filter((slot) => slot.id !== slotId);
+    });
+  }, []);
 
   const handleFilesChange = React.useCallback(
     (slotId: string, files: BulkOrderSlot["files"]) => {
@@ -228,6 +193,8 @@ export function useBulkOrderSlots() {
     [auth, dispatch, syncSlotFromJob],
   );
 
+  const hasUploadedContent = hasBulkWizardUploadedContent(slots);
+
   return {
     slots,
     addSlot,
@@ -235,6 +202,8 @@ export function useBulkOrderSlots() {
     updateSlot,
     handleFilesChange,
     handleRunAi,
+    abortAllJobs: abortAllBulkSlotJobs,
+    hasUploadedContent,
     canAddMore: slots.length < MAX_BULK_SLOTS,
     savedCount: countSavedBulkSlots(slots),
   };

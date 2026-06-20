@@ -29,19 +29,6 @@ export function hasBulkSlotsPendingRunAi(slots: BulkOrderSlot[]): boolean {
   return slots.some(isBulkSlotPendingRunAi);
 }
 
-export function hasPersistedBulkSession(slots: BulkOrderSlot[]): boolean {
-  if (hasBulkSlotsPendingRunAi(slots)) return true;
-  if (slots.length > 1) return true;
-
-  return slots.some(
-    (slot) =>
-      slot.files.length > 0 ||
-      slot.orderUid != null ||
-      slot.status === "saved" ||
-      slot.status === "error",
-  );
-}
-
 export function shouldShowBulkAiButtons(slot: BulkOrderSlot): boolean {
   if (!slotHasRecipeFiles(slot)) return false;
   if (slot.status === "saved") return false;
@@ -89,6 +76,10 @@ export function isBulkSlotUploadDisabled(slot: BulkOrderSlot): boolean {
 
 export function slotHasRecipeFiles(slot: BulkOrderSlot): boolean {
   return slot.files.some((f) => f.documentCategory === "recipe");
+}
+
+export function hasBulkWizardUploadedContent(slots: BulkOrderSlot[]): boolean {
+  return slots.some((slot) => slot.files.length > 0);
 }
 
 export function countSavedBulkSlots(slots: BulkOrderSlot[]): number {

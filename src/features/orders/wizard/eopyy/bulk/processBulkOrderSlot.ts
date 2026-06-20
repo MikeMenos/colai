@@ -11,7 +11,6 @@ import {
   patchBulkSlotJob,
   type BulkSlotJob,
 } from "./bulkSlotJobs";
-import { patchPersistedBulkSlotFromJob } from "./bulkStorage";
 import { loadSlotDraft } from "./loadSlotDraft";
 import { fetchRunAi, type BulkRunAiResult } from "./fetchRunAi";
 import { applyAiToSlotDraft } from "./slotDraftReduxBridge";
@@ -48,10 +47,7 @@ function patchAndNotify(
 ) {
   patchBulkSlotJob(slotId, patch);
   const job = getBulkSlotJob(slotId);
-  if (job) {
-    patchPersistedBulkSlotFromJob(job);
-    if (onJobChange) onJobChange(job);
-  }
+  if (job && onJobChange) onJobChange(job);
 }
 
 async function saveBulkSlotDraft(
@@ -68,7 +64,11 @@ async function saveBulkSlotDraft(
 
   patchAndNotify(slotId, { draft, phase: "saving" }, onJobChange);
 
-  const save = await submitSlotDraft(draft, auth);
+  const save = await submitSlotDraft(
+    draft,
+    auth,
+    getSlotAbortSignal(slotId),
+  );
   if (isStaleSlotRun(slotId, runSeq)) return;
 
   if (save.result) {
@@ -223,7 +223,11 @@ export function startBulkSlotPipeline(
         return;
       }
 
-      const draft = await loadSlotDraft(orderUid, auth);
+      const draft = await loadSlotDraft(
+        orderUid,
+        auth,
+        getSlotAbortSignal(slotId),
+      );
       if (isStaleSlotRun(slotId, runSeq)) return;
 
       let draftToSave = draft;

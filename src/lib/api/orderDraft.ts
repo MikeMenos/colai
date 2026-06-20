@@ -4,12 +4,15 @@ import type { GetOrderEditSuccess } from "@/types/api/responses";
 import type { ApiUserInfo } from "@/types/api/schemas";
 import type { Maybe } from "@/types/api/common";
 
-export async function fetchOrderEdit(params: {
-  typeid: string;
-  catid: number;
-  uid?: string;
-  sellercode?: string | null;
-}): Promise<GetOrderEditSuccess> {
+export async function fetchOrderEdit(
+  params: {
+    typeid: string;
+    catid: number;
+    uid?: string;
+    sellercode?: string | null;
+  },
+  signal?: AbortSignal,
+): Promise<GetOrderEditSuccess> {
   const search = new URLSearchParams({
     _ts: String(Date.now()),
     typeid: params.typeid,
@@ -25,6 +28,7 @@ export async function fetchOrderEdit(params: {
       "Cache-Control": "no-cache",
       Pragma: "no-cache",
     },
+    signal,
   });
 
   return parseProxyJson<GetOrderEditSuccess>(res, "Failed to load order draft");

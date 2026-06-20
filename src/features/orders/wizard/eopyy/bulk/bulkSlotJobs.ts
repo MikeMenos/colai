@@ -92,6 +92,14 @@ export function removeBulkSlotJob(slotId: string): void {
   jobs.delete(slotId);
 }
 
+export function abortAllBulkSlotJobs(): void {
+  for (const job of jobs.values()) {
+    job.abortController?.abort();
+    job.runSeq += 1;
+  }
+  jobs.clear();
+}
+
 export function getSlotAbortSignal(
   slotId: string,
 ): AbortSignal | undefined {
