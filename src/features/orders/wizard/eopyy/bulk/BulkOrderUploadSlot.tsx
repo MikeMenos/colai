@@ -33,27 +33,51 @@ export default function BulkOrderUploadSlot({
   const showAiButtons = shouldShowBulkAiButtons(slot);
 
   return (
-    <div className="app-card p-2">
-      <div className="d-flex align-items-center justify-content-between mb-2">
+    <div
+      className="app-card border-primary-subtle border p-2"
+      style={{
+        boxShadow:
+          "var(--app-shadow-tight), 0 0 0 1px rgba(var(--bs-primary-rgb), 0.06)",
+      }}
+    >
+      <div className="d-flex align-items-center justify-content-between border-bottom mb-3 pb-2">
         <div className="d-flex align-items-center gap-2">
-          <span className="fw-semibold">Παραγγελία {index + 1}</span>
-          {badge ? (
-            <span className={`badge text-bg-${badge.variant}`}>{badge.label}</span>
-          ) : null}
-          {slot.status === "processing" ? (
-            <span className="spinner-border spinner-border-sm" aria-hidden />
-          ) : null}
+          <div
+            className="d-inline-flex align-items-center justify-content-center rounded-circle fw-bold text-primary flex-shrink-0"
+            style={{
+              width: 34,
+              height: 34,
+              fontSize: "0.9rem",
+              background: "rgba(var(--bs-primary-rgb), 0.12)",
+              border: "1px solid rgba(var(--bs-primary-rgb), 0.2)",
+            }}
+            aria-hidden
+          >
+            {index + 1}
+          </div>
+
+          <div className="d-flex align-items-center gap-2">
+            <span className="fw-semibold fs-6">Παραγγελία</span>
+            {badge ? (
+              <span className={`badge text-bg-${badge.variant}`}>
+                {badge.label}
+              </span>
+            ) : null}
+            {slot.status === "processing" ? (
+              <span className="spinner-border spinner-border-sm" aria-hidden />
+            ) : null}
+          </div>
         </div>
 
         {canRemove ? (
           <button
             type="button"
-            className="btn btn-sm btn-link text-secondary p-0"
+            className="btn btn-sm btn-outline-secondary"
             onClick={onRemove}
             disabled={slot.status === "processing"}
             aria-label={`Αφαίρεση παραγγελίας ${index + 1}`}
           >
-            <i className="bi bi-x-lg" />
+            <i className="bi bi-trash" />
           </button>
         ) : null}
       </div>

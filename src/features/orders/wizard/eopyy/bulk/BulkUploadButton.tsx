@@ -33,7 +33,7 @@ export default function BulkUploadButton({
         </>
       ) : (
         <>
-          <i className="bi bi-file-save" />
+          <i className="bi bi-cloud-upload" />
           Αποθήκευση
         </>
       )}

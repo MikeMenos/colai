@@ -45,6 +45,28 @@ export default function OrderEoppyBulkWizard() {
         <SellerActingSelector />
 
         <div className="d-flex flex-column gap-2">
+          <span className="small text-secondary fw-semibold">
+            Παραγγελίες ({slots.length}/{MAX_BULK_SLOTS})
+          </span>
+
+          {canAddMore ? (
+            <button
+              type="button"
+              className="btn btn-outline-secondary d-inline-flex align-items-center justify-content-center w-100 gap-2 py-2"
+              style={{ borderStyle: "dashed" }}
+              onClick={addSlot}
+            >
+              <i className="bi bi-plus-circle" />
+              Προσθήκη παραγγελίας
+            </button>
+          ) : (
+            <div className="small text-secondary py-1 text-center">
+              Μέγιστο {MAX_BULK_SLOTS} παραγγελίες
+            </div>
+          )}
+        </div>
+
+        <div className="d-flex flex-column gap-2">
           {slots.map((slot, index) => (
             <BulkOrderUploadSlot
               key={slot.id}
@@ -57,21 +79,6 @@ export default function OrderEoppyBulkWizard() {
             />
           ))}
         </div>
-
-        {canAddMore ? (
-          <button
-            type="button"
-            className="btn btn-sm btn-outline-primary"
-            onClick={addSlot}
-          >
-            <i className="bi bi-plus-lg me-1" />
-            Προσθήκη ({slots.length}/{MAX_BULK_SLOTS})
-          </button>
-        ) : (
-          <div className="text-secondary small text-center">
-            Μέγιστο {MAX_BULK_SLOTS} παραγγελίες.
-          </div>
-        )}
       </div>
 
       <LeaveOrderWizardConfirmModal

@@ -13,7 +13,7 @@ export default function TrackTraceDetailsContent({
   const checkpoints = sortCheckpoints(info.checkpoints ?? []);
 
   return (
-    <div className="d-flex flex-column gap-3">
+    <div className="d-flex flex-column gap-2">
       <div className="track-trace-summary">
         <TrackTraceSummaryItem
           icon="bi-person"

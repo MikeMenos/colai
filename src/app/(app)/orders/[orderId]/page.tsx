@@ -54,7 +54,7 @@ export default function OrderStartPage() {
   };
 
   return (
-    <div className="d-flex flex-column gap-3">
+    <div className="d-flex flex-column gap-2">
       <div>
         <h1 className="h5 fw-semibold mb-1">Επιλογή πλατφόρμας</h1>
         <p className="text-secondary small mb-0">

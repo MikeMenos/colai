@@ -95,7 +95,7 @@ export default function SellerReportsPage({
   }));
 
   return (
-    <div className="d-flex flex-column gap-3">
+    <div className="d-flex flex-column gap-2">
       <section className="app-card px-3 py-2">
         <div className="d-flex align-items-start justify-content-between gap-3">
           <div className="min-w-0 flex-grow-1">

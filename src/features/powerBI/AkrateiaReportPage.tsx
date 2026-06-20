@@ -400,7 +400,7 @@ export function AkrateiaReportPage({
       : "CC sales, PER και εκτελέσεις ανά μήνα";
 
   return (
-    <div className="d-flex flex-column gap-3">
+    <div className="d-flex flex-column gap-2">
       <ReportHeader
         title="Ακράτεια"
         subtitle={sellerLabel}
