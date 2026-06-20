@@ -92,6 +92,19 @@ export function removeBulkSlotJob(slotId: string): void {
   jobs.delete(slotId);
 }
 
+export function abortBulkSlotJob(slotId: string): void {
+  const job = jobs.get(slotId);
+  if (!job) return;
+
+  job.abortController?.abort();
+  job.runSeq += 1;
+  job.phase = "idle";
+  job.aiRunningClient = null;
+  job.message = null;
+  job.aiErrorMessage = null;
+  job.abortController = null;
+}
+
 export function abortAllBulkSlotJobs(): void {
   for (const job of jobs.values()) {
     job.abortController?.abort();

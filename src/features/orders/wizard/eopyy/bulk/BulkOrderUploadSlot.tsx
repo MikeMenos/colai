@@ -5,6 +5,7 @@ import BulkSlotUploadFields from "./BulkSlotUploadFields";
 import BulkUploadButton from "./BulkUploadButton";
 import {
   getBulkSlotStatusBadge,
+  isBulkSlotPendingRunAi,
   isBulkSlotUploadDisabled,
   shouldShowBulkAiButtons,
   slotHasRecipeFiles,
@@ -18,6 +19,7 @@ type BulkOrderUploadSlotProps = {
   onRemove: () => void;
   onFilesChange: (files: BulkOrderSlot["files"]) => void;
   onRunAi: () => void;
+  onCancel: () => void;
 };
 
 export default function BulkOrderUploadSlot({
@@ -27,10 +29,12 @@ export default function BulkOrderUploadSlot({
   onRemove,
   onFilesChange,
   onRunAi,
+  onCancel,
 }: BulkOrderUploadSlotProps) {
   const badge = getBulkSlotStatusBadge(slot.status);
   const hasRecipeFiles = slotHasRecipeFiles(slot);
   const showAiButtons = shouldShowBulkAiButtons(slot);
+  const isPending = isBulkSlotPendingRunAi(slot);
 
   return (
     <div
@@ -95,12 +99,32 @@ export default function BulkOrderUploadSlot({
 
           {showAiButtons ? (
             <div className="mt-2">
-              <BulkUploadButton
-                aiStatus={slot.aiStatus}
-                hasFiles={hasRecipeFiles}
-                disabled={isBulkSlotUploadDisabled(slot)}
-                onClick={onRunAi}
-              />
+              {isPending ? (
+                <div className="d-flex gap-2">
+                  <div className="flex-grow-1 min-w-0">
+                    <BulkUploadButton
+                      aiStatus={slot.aiStatus}
+                      hasFiles={hasRecipeFiles}
+                      disabled
+                      onClick={onRunAi}
+                    />
+                  </div>
+                  <button
+                    type="button"
+                    className="btn btn-sm btn-outline-secondary flex-shrink-0"
+                    onClick={onCancel}
+                  >
+                    Ακύρωση
+                  </button>
+                </div>
+              ) : (
+                <BulkUploadButton
+                  aiStatus={slot.aiStatus}
+                  hasFiles={hasRecipeFiles}
+                  disabled={isBulkSlotUploadDisabled(slot)}
+                  onClick={onRunAi}
+                />
+              )}
             </div>
           ) : null}
         </>

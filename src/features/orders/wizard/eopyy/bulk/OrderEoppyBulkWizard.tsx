@@ -19,6 +19,7 @@ export default function OrderEoppyBulkWizard() {
     removeSlot,
     handleFilesChange,
     handleRunAi,
+    handleCancelSlot,
     abortAllJobs,
     hasUploadedContent,
     canAddMore,
@@ -52,7 +53,7 @@ export default function OrderEoppyBulkWizard() {
           {canAddMore ? (
             <button
               type="button"
-              className="btn btn-outline-secondary d-inline-flex align-items-center justify-content-center w-100 gap-2 py-2"
+              className="text-primary btn btn-outline-secondary d-inline-flex align-items-center justify-content-center w-100 gap-2 py-2"
               style={{ borderStyle: "dashed" }}
               onClick={addSlot}
             >
@@ -76,6 +77,7 @@ export default function OrderEoppyBulkWizard() {
               onRemove={() => removeSlot(slot.id)}
               onFilesChange={(files) => handleFilesChange(slot.id, files)}
               onRunAi={() => void handleRunAi(slot.id)}
+              onCancel={() => handleCancelSlot(slot.id)}
             />
           ))}
         </div>

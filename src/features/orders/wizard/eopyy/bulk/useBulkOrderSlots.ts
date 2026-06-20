@@ -11,6 +11,7 @@ import { registerBulkLeaveGuard } from "./bulkLeaveGuard";
 import { startBulkSlotPipeline } from "./processBulkOrderSlot";
 import {
   abortAllBulkSlotJobs,
+  abortBulkSlotJob,
   ensureBulkSlotJob,
   getBulkSlotJob,
   patchBulkSlotJob,
@@ -193,6 +194,21 @@ export function useBulkOrderSlots() {
     [auth, dispatch, syncSlotFromJob],
   );
 
+  const handleCancelSlot = React.useCallback(
+    (slotId: string) => {
+      abortBulkSlotJob(slotId);
+      updateSlot(slotId, {
+        status: "ready",
+        phase: "idle",
+        aiStatus: "idle",
+        aiRunningClient: null,
+        aiMessage: null,
+        statusMessage: null,
+      });
+    },
+    [updateSlot],
+  );
+
   const hasUploadedContent = hasBulkWizardUploadedContent(slots);
 
   return {
@@ -202,6 +218,7 @@ export function useBulkOrderSlots() {
     updateSlot,
     handleFilesChange,
     handleRunAi,
+    handleCancelSlot,
     abortAllJobs: abortAllBulkSlotJobs,
     hasUploadedContent,
     canAddMore: slots.length < MAX_BULK_SLOTS,
