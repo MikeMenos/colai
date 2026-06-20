@@ -75,28 +75,21 @@ function SubmitConfirmInfoBanner({ label }: { label: string }) {
 }
 
 function SubmitConfirmToggleWarnings({
-  isVoiceConsent = false,
   isPaid = false,
   showPaymentMethodInfo = false,
 }: {
-  isVoiceConsent?: boolean;
   isPaid?: boolean;
   showPaymentMethodInfo?: boolean;
 }) {
-  if (!isVoiceConsent && !showPaymentMethodInfo) return null;
+  if (!showPaymentMethodInfo) return null;
 
   return (
     <div className="d-flex flex-column mb-3 gap-2">
-      {isVoiceConsent ? (
-        <SubmitConfirmInfoBanner label="Τηλ. επικοινωνία για συναίνεση" />
-      ) : null}
-      {showPaymentMethodInfo ? (
-        <SubmitConfirmInfoBanner
-          label={
-            isPaid ? "Πληρωμή μέσω κατάθεσης" : "Πληρωμή με αντικαταβολή"
-          }
-        />
-      ) : null}
+      <SubmitConfirmInfoBanner
+        label={
+          isPaid ? "Πληρωμή μέσω κατάθεσης" : "Πληρωμή με αντικαταβολή"
+        }
+      />
     </div>
   );
 }
@@ -111,7 +104,6 @@ export default function SubmitOrderConfirmModal({
   customerIsCompletelyNew = false,
   suggestedDoctorName,
   orderAsSeller,
-  isVoiceConsent = false,
   isPaid = false,
   showPaymentMethodInfo = false,
   onClose,
@@ -164,7 +156,6 @@ export default function SubmitOrderConfirmModal({
             <OrderAsSellerHighlight value={orderAsSeller} />
           ) : null}
           <SubmitConfirmToggleWarnings
-            isVoiceConsent={isVoiceConsent}
             isPaid={isPaid}
             showPaymentMethodInfo={showPaymentMethodInfo}
           />

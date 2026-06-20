@@ -4,7 +4,7 @@ import React from "react";
 import { StepIndicator } from "@/components/ui/StepIndicator";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { fetchOrders, submitDraftAsync } from "@/store/orders/ordersSlice";
-import { isConsentScoreTooLow, isVoiceConsentOrder } from "@/lib/consentUpload";
+import { isConsentScoreTooLow } from "@/lib/consentUpload";
 import { getAmkaInlineFieldError } from "@/lib/utils/amka";
 import SynenaiseisArea from "@/features/orders/wizard/eopyy/SynenaiseisArea";
 import OrderRetailCustomerArea from "./OrderRetailCustomerArea";
@@ -34,9 +34,7 @@ export default function OrderRetailWizard() {
     (file) => file?.documentCategory === "consent_form",
   );
   const consentScoreTooLow = isConsentScoreTooLow(synaineseisResults);
-  const isVoiceConsent = isVoiceConsentOrder(draftOrder);
-  const consentBlocksProgress =
-    consentScoreTooLow && hasConsentFormFiles && !isVoiceConsent;
+  const consentBlocksProgress = consentScoreTooLow && hasConsentFormFiles;
 
   const effectiveSteps = React.useMemo(() => {
     return [...steps];

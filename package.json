@@ -1,6 +1,6 @@
 {
   "name": "colai-app-orders",
-  "version": "1.0.87",
+  "version": "1.0.86",
   "private": true,
   "scripts": {
     "dev": "next dev",

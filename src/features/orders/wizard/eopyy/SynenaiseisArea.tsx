@@ -3,7 +3,6 @@
 import React from "react";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import {
-  setDraftProperty,
   setDraftSyntagiUploaded,
   setSynaineseisResults,
 } from "@/store/orders/ordersSlice";
@@ -16,7 +15,7 @@ import {
   isConsentScoreTooLow,
   isConsentScoreWarning,
 } from "@/lib/consentUpload";
-import { Alert, Button, Modal } from "react-bootstrap";
+import { Alert } from "react-bootstrap";
 import { formatFileSizeMB } from "@/lib/utils/number";
 import type { UploadStatus, UploadingInfo } from "./wizard/types";
 
@@ -32,9 +31,6 @@ export default function SynenaiseisArea() {
 
   const files = useAppSelector((s) => s.orders?.draft?.files) ?? [];
   const orderUid = useAppSelector((s) => s.orders?.draft?.order?.uid);
-  const isVoiceConsent = useAppSelector(
-    (s) => s.orders?.draft?.order?.isVoiceConsent,
-  );
   const synaineseisResults = useAppSelector(
     (s) => s.orders?.draft?.synaineseisResults,
   );
@@ -48,8 +44,6 @@ export default function SynenaiseisArea() {
   const [uploading, setUploading] = React.useState<UploadingInfo | null>(null);
   const [uploadingBack, setUploadingBack] =
     React.useState<UploadingInfo | null>(null);
-  const [showVoiceConsentConfirm, setShowVoiceConsentConfirm] =
-    React.useState(false);
 
   const consentFiles = files.filter(
     (f) => getConsentFileCategory(f) === "consent_form",
@@ -66,59 +60,10 @@ export default function SynenaiseisArea() {
 
   const isUploadingNow = status === "uploading";
   const isUploadingBackNow = statusBack === "uploading";
-  const showConsentUploads = isVoiceConsent != 1;
-
-  function handleVoiceConsentChange(
-    event: React.ChangeEvent<HTMLInputElement>,
-  ) {
-    if (event.target.checked) {
-      setShowVoiceConsentConfirm(true);
-      return;
-    }
-
-    dispatch(
-      setDraftProperty({
-        key: "isVoiceConsent",
-        value: 0,
-      }),
-    );
-  }
-
-  function confirmVoiceConsent() {
-    dispatch(
-      setDraftProperty({
-        key: "isVoiceConsent",
-        value: 1,
-      }),
-    );
-    setShowVoiceConsentConfirm(false);
-  }
-
-  function cancelVoiceConsent() {
-    setShowVoiceConsentConfirm(false);
-  }
 
   return (
     <>
-      <div className="app-card mb-1 p-2">
-        <div className="form-check form-switch switch-lg mb-0">
-          <input
-            className="form-check-input"
-            type="checkbox"
-            checked={isVoiceConsent == 1}
-            onChange={handleVoiceConsentChange}
-            name="isVoiceConsent"
-            id="isVoiceConsent"
-          />
-          <label className="form-check-label" htmlFor="isVoiceConsent">
-            Ηχητική συναίνεση
-          </label>
-        </div>
-      </div>
-
-      {showConsentUploads ? (
-        <>
-          <div className={CONSENT_UPLOAD_CARD_CLASS}>
+      <div className={CONSENT_UPLOAD_CARD_CLASS}>
             <div className="d-flex align-items-center justify-content-between border-bottom mb-2 pb-2">
               <div className="fw-semibold">Αρχείo συναίνεσης</div>
 
@@ -384,69 +329,6 @@ export default function SynenaiseisArea() {
               </div>
             )}
           </div>
-        </>
-      ) : null}
-
-      <Modal
-        show={showVoiceConsentConfirm}
-        onHide={cancelVoiceConsent}
-        centered
-        contentClassName="premium-modal border border-warning-subtle"
-      >
-        <Modal.Header
-          closeButton
-          className="bg-warning-subtle border-warning-subtle"
-        >
-          <Modal.Title className="fw-semibold h6 text-warning-emphasis mb-0">
-            Ηχητική συναίνεση
-          </Modal.Title>
-        </Modal.Header>
-
-        <Modal.Body>
-          <div className="d-flex align-items-start gap-3">
-            <div
-              className="rounded-circle d-flex align-items-center justify-content-center flex-shrink-0"
-              style={{
-                width: 44,
-                height: 44,
-                background: "rgba(var(--bs-warning-rgb), .12)",
-                border: "1px solid rgba(var(--bs-warning-rgb), .18)",
-              }}
-            >
-              <i
-                className="bi bi-exclamation-triangle-fill text-warning"
-                aria-hidden
-              />
-            </div>
-
-            <p className="text-secondary mb-0">
-              Η δυνατότητα αυτή ισχύει ΜΟΝΟ για ιδιαιτέρως σημαντικές και
-              δυσπρόσιτες πειρπτώσεις και εφόσον το υποστηρίζει το γραφείο των
-              πωλήσεων και πάντα θα πρέπει να γίνεται σε επικοινωνία με τον
-              προϊστάμενό σας.
-            </p>
-          </div>
-        </Modal.Body>
-
-        <Modal.Footer className="d-flex border-warning-subtle gap-2">
-          <Button
-            variant="outline-secondary"
-            className="flex-fill"
-            style={{ borderRadius: 12 }}
-            onClick={cancelVoiceConsent}
-          >
-            Ακύρωση
-          </Button>
-          <Button
-            variant="warning"
-            className="flex-fill"
-            style={{ borderRadius: 12 }}
-            onClick={confirmVoiceConsent}
-          >
-            Επιβεβαίωση
-          </Button>
-        </Modal.Footer>
-      </Modal>
     </>
   );
 }

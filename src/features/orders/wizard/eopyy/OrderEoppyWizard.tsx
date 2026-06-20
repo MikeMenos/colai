@@ -5,7 +5,7 @@ import { StepIndicator } from "@/components/ui/StepIndicator";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { fetchOrders, submitDraftAsync, clearDraftSubmitError } from "@/store/orders/ordersSlice";
 import { shouldShowSynainesiStep } from "@/lib/customerUtils";
-import { isConsentScoreTooLow, isVoiceConsentOrder } from "@/lib/consentUpload";
+import { isConsentScoreTooLow } from "@/lib/consentUpload";
 import {
   getAiRunErrorMessage,
   type AiClient,
@@ -88,9 +88,7 @@ export default function OrderEoppyWizard() {
     (s) => s.orders.draft.synaineseisResults,
   );
   const consentScoreTooLow = isConsentScoreTooLow(synaineseisResults);
-  const isVoiceConsent = isVoiceConsentOrder(draftOrder);
-  const consentBlocksProgress =
-    consentScoreTooLow && hasConsentFormFiles && !isVoiceConsent;
+  const consentBlocksProgress = consentScoreTooLow && hasConsentFormFiles;
   const aiMaterials = useAppSelector((s) => s.orders.draft.ai_ylika);
   const maxPosoKostousGiaSymmetoxi = useAppSelector(
     (s) => s.orders?.draft?.order?.maxPosoKostousGiaSymmetoxi,
@@ -376,7 +374,6 @@ export default function OrderEoppyWizard() {
         customerIsCompletelyNew={customerIsCompletelyNew === true}
         suggestedDoctorName={submitConfirmSuggestedDoctorName}
         orderAsSeller={submitConfirmOrderAsSeller}
-        isVoiceConsent={isVoiceConsentOrder(draftOrder)}
         isPaid={draftOrder.isPaid == 1}
         showPaymentMethodInfo={
           Number(draftOrder.posoSymmetoxis ?? 0) > 0 &&
