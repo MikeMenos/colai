@@ -89,7 +89,7 @@ function MetricCard({
 
   const body = (
     <div
-      className={`app-card p-3 h-100${href ? " app-card-pressable" : ""}`}
+      className={`app-card h-100 p-3 ${href ? "app-card-pressable" : ""}`}
       style={href ? { WebkitTapHighlightColor: "transparent" } : undefined}
     >
       <div className="d-flex align-items-start justify-content-between">
@@ -353,7 +353,7 @@ export default function HomeStats() {
             style={{ gridTemplateColumns: "repeat(2, minmax(0, 1fr))" }}
           >
             <MetricCard
-              title="Αναφορές πωλητών"
+              title="Αναφορές πωλήσεων"
               value="PowerBI"
               delta={null}
               icon="bi-bar-chart-line"
