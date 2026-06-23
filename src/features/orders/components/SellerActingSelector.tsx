@@ -7,6 +7,7 @@ import SearchableSelect, {
 } from "@/components/ui/SearchableSelect";
 import {
   getAccessibleSellers,
+  getOwnSellerCode,
   hasSellerAccessList,
   resolveActingSeller,
 } from "@/lib/sellerAccess";
@@ -28,35 +29,71 @@ export default function SellerActingSelector({
   const dispatch = useAppDispatch();
   const userInfos = useAppSelector((s) => s.auth.userInfos);
   const actingSellerCode = useAppSelector((s) => s.auth.actingSellerCode);
+  const draftSellerCode = useAppSelector(
+    (s) => s.orders.draft.order.sellerCode,
+  );
 
   const accessSellers = getAccessibleSellers(userInfos);
-  const selectedValue = actingSellerCode?.trim() ?? "";
+  const ownSellerCode = getOwnSellerCode(userInfos);
+  const selectedValue = actingSellerCode?.trim() || ownSellerCode || "";
   const defaultSeller = React.useMemo(
     () => resolveActingSeller(userInfos, null),
     [userInfos],
   );
 
-  const options = React.useMemo<SearchableSelectOption[]>(
-    () =>
-      accessSellers.map((seller) => {
-        const code = seller.sellerCode?.trim() ?? "";
-        return {
-          value: code,
-          label: seller.sellerName?.trim() || code,
-          description: code || undefined,
-        };
+  const options = React.useMemo<SearchableSelectOption[]>(() => {
+    const items: SearchableSelectOption[] = [];
+
+    if (defaultSeller?.sellerCode) {
+      const ownLabel =
+        defaultSeller.sellerName?.trim() || defaultSeller.sellerCode;
+      items.push({
+        value: defaultSeller.sellerCode,
+        label: `${ownLabel} (Εγώ)`,
+      });
+    }
+
+    for (const seller of accessSellers) {
+      const code = seller.sellerCode?.trim() ?? "";
+      if (!code || items.some((item) => item.value === code)) continue;
+      items.push({
+        value: code,
+        label: seller.sellerName?.trim() || code,
+        description: code || undefined,
+      });
+    }
+
+    return items;
+  }, [accessSellers, defaultSeller]);
+
+  React.useEffect(() => {
+    if (!defaultSeller?.sellerCode) return;
+    if (actingSellerCode?.trim()) return;
+    if (draftSellerCode?.trim()) return;
+
+    dispatch(
+      setDraftProperty({
+        key: "sellerCode",
+        value: defaultSeller.sellerCode,
       }),
-    [accessSellers],
-  );
+    );
+    dispatch(
+      setDraftProperty({
+        key: "sellerName",
+        value: defaultSeller.sellerName?.trim() ?? defaultSeller.sellerCode,
+      }),
+    );
+  }, [actingSellerCode, defaultSeller, dispatch, draftSellerCode]);
 
   const handleChange = (value: string) => {
     const code = value.trim() || null;
-    dispatch(setActingSellerCode(code));
+    const actingCode = code && code !== ownSellerCode ? code : null;
+    dispatch(setActingSellerCode(actingCode));
     clearError?.("actingSellerCode");
 
-    if (code) {
+    if (actingCode) {
       const seller = accessSellers.find(
-        (item) => item.sellerCode?.trim() === code,
+        (item) => item.sellerCode?.trim() === actingCode,
       );
       if (seller?.sellerCode?.trim()) {
         dispatch(
@@ -108,7 +145,7 @@ export default function SellerActingSelector({
       />
       <div className="flex-grow-1" style={{ minWidth: 0 }}>
         <div className="text-secondary mb-1" style={{ fontSize: 11 }}>
-          Παραγγελία ως (προαιρετικό)
+          Παραγγελία ως
         </div>
         <SearchableSelect
           size="sm"

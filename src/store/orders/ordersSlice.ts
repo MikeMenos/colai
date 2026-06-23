@@ -28,6 +28,7 @@ import type {
   IPatientFormData,
   IRecipientFormData,
 } from "@/lib/interface";
+import { calcPosoSymmetoxisForOrder } from "@/lib/utils/plafon";
 import { RootState } from "@/store/store";
 import { formatStringToISODDateTime, formatUIDate } from "@/lib/utils/date";
 import { parseGreekDecimal } from "@/lib/utils/number";
@@ -516,31 +517,13 @@ const ordersSlice = createSlice({
           "eidos_Egkrisis",
           "plafonGiftAmount",
           "maxPosoKostousGiaSymmetoxi",
+          "posoPlafon",
+          "katigoriaParoxis",
         ].includes(action.payload.key)
       ) {
-        const eidosEgkrisis = state.draft.order.eidos_Egkrisis;
-        const type = state.draft.order.type;
-        const kostos = Number(state.draft.order.kostos ?? 0);
-        const symmPercentage = Number(state.draft.order.symmPercentage ?? 0);
-        const maxPosoKostousGiaSymmetoxi = Number(
-          state.draft.order.maxPosoKostousGiaSymmetoxi ?? 0,
+        state.draft.order.posoSymmetoxis = calcPosoSymmetoxisForOrder(
+          state.draft.order,
         );
-        const plafonGiftAmount = Number(
-          state.draft.order.plafonGiftAmount ?? 0,
-        );
-        if (
-          maxPosoKostousGiaSymmetoxi > 0 &&
-          kostos > maxPosoKostousGiaSymmetoxi &&
-          eidosEgkrisis == 1 &&
-          type == "eopyy"
-        ) {
-          const diafora = kostos - maxPosoKostousGiaSymmetoxi;
-          state.draft.order.posoSymmetoxis =
-            (maxPosoKostousGiaSymmetoxi * symmPercentage) / 100 +
-            (diafora > plafonGiftAmount ? diafora : 0);
-        } else {
-          state.draft.order.posoSymmetoxis = kostos * (symmPercentage / 100);
-        }
       }
 
       persistStateToLocalStorage(state);
@@ -572,27 +555,9 @@ const ordersSlice = createSlice({
         (acc, x) => acc + Number(x.qty) * Number(x.erp_Price || 0),
         0,
       );
-      const eidosEgkrisis = state.draft.order.eidos_Egkrisis;
-      const type = state.draft.order.type;
-      const kostos = Number(state.draft.order.kostos ?? 0);
-      const symmPercentage = Number(state.draft.order.symmPercentage ?? 0);
-      const maxPosoKostousGiaSymmetoxi = Number(
-        state.draft.order.maxPosoKostousGiaSymmetoxi ?? 0,
+      state.draft.order.posoSymmetoxis = calcPosoSymmetoxisForOrder(
+        state.draft.order,
       );
-      const plafonGiftAmount = Number(state.draft.order.plafonGiftAmount ?? 0);
-      if (
-        maxPosoKostousGiaSymmetoxi > 0 &&
-        kostos > maxPosoKostousGiaSymmetoxi &&
-        eidosEgkrisis == 1 &&
-        type == "eopyy"
-      ) {
-        const diafora = kostos - maxPosoKostousGiaSymmetoxi;
-        state.draft.order.posoSymmetoxis =
-          (maxPosoKostousGiaSymmetoxi * symmPercentage) / 100 +
-          (diafora > plafonGiftAmount ? diafora : 0);
-      } else {
-        state.draft.order.posoSymmetoxis = kostos * (symmPercentage / 100);
-      }
       persistStateToLocalStorage(state);
     },
     setDraftFiles(state, action: PayloadAction<OrderFile[]>) {
@@ -668,27 +633,9 @@ const ordersSlice = createSlice({
         0,
       );
 
-      const eidosEgkrisis = state.draft.order.eidos_Egkrisis;
-      const type = state.draft.order.type;
-      const kostos = Number(state.draft.order.kostos ?? 0);
-      const symmPercentage = Number(state.draft.order.symmPercentage ?? 0);
-      const maxPosoKostousGiaSymmetoxi = Number(
-        state.draft.order.maxPosoKostousGiaSymmetoxi ?? 0,
+      state.draft.order.posoSymmetoxis = calcPosoSymmetoxisForOrder(
+        state.draft.order,
       );
-      const plafonGiftAmount = Number(state.draft.order.plafonGiftAmount ?? 0);
-      if (
-        maxPosoKostousGiaSymmetoxi > 0 &&
-        kostos > maxPosoKostousGiaSymmetoxi &&
-        eidosEgkrisis == 1 &&
-        type == "eopyy"
-      ) {
-        const diafora = kostos - maxPosoKostousGiaSymmetoxi;
-        state.draft.order.posoSymmetoxis =
-          (maxPosoKostousGiaSymmetoxi * symmPercentage) / 100 +
-          (diafora > plafonGiftAmount ? diafora : 0);
-      } else {
-        state.draft.order.posoSymmetoxis = kostos * (symmPercentage / 100);
-      }
       persistStateToLocalStorage(state);
     },
     updateDraftYlikoQuantity: (
@@ -722,27 +669,9 @@ const ordersSlice = createSlice({
         0,
       );
 
-      const eidosEgkrisis = state.draft.order.eidos_Egkrisis;
-      const type = state.draft.order.type;
-      const kostos = Number(state.draft.order.kostos ?? 0);
-      const symmPercentage = Number(state.draft.order.symmPercentage ?? 0);
-      const maxPosoKostousGiaSymmetoxi = Number(
-        state.draft.order.maxPosoKostousGiaSymmetoxi ?? 0,
+      state.draft.order.posoSymmetoxis = calcPosoSymmetoxisForOrder(
+        state.draft.order,
       );
-      const plafonGiftAmount = Number(state.draft.order.plafonGiftAmount ?? 0);
-      if (
-        maxPosoKostousGiaSymmetoxi > 0 &&
-        kostos > maxPosoKostousGiaSymmetoxi &&
-        eidosEgkrisis == 1 &&
-        type == "eopyy"
-      ) {
-        const diafora = kostos - maxPosoKostousGiaSymmetoxi;
-        state.draft.order.posoSymmetoxis =
-          (maxPosoKostousGiaSymmetoxi * symmPercentage) / 100 +
-          (diafora > plafonGiftAmount ? diafora : 0);
-      } else {
-        state.draft.order.posoSymmetoxis = kostos * (symmPercentage / 100);
-      }
 
       persistStateToLocalStorage(state);
     },
@@ -770,27 +699,9 @@ const ordersSlice = createSlice({
         0,
       );
 
-      const eidosEgkrisis = state.draft.order.eidos_Egkrisis;
-      const type = state.draft.order.type;
-      const kostos = Number(state.draft.order.kostos ?? 0);
-      const symmPercentage = Number(state.draft.order.symmPercentage ?? 0);
-      const maxPosoKostousGiaSymmetoxi = Number(
-        state.draft.order.maxPosoKostousGiaSymmetoxi ?? 0,
+      state.draft.order.posoSymmetoxis = calcPosoSymmetoxisForOrder(
+        state.draft.order,
       );
-      const plafonGiftAmount = Number(state.draft.order.plafonGiftAmount ?? 0);
-      if (
-        maxPosoKostousGiaSymmetoxi > 0 &&
-        kostos > maxPosoKostousGiaSymmetoxi &&
-        eidosEgkrisis == 1 &&
-        type == "eopyy"
-      ) {
-        const diafora = kostos - maxPosoKostousGiaSymmetoxi;
-        state.draft.order.posoSymmetoxis =
-          (maxPosoKostousGiaSymmetoxi * symmPercentage) / 100 +
-          (diafora > plafonGiftAmount ? diafora : 0);
-      } else {
-        state.draft.order.posoSymmetoxis = kostos * (symmPercentage / 100);
-      }
 
       persistStateToLocalStorage(state);
     },

@@ -26,3 +26,9 @@ export type PrepaidOrderConfirmModalProps = {
   onCancel: () => void;
   onConfirm: () => void;
 };
+
+export type SymmetoxiPercentageConfirmModalProps = {
+  show: boolean;
+  onCancel: () => void;
+  onConfirm: () => void;
+};

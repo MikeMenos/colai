@@ -32,6 +32,7 @@ import {
   isCustomerTouchdownOnlyField,
 } from "./wizard/customerFieldValidation";
 import { focusWizardField, isAllowedSymmPercentage } from "./wizard/wizardUtils";
+import { shouldShowYpervasiPlafonStep } from "@/lib/utils/plafon";
 import { runEoppyAi } from "./wizard/runEoppyAi";
 import {
   buildStepOrderMap,
@@ -90,14 +91,7 @@ export default function OrderEoppyWizard() {
   const consentScoreTooLow = isConsentScoreTooLow(synaineseisResults);
   const consentBlocksProgress = consentScoreTooLow && hasConsentFormFiles;
   const aiMaterials = useAppSelector((s) => s.orders.draft.ai_ylika);
-  const maxPosoKostousGiaSymmetoxi = useAppSelector(
-    (s) => s.orders?.draft?.order?.maxPosoKostousGiaSymmetoxi,
-  );
-  const kostos = useAppSelector((s) => s.orders?.draft?.order?.kostos);
-  const ypervasiPlafon = (kostos ?? 0) - (maxPosoKostousGiaSymmetoxi ?? 0);
-  const eidosEgkrisis = draftOrder.eidos_Egkrisis;
-  const shouldShowWarningPlafon =
-    ypervasiPlafon > 6 && Number(eidosEgkrisis) === 1;
+  const shouldShowWarningPlafon = shouldShowYpervasiPlafonStep(draftOrder);
 
   const effectiveStepsRef = React.useRef<StepDef[]>([]);
   const stepOrderRef = React.useRef<Map<StepKey, StepOrderEntry>>(new Map());
