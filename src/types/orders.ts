@@ -157,6 +157,7 @@ export type Order = {
   hasConfirmedMidenikiPliromi?: Nullable<boolean>;
   maxPosoKostousGiaSymmetoxi?: number;
   plafonGiftAmount?: number;
+  posoPlafon?: number | null;
 };
 
 /** Line item — based on swagger `APLAT_Sales_OrderItem` with required UI numeric fields. */

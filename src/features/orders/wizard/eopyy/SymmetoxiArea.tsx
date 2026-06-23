@@ -1,11 +1,16 @@
 import { setDraftProperty } from "@/store/orders/ordersSlice";
 import { formatCurrencyGR } from "@/lib/utils/number";
+import {
+  getPlafonCeilingForCategory,
+  getYpervasiPlafonAmount,
+} from "@/lib/utils/plafon";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { FormSelect } from "react-bootstrap";
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import FormErrorsContext from "@/components/ui/FormErrorContect";
 import OrderField from "@/components/ui/OrderField";
 import OrderSwitchField from "@/components/ui/OrdeSwitchField";
+import SymmetoxiPercentageConfirmModal from "../modals/SymmetoxiPercentageConfirmModal";
 import type { SymmetoxiAreaProps } from "./componentProps";
 import {
   isAllowedSymmPercentage,
@@ -19,17 +24,14 @@ const SymmetoxiArea = ({ errors, clearError }: SymmetoxiAreaProps) => {
     (s) => s.orders.draft.list_DiscountReasons,
   );
 
-  const posoSymetoxis =
-    (Number(data.kostos ?? 0) * Number(data.symmPercentage ?? 0)) / 100;
-  const maxPosoKostousGiaSymmetoxi = data.maxPosoKostousGiaSymmetoxi ?? 0;
+  const kostos = Number(data.kostos ?? 0);
+  const plafonCeiling = getPlafonCeilingForCategory(data);
+  const posoSymetoxis = (kostos * Number(data.symmPercentage ?? 0)) / 100;
   const symmetoxiEoppy =
-    data.kostos > maxPosoKostousGiaSymmetoxi
-      ? (Number(data.maxPosoKostousGiaSymmetoxi ?? 0) *
-          Number(data.symmPercentage ?? 0)) /
-        100
+    kostos > plafonCeiling
+      ? (plafonCeiling * Number(data.symmPercentage ?? 0)) / 100
       : posoSymetoxis;
-  const ypervasiPlafon =
-    (data.kostos ?? 0) - (data.maxPosoKostousGiaSymmetoxi ?? 0);
+  const ypervasiPlafon = getYpervasiPlafonAmount(data);
   const finalAmount = Number(
     String(data.posoDiscounted ?? 0)
       .replaceAll(".", "")
@@ -76,6 +78,51 @@ const SymmetoxiArea = ({ errors, clearError }: SymmetoxiAreaProps) => {
   };
 
   const prevPosoSymmetoxisRef = useRef<number | null>(null);
+  const [pendingSymmPercentage, setPendingSymmPercentage] = useState<
+    number | null | undefined
+  >(undefined);
+  const [showSymmPercentageConfirm, setShowSymmPercentageConfirm] =
+    useState(false);
+
+  function applySymmPercentageChange(next: number | null) {
+    dispatch(setDraftProperty({ key: "symmPercentage", value: next }));
+    if (next === 0 || next == null) {
+      dispatch(setDraftProperty({ key: "isPaid", value: 0 }));
+    }
+    clearError?.("symmPercentage");
+  }
+
+  function requestSymmPercentageChange(raw: string) {
+    const current = isAllowedSymmPercentage(data.symmPercentage)
+      ? data.symmPercentage
+      : null;
+
+    let next: number | null;
+    if (raw === "") {
+      next = null;
+    } else {
+      const n = Number(raw);
+      if (!isAllowedSymmPercentage(n)) return;
+      next = n;
+    }
+
+    if (next === current) return;
+
+    setPendingSymmPercentage(next);
+    setShowSymmPercentageConfirm(true);
+  }
+
+  function confirmSymmPercentageChange() {
+    if (pendingSymmPercentage === undefined) return;
+    applySymmPercentageChange(pendingSymmPercentage);
+    setShowSymmPercentageConfirm(false);
+    setPendingSymmPercentage(undefined);
+  }
+
+  function cancelSymmPercentageChange() {
+    setShowSymmPercentageConfirm(false);
+    setPendingSymmPercentage(undefined);
+  }
 
   const showIsPaidToggle =
     isAllowedSymmPercentage(data.symmPercentage) && data.symmPercentage !== 0;
@@ -167,7 +214,7 @@ const SymmetoxiArea = ({ errors, clearError }: SymmetoxiAreaProps) => {
             style={{ height: 51 }}
             className="d-flex align-items-center justify-content-between border-bottom mb-2 pb-2"
           >
-            <div className="fw-semibold">Συμμετοχή ασθενή</div>
+            <div className="fw-semibold">Συμμετοχή ασθενή στη γνωμάτευση</div>
           </div>
 
           <OrderField label="%">
@@ -178,25 +225,7 @@ const SymmetoxiArea = ({ errors, clearError }: SymmetoxiAreaProps) => {
                   ? String(data.symmPercentage)
                   : ""
               }
-              onChange={(e) => {
-                const raw = e.target.value;
-
-                if (raw === "") {
-                  dispatch(
-                    setDraftProperty({ key: "symmPercentage", value: null }),
-                  );
-                  dispatch(setDraftProperty({ key: "isPaid", value: 0 }));
-                  return;
-                }
-
-                const n = Number(raw);
-                if (!isAllowedSymmPercentage(n)) return;
-
-                dispatch(setDraftProperty({ key: "symmPercentage", value: n }));
-                if (n === 0) {
-                  dispatch(setDraftProperty({ key: "isPaid", value: 0 }));
-                }
-              }}
+              onChange={(e) => requestSymmPercentageChange(e.target.value)}
             >
               <option value="" />
               {SYMM_PERCENTAGE_OPTIONS.map((value) => (
@@ -245,9 +274,7 @@ const SymmetoxiArea = ({ errors, clearError }: SymmetoxiAreaProps) => {
                       inputMode="numeric"
                       disabled
                       readOnly
-                      value={formatCurrencyGR(
-                        data.maxPosoKostousGiaSymmetoxi ?? 0,
-                      )}
+                      value={formatCurrencyGR(plafonCeiling)}
                     />
                   </OrderField>
                 </div>
@@ -566,6 +593,12 @@ const SymmetoxiArea = ({ errors, clearError }: SymmetoxiAreaProps) => {
           )}
         </FormErrorsContext.Provider>
       </div>
+
+      <SymmetoxiPercentageConfirmModal
+        show={showSymmPercentageConfirm}
+        onCancel={cancelSymmPercentageChange}
+        onConfirm={confirmSymmPercentageChange}
+      />
     </>
   );
 };
