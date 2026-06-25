@@ -4,6 +4,7 @@ import type { Order } from "@/types/orders";
 import { getDraftAmkaWizardIssues } from "./amkaValidation";
 import { getDraftBarcodeWizardIssues } from "./barcodeValidation";
 import { getCustomerFieldWizardIssues } from "./customerFieldValidation";
+import { getOtherSuggestedDoctorFieldWizardIssues } from "./doctorFieldValidation";
 import type { StepKey, ValidateEoppyOrderInput, WizardIssue } from "./types";
 import { onlyDigits } from "./wizardUtils";
 
@@ -165,6 +166,10 @@ export function validateEoppyOrder({
     );
 
     for (const issue of getCustomerFieldWizardIssues(draftOrder)) {
+      issues.push(issue);
+    }
+
+    for (const issue of getOtherSuggestedDoctorFieldWizardIssues(draftOrder)) {
       issues.push(issue);
     }
 

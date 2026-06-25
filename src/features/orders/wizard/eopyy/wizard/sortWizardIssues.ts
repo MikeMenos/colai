@@ -1,4 +1,5 @@
 import type { StepKey, WizardIssue } from "./types";
+import { OTHER_SUGGESTED_DOCTOR_FIELD_ORDER } from "./doctorFieldValidation";
 
 export type StepOrderEntry = {
   number: number;
@@ -18,6 +19,25 @@ export function buildStepOrderMap(
   return order;
 }
 
+const FIELD_ORDER_BY_STEP: Partial<Record<StepKey, readonly string[]>> = {
+  doctor: OTHER_SUGGESTED_DOCTOR_FIELD_ORDER,
+};
+
+function compareFieldsWithinStep(a: WizardIssue, b: WizardIssue): number {
+  const fieldOrder = FIELD_ORDER_BY_STEP[a.step];
+  if (!fieldOrder || a.step !== b.step) {
+    return a.field.localeCompare(b.field);
+  }
+
+  const idxA = fieldOrder.indexOf(a.field);
+  const idxB = fieldOrder.indexOf(b.field);
+  const sortA = idxA === -1 ? Number.MAX_SAFE_INTEGER : idxA;
+  const sortB = idxB === -1 ? Number.MAX_SAFE_INTEGER : idxB;
+  if (sortA !== sortB) return sortA - sortB;
+
+  return a.field.localeCompare(b.field);
+}
+
 export function sortWizardIssues(
   issues: WizardIssue[],
   stepOrder: Map<StepKey, StepOrderEntry>,
@@ -26,7 +46,7 @@ export function sortWizardIssues(
     const orderA = stepOrder.get(a.step)?.number ?? Number.MAX_SAFE_INTEGER;
     const orderB = stepOrder.get(b.step)?.number ?? Number.MAX_SAFE_INTEGER;
     if (orderA !== orderB) return orderA - orderB;
-    return a.field.localeCompare(b.field);
+    return compareFieldsWithinStep(a, b);
   });
 }
 
