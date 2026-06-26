@@ -1,5 +1,8 @@
 import type { StepKey, WizardIssue } from "./types";
-import { OTHER_SUGGESTED_DOCTOR_FIELD_ORDER } from "./doctorFieldValidation";
+import {
+  OTHER_SUGGESTED_DOCTOR_FIELD_ORDER,
+  SUGGESTED_DOCTOR_FIELD_ORDER,
+} from "./doctorFieldValidation";
 
 export type StepOrderEntry = {
   number: number;
@@ -20,7 +23,10 @@ export function buildStepOrderMap(
 }
 
 const FIELD_ORDER_BY_STEP: Partial<Record<StepKey, readonly string[]>> = {
-  doctor: OTHER_SUGGESTED_DOCTOR_FIELD_ORDER,
+  doctor: [
+    ...OTHER_SUGGESTED_DOCTOR_FIELD_ORDER,
+    ...SUGGESTED_DOCTOR_FIELD_ORDER,
+  ],
 };
 
 function compareFieldsWithinStep(a: WizardIssue, b: WizardIssue): number {

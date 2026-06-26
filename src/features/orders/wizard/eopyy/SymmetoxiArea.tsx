@@ -10,6 +10,7 @@ import { useEffect, useRef, useState } from "react";
 import FormErrorsContext from "@/components/ui/FormErrorContect";
 import OrderField from "@/components/ui/OrderField";
 import OrderSwitchField from "@/components/ui/OrdeSwitchField";
+import { PAYMENT_METHOD_OPTIONS } from "@/lib/utils/paymentMethod";
 import SymmetoxiPercentageConfirmModal from "../modals/SymmetoxiPercentageConfirmModal";
 import type { SymmetoxiAreaProps } from "./componentProps";
 import {
@@ -78,6 +79,7 @@ const SymmetoxiArea = ({ errors, clearError }: SymmetoxiAreaProps) => {
   };
 
   const prevPosoSymmetoxisRef = useRef<number | null>(null);
+  const [manualDiscountPercent, setManualDiscountPercent] = useState("");
   const [pendingSymmPercentage, setPendingSymmPercentage] = useState<
     number | null | undefined
   >(undefined);
@@ -127,6 +129,62 @@ const SymmetoxiArea = ({ errors, clearError }: SymmetoxiAreaProps) => {
   const showIsPaidToggle =
     isAllowedSymmPercentage(data.symmPercentage) && data.symmPercentage !== 0;
 
+  const basePaymentAmount = Number(data.posoSymmetoxis ?? 0);
+
+  function applyManualDiscountPercent(raw: string) {
+    const normalized = raw.replace(",", ".").trim();
+    setManualDiscountPercent(normalized);
+
+    if (normalized === "") {
+      dispatch(
+        setDraftProperty({
+          key: "posoDiscounted",
+          value: formatCurrencyGR(basePaymentAmount),
+        }),
+      );
+      return;
+    }
+
+    const percent = Number(normalized);
+    if (!Number.isFinite(percent) || percent < 0 || percent > 100) {
+      return;
+    }
+
+    const discounted = basePaymentAmount * (1 - percent / 100);
+    dispatch(
+      setDraftProperty({
+        key: "posoDiscounted",
+        value: formatCurrencyGR(discounted),
+      }),
+    );
+  }
+
+  function formatDiscountPercent(value: number): string {
+    const rounded = Math.round(value * 100) / 100;
+    if (!Number.isFinite(rounded)) {
+      return "";
+    }
+    return rounded.toFixed(2).replace(/\.?0+$/, "");
+  }
+
+  function syncManualDiscountPercentFromAmount(
+    amount: number | null | undefined,
+  ) {
+    if (
+      amount == null ||
+      !Number.isFinite(amount) ||
+      basePaymentAmount <= 0
+    ) {
+      setManualDiscountPercent("");
+      return;
+    }
+
+    const percent =
+      ((basePaymentAmount - amount) / basePaymentAmount) * 100;
+    const clamped = Math.min(100, Math.max(0, percent));
+    setManualDiscountPercent(formatDiscountPercent(clamped));
+  }
+
   useEffect(() => {
     if (data.payFullOrDiscount !== 2) {
       return;
@@ -144,13 +202,35 @@ const SymmetoxiArea = ({ errors, clearError }: SymmetoxiAreaProps) => {
       return;
     }
 
+    const percent = Number(manualDiscountPercent.replace(",", "."));
+    if (
+      manualDiscountPercent.trim() &&
+      Number.isFinite(percent) &&
+      percent >= 0 &&
+      percent <= 100
+    ) {
+      const discounted = currentPosoSymmetoxis * (1 - percent / 100);
+      dispatch(
+        setDraftProperty({
+          key: "posoDiscounted",
+          value: formatCurrencyGR(discounted),
+        }),
+      );
+      return;
+    }
+
     dispatch(
       setDraftProperty({
         key: "posoDiscounted",
         value: formatCurrencyGR(currentPosoSymmetoxis),
       }),
     );
-  }, [data.payFullOrDiscount, data.posoSymmetoxis, dispatch]);
+  }, [
+    data.payFullOrDiscount,
+    data.posoSymmetoxis,
+    dispatch,
+    manualDiscountPercent,
+  ]);
 
   useEffect(() => {
     if (data.payFullOrDiscount !== 2) {
@@ -338,6 +418,7 @@ const SymmetoxiArea = ({ errors, clearError }: SymmetoxiAreaProps) => {
                       }),
                     );
                     if (!e.target.checked) {
+                      setManualDiscountPercent("");
                       dispatch(
                         setDraftProperty({
                           key: "discount_reason_id",
@@ -351,6 +432,7 @@ const SymmetoxiArea = ({ errors, clearError }: SymmetoxiAreaProps) => {
                         }),
                       );
                     } else {
+                      setManualDiscountPercent("");
                       dispatch(
                         setDraftProperty({
                           key: "discount_reason_id",
@@ -390,6 +472,7 @@ const SymmetoxiArea = ({ errors, clearError }: SymmetoxiAreaProps) => {
                       }),
                     );
                     if (e.target.checked) {
+                      setManualDiscountPercent("");
                       dispatch(
                         setDraftProperty({
                           key: "discount_reason_id",
@@ -403,6 +486,7 @@ const SymmetoxiArea = ({ errors, clearError }: SymmetoxiAreaProps) => {
                         }),
                       );
                     } else {
+                      setManualDiscountPercent("");
                       dispatch(
                         setDraftProperty({
                           key: "discount_reason_id",
@@ -429,38 +513,6 @@ const SymmetoxiArea = ({ errors, clearError }: SymmetoxiAreaProps) => {
                   Εφαρμογή έκπτωσης
                 </label>
               </div>
-              {showIsPaidToggle ? (
-                <>
-                  <OrderSwitchField
-                    name="isPaid"
-                    id="isPaid"
-                    label="Πληρωμή μέσω κατάθεσης"
-                    checked={data.isPaid == 1}
-                    onChange={(checked) => {
-                      dispatch(
-                        setDraftProperty({
-                          key: "isPaid",
-                          value: checked ? 1 : 0,
-                        }),
-                      );
-                    }}
-                  />
-                  <OrderSwitchField
-                    name="isPaidCod"
-                    id="isPaidCod"
-                    label="Πληρωμή με αντικαταβολή"
-                    checked={data.isPaid != 1}
-                    onChange={(checked) => {
-                      dispatch(
-                        setDraftProperty({
-                          key: "isPaid",
-                          value: checked ? 0 : 1,
-                        }),
-                      );
-                    }}
-                  />
-                </>
-              ) : null}
             </>
           )}
           {!(data.posoSymmetoxis > 0) && (
@@ -494,7 +546,7 @@ const SymmetoxiArea = ({ errors, clearError }: SymmetoxiAreaProps) => {
               <div className="app-divider my-2" />
               <OrderField label="Λόγος έκπτωσης">
                 <FormSelect
-                  name=""
+                  name="discount_reason_id"
                   value={data.discount_reason_id}
                   onChange={(e) =>
                     dispatch(
@@ -511,6 +563,19 @@ const SymmetoxiArea = ({ errors, clearError }: SymmetoxiAreaProps) => {
                     </option>
                   ))}
                 </FormSelect>
+              </OrderField>
+              <OrderField label="Έκπτωση %">
+                <div className="input-group">
+                  <input
+                    className="form-control"
+                    name="manualDiscountPercent"
+                    inputMode="decimal"
+                    value={manualDiscountPercent}
+                    placeholder="π.χ. 10"
+                    onChange={(e) => applyManualDiscountPercent(e.target.value)}
+                  />
+                  <span className="input-group-text">%</span>
+                </div>
               </OrderField>
               <OrderField
                 label={
@@ -535,6 +600,7 @@ const SymmetoxiArea = ({ errors, clearError }: SymmetoxiAreaProps) => {
                       const maxAllowed = data.posoSymmetoxis ?? 0;
 
                       if (raw === "") {
+                        setManualDiscountPercent("");
                         dispatch(
                           setDraftProperty({
                             key: "posoDiscounted",
@@ -545,6 +611,8 @@ const SymmetoxiArea = ({ errors, clearError }: SymmetoxiAreaProps) => {
                       }
 
                       if (parseFloat(raw) <= maxAllowed) {
+                        const parsed = parseFloat(raw);
+                        syncManualDiscountPercentFromAmount(parsed);
                         dispatch(
                           setDraftProperty({
                             key: "posoDiscounted",
@@ -554,16 +622,18 @@ const SymmetoxiArea = ({ errors, clearError }: SymmetoxiAreaProps) => {
                       }
                     }}
                     onBlur={(e) => {
+                      const parsed = Number(
+                        e.target.value
+                          .replaceAll("€", "")
+                          .trim()
+                          .replaceAll(".", "")
+                          .replaceAll(",", "."),
+                      );
+                      syncManualDiscountPercentFromAmount(parsed);
                       dispatch(
                         setDraftProperty({
                           key: "posoDiscounted",
-                          value: formatCurrencyGR(
-                            e.target.value
-                              .replaceAll("€", "")
-                              .trim()
-                              .replaceAll(".", "")
-                              .replaceAll(",", "."),
-                          ),
+                          value: formatCurrencyGR(parsed),
                         }),
                       );
                     }}
@@ -591,6 +661,32 @@ const SymmetoxiArea = ({ errors, clearError }: SymmetoxiAreaProps) => {
               )}
             </>
           )}
+          {data.posoSymmetoxis > 0 && showIsPaidToggle ? (
+            <OrderField label="Τρόπος πληρωμής">
+              <FormSelect
+                name="isPaid"
+                value={
+                  data.isPaid === 0 || data.isPaid === 1
+                    ? String(data.isPaid)
+                    : "0"
+                }
+                onChange={(e) =>
+                  dispatch(
+                    setDraftProperty({
+                      key: "isPaid",
+                      value: Number(e.target.value),
+                    }),
+                  )
+                }
+              >
+                {PAYMENT_METHOD_OPTIONS.map((option) => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
+              </FormSelect>
+            </OrderField>
+          ) : null}
         </FormErrorsContext.Provider>
       </div>
 

@@ -4,6 +4,7 @@ import {
   applyLastOrderData,
   applyPersonErpGIDFromLastOrder,
   extractAddressErpGID,
+  extractDateInFromOrderRecord,
   extractPersonErpGID,
   extractShipToOtherAddress,
   syncShipToOtherAddressFlags,
@@ -15,6 +16,7 @@ import {
   setCustomerIsCompletelyNew,
   setDraftProperty,
   setLastOrderInfoCustomerErpGID,
+  setLastOrderInfoDateIn,
   setLastWebOrderFromLoadInfo,
 } from "@/store/orders/ordersSlice";
 import type { AppDispatch } from "@/store/store";
@@ -172,6 +174,7 @@ export async function applyCustomerFromSearch(
       const leo = data.last_erp_order;
       if (isNonEmptyRecord(lwo)) {
         dispatch(setLastWebOrderFromLoadInfo(lwo));
+        dispatch(setLastOrderInfoDateIn(extractDateInFromOrderRecord(lwo)));
         const lwoRec = lwo as Record<string, unknown>;
         if (hasText(lwoRec.customer_mobile)) {
           mobileFromLastWebOrder = String(lwoRec.customer_mobile);
@@ -192,6 +195,7 @@ export async function applyCustomerFromSearch(
         preferredAddr = lwoAddr;
       } else if (isNonEmptyRecord(leo)) {
         dispatch(setLastWebOrderFromLoadInfo(null));
+        dispatch(setLastOrderInfoDateIn(extractDateInFromOrderRecord(leo)));
         applyLastErpOrderData(leo, dispatch);
         preferredPerson =
           String(leo.deliveryPersonGID ?? "").trim() || undefined;
@@ -199,12 +203,15 @@ export async function applyCustomerFromSearch(
           String(leo.deliveryAddressGID ?? "").trim() || undefined;
       } else {
         dispatch(setLastWebOrderFromLoadInfo(null));
+        dispatch(setLastOrderInfoDateIn(undefined));
       }
     } else {
       dispatch(setLastWebOrderFromLoadInfo(null));
+      dispatch(setLastOrderInfoDateIn(undefined));
     }
   } catch {
     dispatch(setLastWebOrderFromLoadInfo(null));
+    dispatch(setLastOrderInfoDateIn(undefined));
   }
 
   dispatch(setDraftProperty({ key: "customer_ErpGID", value: c.tR_GID }));
@@ -321,6 +328,7 @@ export async function applyLastCustomerWebOrderFromSearch(
   dispatch(setCustomerSelectedFromList(false));
   dispatch(setCustomerIsCompletelyNew(false));
   dispatch(setLastWebOrderFromLoadInfo(lwo));
+  dispatch(setLastOrderInfoDateIn(extractDateInFromOrderRecord(lwo)));
   dispatch(setDraftProperty({ key: "person_erpid", value: null }));
 
   let preferredPerson: string | undefined;
@@ -465,6 +473,7 @@ export function applyCompletelyNewCustomerFromAmka(
   dispatch(setCustomerIsCompletelyNew(true));
   dispatch(setLastWebOrderFromLoadInfo(undefined));
   dispatch(setLastOrderInfoCustomerErpGID(undefined));
+  dispatch(setLastOrderInfoDateIn(undefined));
   dispatch(setDraftProperty({ key: "customer_amka", value: amka }));
   dispatch(setDraftProperty({ key: "customer_ErpGID", value: null }));
 }

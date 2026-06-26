@@ -18,6 +18,8 @@ import { useRouter } from "next/navigation";
 import { buildStepDefs } from "./wizard/buildStepDefs";
 import {
   getSubmitConfirmAmka,
+  getSubmitConfirmRecipientAddress,
+  getSubmitConfirmRecipientName,
   getSubmitConfirmSuggestedDoctorName,
 } from "./wizard/submitConfirmAmka";
 import type { StepDef, StepKey, WizardIssue } from "./wizard/types";
@@ -81,6 +83,9 @@ export default function OrderEoppyWizard() {
   );
   const customerIsCompletelyNew = useAppSelector(
     (s) => s.orders.draft.customerIsCompletelyNew,
+  );
+  const lastOrderInfoDateIn = useAppSelector(
+    (s) => s.orders.draft.lastOrderInfoDateIn,
   );
   const showSynainesiPanel = shouldShowSynainesiStep({
     customerIsCompletelyNew,
@@ -149,10 +154,17 @@ export default function OrderEoppyWizard() {
       validateEoppyOrderDraft({
         draftOrder,
         customerIsCompletelyNew,
+        lastOrderInfoDateIn,
         hasFiles,
         hasConsentFormFiles,
       }),
-    [customerIsCompletelyNew, draftOrder, hasConsentFormFiles, hasFiles],
+    [
+      customerIsCompletelyNew,
+      draftOrder,
+      hasConsentFormFiles,
+      hasFiles,
+      lastOrderInfoDateIn,
+    ],
   );
 
   const runAi = React.useCallback(
@@ -285,6 +297,16 @@ export default function OrderEoppyWizard() {
     [draftOrder, listAddressesPersons],
   );
 
+  const submitConfirmRecipientName = React.useMemo(
+    () => getSubmitConfirmRecipientName(draftOrder, listAddressesPersons),
+    [draftOrder, listAddressesPersons],
+  );
+
+  const submitConfirmRecipientAddress = React.useMemo(
+    () => getSubmitConfirmRecipientAddress(draftOrder, listAddressesPersons),
+    [draftOrder, listAddressesPersons],
+  );
+
   const submitConfirmSuggestedDoctorName = React.useMemo(
     () => getSubmitConfirmSuggestedDoctorName(draftOrder),
     [draftOrder],
@@ -364,6 +386,8 @@ export default function OrderEoppyWizard() {
         error={submitState.error}
         otp={draftOrder.customer_tel_otp}
         amka={submitConfirmAmka}
+        recipientName={submitConfirmRecipientName}
+        recipientAddress={submitConfirmRecipientAddress}
         barcode={draftOrder.barcode}
         customerIsCompletelyNew={customerIsCompletelyNew === true}
         suggestedDoctorName={submitConfirmSuggestedDoctorName}
