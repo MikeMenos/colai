@@ -9,13 +9,14 @@ import { FormSelect } from "react-bootstrap";
 import FormErrorsContext from "@/components/ui/FormErrorContect";
 import OrderField from "@/components/ui/OrderField";
 import { getAmkaInlineFieldError } from "@/lib/utils/amka";
+import WizardStepBarcodeHint from "../components/WizardStepBarcodeHint";
 
 function Field({
   label,
   children,
   hint,
 }: {
-  label: string;
+  label: React.ReactNode;
   children: React.ReactNode;
   hint?: string;
 }) {
@@ -113,10 +114,13 @@ export default function OrderRetailCustomerArea() {
   return (
     <FormErrorsContext.Provider value={{ errors: amkaFieldErrors }}>
       <div className="app-card px-3 py-2">
-        <div className="d-flex align-items-center border-bottom mb-3 gap-5 pb-3">
-          <label className="form-label fw-semibold mb-0 flex-shrink-0">
-            Ασθενής
-          </label>
+        <div className="border-bottom mb-1 pb-2">
+          <div className="d-flex align-items-center justify-content-between mb-3 flex-wrap gap-3">
+            <label className="form-label fw-semibold mb-0 flex-shrink-0">
+              Ασθενής
+            </label>
+            <WizardStepBarcodeHint barcode={data.barcode} />
+          </div>
           <div className="input-group flex-grow-1" style={{ minWidth: 0 }}>
             <input
               type="text"

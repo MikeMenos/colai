@@ -63,6 +63,8 @@ export interface DraftState {
   ai_ylika: AIMaterials[];
   synaineseisResults: SynaineseisResults | null;
   lastOrderInfoCustomerErpGID?: string;
+  /** `dateIn` from run-AI `last_order_info`, used for doctor-step eligibility rules. */
+  lastOrderInfoDateIn?: string;
   customerProsEbs?: boolean;
   customerSelectedFromList?: boolean;
   customerIsCompletelyNew?: boolean;
@@ -396,6 +398,9 @@ function loadStateFromLocalStorage(): OrdersState | null {
         lastOrderInfoCustomerErpGID:
           parsed?.lastOrderInfoCustomerErpGID ??
           initialStateBase.draft.lastOrderInfoCustomerErpGID,
+        lastOrderInfoDateIn:
+          parsed?.lastOrderInfoDateIn ??
+          initialStateBase.draft.lastOrderInfoDateIn,
         customerProsEbs:
           parsed?.customerProsEbs ?? initialStateBase.draft.customerProsEbs,
         customerSelectedFromList:
@@ -431,6 +436,7 @@ function persistStateToLocalStorage(state: OrdersState) {
     list_TroposApostolis: state.draft.list_TroposApostolis,
     ai_ylika: state.draft.ai_ylika,
     lastOrderInfoCustomerErpGID: state.draft.lastOrderInfoCustomerErpGID,
+    lastOrderInfoDateIn: state.draft.lastOrderInfoDateIn,
     customerProsEbs: state.draft.customerProsEbs,
     customerSelectedFromList: state.draft.customerSelectedFromList,
     customerIsCompletelyNew: state.draft.customerIsCompletelyNew,
@@ -488,6 +494,7 @@ const ordersSlice = createSlice({
       state.draft.ai_ylika = [] as AIMaterials[];
       state.draft.synaineseisResults = null;
       state.draft.lastOrderInfoCustomerErpGID = undefined;
+      state.draft.lastOrderInfoDateIn = undefined;
       state.draft.customerProsEbs = undefined;
       state.draft.customerSelectedFromList = undefined;
       state.draft.customerIsCompletelyNew = true;
@@ -575,6 +582,13 @@ const ordersSlice = createSlice({
       action: PayloadAction<string | undefined>,
     ) {
       state.draft.lastOrderInfoCustomerErpGID = action.payload;
+      persistStateToLocalStorage(state);
+    },
+    setLastOrderInfoDateIn(
+      state,
+      action: PayloadAction<string | undefined>,
+    ) {
+      state.draft.lastOrderInfoDateIn = action.payload;
       persistStateToLocalStorage(state);
     },
     setCustomerProsEbs(state, action: PayloadAction<boolean | undefined>) {
@@ -1046,6 +1060,7 @@ export const {
   startDraft,
   setSynaineseisResults,
   setLastOrderInfoCustomerErpGID,
+  setLastOrderInfoDateIn,
   setCustomerProsEbs,
   setCustomerSelectedFromList,
   setCustomerIsCompletelyNew,

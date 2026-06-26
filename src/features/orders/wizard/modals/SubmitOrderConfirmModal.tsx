@@ -86,9 +86,7 @@ function SubmitConfirmToggleWarnings({
   return (
     <div className="d-flex flex-column mb-3 gap-2">
       <SubmitConfirmInfoBanner
-        label={
-          isPaid ? "Πληρωμή μέσω κατάθεσης" : "Πληρωμή με αντικαταβολή"
-        }
+        label={isPaid ? "Πληρωμή μέσω κατάθεσης" : "Πληρωμή με αντικαταβολή"}
       />
     </div>
   );
@@ -100,6 +98,8 @@ export default function SubmitOrderConfirmModal({
   error,
   otp,
   amka,
+  recipientName,
+  recipientAddress,
   barcode,
   customerIsCompletelyNew = false,
   suggestedDoctorName,
@@ -160,6 +160,8 @@ export default function SubmitOrderConfirmModal({
             showPaymentMethodInfo={showPaymentMethodInfo}
           />
           <SummaryRow label="OTP" value={otp} />
+          <SummaryRow label="Παραλήπτης" value={recipientName} />
+          <SummaryRow label="Διεύθ. παραλήπτη" value={recipientAddress} />
           <SummaryRow label="ΑΜΚΑ παραλήπτη" value={amka} />
           <SummaryRow label="Barcode" value={barcode} />
           {customerIsCompletelyNew ? (

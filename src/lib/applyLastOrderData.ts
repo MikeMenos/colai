@@ -69,6 +69,18 @@ export function pickOrderFieldFromRecords(
   return undefined;
 }
 
+export function extractDateInFromOrderRecord(
+  ...sources: OrderLikeRecord[]
+): string | undefined {
+  const v = pickOrderFieldFromRecords(
+    ["dateIn", "DateIn", "registrationDate", "RegistrationDate"],
+    ...sources,
+  );
+  if (v == null) return undefined;
+  const s = String(v).trim();
+  return s || undefined;
+}
+
 export function extractShipToOtherAddress(
   ...sources: OrderLikeRecord[]
 ): 0 | 1 | undefined {

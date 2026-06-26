@@ -2,6 +2,7 @@ import {
   applyLastOrderData,
   applyPersonErpGIDFromLastOrder,
   extractAddressErpGID,
+  extractDateInFromOrderRecord,
   extractPersonErpGID,
   extractShipToOtherAddress,
   normalizeZeroOne,
@@ -20,6 +21,7 @@ import {
   setCustomerSelectedFromList,
   setCustomerIsCompletelyNew,
   setLastOrderInfoCustomerErpGID,
+  setLastOrderInfoDateIn,
   setLastWebOrderFromLoadInfo,
 } from "@/store/orders/ordersSlice";
 import type { AppDispatch } from "@/store/store";
@@ -46,6 +48,7 @@ export async function applyRunAiResponse(
   dispatch(setDraftYlika([]));
   dispatch(setAIMaterials([]));
   dispatch(setLastOrderInfoCustomerErpGID(undefined));
+  dispatch(setLastOrderInfoDateIn(undefined));
   dispatch(setCustomerProsEbs(undefined));
   dispatch(setCustomerSelectedFromList(undefined));
   dispatch(setCustomerIsCompletelyNew(true));
@@ -100,11 +103,21 @@ export async function applyRunAiResponse(
           ? (raw.data as Record<string, unknown>)
           : raw;
 
+    const pick = (...keys: string[]) =>
+      keys.reduce(
+        (v: unknown, k) => v ?? raw[k] ?? orderObj[k],
+        undefined as unknown,
+      );
+
     dispatch(
       setLastOrderInfoCustomerErpGID(
         (orderObj.customer_ErpGID ?? raw.customer_ErpGID) as string,
       ),
     );
+    const dateIn = extractDateInFromOrderRecord(orderObj, raw);
+    if (dateIn) {
+      dispatch(setLastOrderInfoDateIn(dateIn));
+    }
     applyLastOrderData(orderObj, dispatch);
     if (Array.isArray(orderObj?.items ?? orderObj?.ylika)) {
       dispatch(setDraftYlika((orderObj.items ?? orderObj.ylika) as OrderYlika[]));
@@ -115,11 +128,6 @@ export async function applyRunAiResponse(
     if (Array.isArray(raw?.files ?? orderObj?.files)) {
       dispatch(setDraftFiles((raw.files ?? orderObj.files) as OrderFile[]));
     }
-    const pick = (...keys: string[]) =>
-      keys.reduce(
-        (v: unknown, k) => v ?? raw[k] ?? orderObj[k],
-        undefined as unknown,
-      );
     const hasOther = pick(
       "has_other_recipient",
       "hasOtherRecipient",

@@ -17,44 +17,13 @@ import { FormSelect } from "react-bootstrap";
 import FormErrorsContext from "@/components/ui/FormErrorContect";
 import OrderField from "@/components/ui/OrderField";
 import OtpInput from "@/components/ui/OTPInput";
-import {
-  isCompletelyNewCustomer,
-  isCustomerProsEbs,
-  isCustomerSelectedFromList,
-} from "@/lib/customerUtils";
 import { isValidAmka } from "@/lib/utils/amka";
+import WizardStepBarcodeHint from "../components/WizardStepBarcodeHint";
+import {
+  CustomerNameLabel,
+  CustomerStatusBadges,
+} from "../components/CustomerStatusBadges";
 import type { OrderCustomerAreaProps } from "./componentProps";
-
-function CustomerNameLabel() {
-  const data = useAppSelector((s) => s.orders.draft.order);
-  const draftMeta = useAppSelector((s) => ({
-    customerProsEbs: s.orders.draft.customerProsEbs,
-    customerSelectedFromList: s.orders.draft.customerSelectedFromList,
-    customerIsCompletelyNew: s.orders.draft.customerIsCompletelyNew,
-  }));
-  const isProsEbs = isCustomerProsEbs(draftMeta);
-  const selectedFromList = isCustomerSelectedFromList(draftMeta);
-  const completelyNew = isCompletelyNewCustomer(draftMeta);
-  const isExistingCustomer = !!String(data.customer_ErpGID ?? "").trim();
-  return (
-    <span className="d-inline-flex align-items-center flex-wrap gap-2">
-      Ονοματεπώνυμο
-      {selectedFromList ? (
-        <span className="badge text-bg-success">Υφιστάμενος</span>
-      ) : isProsEbs ? (
-        <span className="badge text-bg-success">Νέος/Προς EBS</span>
-      ) : completelyNew ? (
-        <span className="badge text-bg-danger">Νέος</span>
-      ) : (
-        <span
-          className={`badge ${isExistingCustomer ? "text-bg-success" : "text-bg-danger"}`}
-        >
-          {isExistingCustomer ? "Υφιστάμενος" : "Νέος"}
-        </span>
-      )}
-    </span>
-  );
-}
 
 export default function OrderCustomerArea({
   errors,
@@ -245,10 +214,13 @@ export default function OrderCustomerArea({
   return (
     <div className="app-card px-3 py-2">
       <FormErrorsContext.Provider value={{ errors: errors ?? {}, clearError }}>
-        <div className="d-flex align-items-center border-bottom mb-3 gap-5 pb-3">
-          <label className="form-label fw-semibold mb-0 flex-shrink-0">
-            Ασθενής
-          </label>
+        <div className="border-bottom mb-1 pb-2">
+          <div className="d-flex align-items-center justify-content-between mb-3 flex-wrap gap-3">
+            <label className="form-label fw-semibold mb-0 flex-shrink-0">
+              Ασθενής
+            </label>
+            <WizardStepBarcodeHint barcode={data.barcode} />
+          </div>
           <div className="input-group flex-grow-1" style={{ minWidth: 0 }}>
             <input
               type="text"
@@ -288,7 +260,9 @@ export default function OrderCustomerArea({
           baselineCustomerAmkaRef={baselineCustomerAmkaRef}
         />
 
-        <div className="mb-3">
+        <CustomerStatusBadges className="d-flex d-md-none mb-2" />
+
+        <div className="mb-2">
           <div className="d-flex align-items-center flex-wrap gap-2">
             <label
               className="form-label fw-semibold mb-0"

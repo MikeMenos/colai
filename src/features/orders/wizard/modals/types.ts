@@ -4,6 +4,8 @@ export type SubmitOrderConfirmModalProps = {
   error?: string | null;
   otp?: string | null;
   amka?: string | null;
+  recipientName?: string | null;
+  recipientAddress?: string | null;
   barcode?: string | null;
   customerIsCompletelyNew?: boolean;
   suggestedDoctorName?: string | null;
