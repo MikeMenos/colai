@@ -10,7 +10,6 @@ import {
 } from "@/store/orders/ordersSlice";
 import { isConsentScoreTooLow } from "@/lib/consentUpload";
 import { getActingSellerDisplayLabel } from "@/lib/sellerAccess";
-import { getAmkaInlineFieldError } from "@/lib/utils/amka";
 import SynenaiseisArea from "@/features/orders/wizard/eopyy/SynenaiseisArea";
 import SubmitOrderConfirmModal from "@/features/orders/wizard/modals/SubmitOrderConfirmModal";
 import { getSubmitConfirmRecipientAddress, getSubmitConfirmRecipientName } from "@/features/orders/wizard/eopyy/wizard/submitConfirmAmka";
@@ -51,9 +50,6 @@ export default function OrderRetailWizard() {
     customerIsCompletelyNew: s.orders.draft.customerIsCompletelyNew,
     lastOrderInfoDateIn: s.orders.draft.lastOrderInfoDateIn,
   }));
-  const hasAmkaError = Boolean(
-    getAmkaInlineFieldError(draftOrder.customer_amka),
-  );
   const hasConsentFormFiles = files.some(
     (file) => file?.documentCategory === "consent_form",
   );
@@ -140,11 +136,9 @@ export default function OrderRetailWizard() {
   }
 
   const nextDisabled =
-    (step === 0 && hasAmkaError) ||
-    (currentLabel === "Συναίνεση" && consentBlocksProgress);
+    currentLabel === "Συναίνεση" && consentBlocksProgress;
 
-  const saveDisabled =
-    submitState.loading || hasAmkaError || consentBlocksProgress;
+  const saveDisabled = submitState.loading || consentBlocksProgress;
 
   const submitConfirmOrderAsSeller = getActingSellerDisplayLabel(
     userInfos,
