@@ -7,6 +7,7 @@ export type SubmitOrderConfirmModalProps = {
   recipientName?: string | null;
   recipientAddress?: string | null;
   barcode?: string | null;
+  dateOfSyntagi?: string | null;
   customerIsCompletelyNew?: boolean;
   suggestedDoctorName?: string | null;
   orderAsSeller?: string | null;

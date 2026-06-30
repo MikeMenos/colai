@@ -101,6 +101,7 @@ export default function SubmitOrderConfirmModal({
   recipientName,
   recipientAddress,
   barcode,
+  dateOfSyntagi,
   customerIsCompletelyNew = false,
   suggestedDoctorName,
   orderAsSeller,
@@ -163,6 +164,7 @@ export default function SubmitOrderConfirmModal({
           <SummaryRow label="Παραλήπτης" value={recipientName} />
           <SummaryRow label="Διεύθ. παραλήπτη" value={recipientAddress} />
           <SummaryRow label="ΑΜΚΑ παραλήπτη" value={amka} />
+          <SummaryRow label="Ημ/νία συνταγής" value={dateOfSyntagi} />
           <SummaryRow label="Barcode" value={barcode} />
           {customerIsCompletelyNew ? (
             <SummaryRow label="Συστήνων ιατρός" value={suggestedDoctorName} />

@@ -30,6 +30,10 @@ import {
 } from "./wizard/amkaValidation";
 import { getDraftBarcodeFieldErrors } from "./wizard/barcodeValidation";
 import {
+  getDraftDateOfSyntagiFieldErrors,
+  hasDraftDateOfSyntagiErrors,
+} from "./wizard/dateOfSyntagiValidation";
+import {
   hasCustomerFieldErrors,
   isCustomerTouchdownOnlyField,
 } from "./wizard/customerFieldValidation";
@@ -126,10 +130,16 @@ export default function OrderEoppyWizard() {
     [draftOrder],
   );
 
+  const dateOfSyntagiErrorsByField = React.useMemo(
+    () => getDraftDateOfSyntagiFieldErrors(draftOrder),
+    [draftOrder],
+  );
+
   const fieldErrorsByField = React.useMemo(() => {
     const m: Record<string, string | boolean> = {
       ...amkaErrorsByField,
       ...barcodeErrorsByField,
+      ...dateOfSyntagiErrorsByField,
     };
     for (const [field, message] of Object.entries(errorsByField)) {
       if (!isCustomerTouchdownOnlyField(field)) {
@@ -137,10 +147,20 @@ export default function OrderEoppyWizard() {
       }
     }
     return m;
-  }, [amkaErrorsByField, barcodeErrorsByField, errorsByField]);
+  }, [
+    amkaErrorsByField,
+    barcodeErrorsByField,
+    dateOfSyntagiErrorsByField,
+    errorsByField,
+  ]);
 
   const hasAmkaErrors = React.useMemo(
     () => hasDraftAmkaErrors(draftOrder),
+    [draftOrder],
+  );
+
+  const hasDateOfSyntagiErrors = React.useMemo(
+    () => hasDraftDateOfSyntagiErrors(draftOrder),
     [draftOrder],
   );
 
@@ -367,6 +387,7 @@ export default function OrderEoppyWizard() {
                 (!isTempSave &&
                   (hasValidationIssues ||
                     hasAmkaErrors ||
+                    hasDateOfSyntagiErrors ||
                     hasEmptyCustomerFields ||
                     consentBlocksProgress))
               }
@@ -389,6 +410,7 @@ export default function OrderEoppyWizard() {
         recipientName={submitConfirmRecipientName}
         recipientAddress={submitConfirmRecipientAddress}
         barcode={draftOrder.barcode}
+        dateOfSyntagi={draftOrder.dateOfSyntagi}
         customerIsCompletelyNew={customerIsCompletelyNew === true}
         suggestedDoctorName={submitConfirmSuggestedDoctorName}
         orderAsSeller={submitConfirmOrderAsSeller}
