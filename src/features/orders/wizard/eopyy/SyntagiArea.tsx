@@ -5,6 +5,7 @@ import { Order } from "@/types/orders";
 import React from "react";
 import { FormSelect } from "react-bootstrap";
 import BarcodeField from "./BarcodeField";
+import OrderField from "@/components/ui/OrderField";
 import type { SyntagiAreaProps } from "./componentProps";
 
 function Field({
@@ -81,8 +82,8 @@ const SyntagiArea = ({ errors, clearError }: SyntagiAreaProps) => {
           name="barcode"
         />
         <div className="row g-2">
-          <div className="col-6">
-            <Field label="Ημ/νία συνταγης">
+          <div className="col-12">
+            <OrderField label="Ημερομηνία συνταγής">
               <input
                 className="form-control"
                 inputMode="numeric"
@@ -92,7 +93,7 @@ const SyntagiArea = ({ errors, clearError }: SyntagiAreaProps) => {
                   handleDateInput("dateOfSyntagi", e.target.value)
                 }
               />
-            </Field>
+            </OrderField>
           </div>
         </div>
 
