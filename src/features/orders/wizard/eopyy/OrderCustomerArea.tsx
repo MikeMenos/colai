@@ -518,7 +518,7 @@ export default function OrderCustomerArea({
           </div>
         </div>
 
-        <OrderField label="Σχόλια παραγγελίας">
+        <OrderField label="Σχόλια για το τμήμα παραγγελιών">
           <textarea
             className="form-control"
             name="sellerComments"
@@ -942,7 +942,7 @@ export default function OrderCustomerArea({
                 </OrderField>
               </div>
             </div>
-            <OrderField label="Σχόλια παραγγελίας">
+            <OrderField label="Σχόλια για το τμήμα παραγγελιών">
               <textarea
                 className="form-control"
                 name="sellerComments"
