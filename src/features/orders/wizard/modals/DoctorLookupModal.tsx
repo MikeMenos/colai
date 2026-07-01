@@ -3,15 +3,53 @@
 import React from "react";
 import { Modal } from "react-bootstrap";
 import { useAppDispatch } from "@/store/hooks";
-import { setDraftProperty } from "@/store/orders/ordersSlice";
+import { patchDraftOrder } from "@/store/orders/ordersSlice";
 import AppLoader from "@/components/ui/AppLoader";
 import type {
   DoctorSearchResult,
   SearchDoctorsSuccess,
 } from "@/types/api/responses";
+import type { Order } from "@/types/orders";
 import { parseProxyJson } from "@/lib/api/client";
 
 export type DoctorLookupModal = DoctorSearchResult;
+
+function buildDoctorPatch(
+  c: DoctorLookupModal,
+  isSuggested?: boolean,
+  isOtherSuggested?: boolean,
+): Partial<Order> {
+  const phone = (c.mobile1?.trim() || c.mobile2?.trim()) ?? "";
+
+  if (isOtherSuggested) {
+    return {
+      otherDoctorSuggested_name: c.doctoR_NAME,
+      otherDoctorSuggested_amka: c.doctoR_AMKA,
+      otherDoctorSuggested_afm: c.doctoR_AFM,
+      otherDoctorSuggested_ErpGID: c.gid,
+      otherDoctorSuggested_domi: c.domi?.trim() ?? "",
+      otherDoctorSuggested_mobile: phone,
+    } as Partial<Order>;
+  }
+
+  if (isSuggested) {
+    return {
+      doctorSuggested_name: c.doctoR_NAME,
+      doctorSuggested_amka: c.doctoR_AMKA,
+      doctorSuggested_afm: c.doctoR_AFM,
+      doctorSuggested_ErpGID: c.gid,
+      doctorSuggested_domi: c.domi?.trim() ?? "",
+      doctorSuggested_tel: phone,
+    } as Partial<Order>;
+  }
+
+  return {
+    doctor_name: c.doctoR_NAME,
+    doctor_amka: c.doctoR_AMKA,
+    doctor_afm: c.doctoR_AFM,
+    doctor_ErpGID: c.gid,
+  } as Partial<Order>;
+}
 
 export default function DoctorLookupModal({
   show,
@@ -27,6 +65,7 @@ export default function DoctorLookupModal({
   const dispatch = useAppDispatch();
   const [q, setQ] = React.useState("");
   const [loading, setLoading] = React.useState(false);
+  const [applying, setApplying] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
   const [results, setResults] = React.useState<DoctorLookupModal[]>([]);
   const inputRef = React.useRef<HTMLInputElement | null>(null);
@@ -36,6 +75,7 @@ export default function DoctorLookupModal({
     setResults([]);
     setError(null);
     setLoading(false);
+    setApplying(false);
   }, [show]);
 
   async function search() {
@@ -65,77 +105,21 @@ export default function DoctorLookupModal({
     }
   }
 
-  function applyDoctor(c: DoctorLookupModal) {
-    if (isOtherSuggested) {
+  async function applyDoctor(c: DoctorLookupModal) {
+    setApplying(true);
+    try {
+      await new Promise<void>((resolve) => {
+        requestAnimationFrame(() => resolve());
+      });
       dispatch(
-        setDraftProperty({
-          key: "otherDoctorSuggested_name",
-          value: c.doctoR_NAME,
-        }),
+        patchDraftOrder(
+          buildDoctorPatch(c, isSuggested, isOtherSuggested),
+        ),
       );
-      dispatch(
-        setDraftProperty({
-          key: "otherDoctorSuggested_amka",
-          value: c.doctoR_AMKA,
-        }),
-      );
-      dispatch(
-        setDraftProperty({
-          key: "otherDoctorSuggested_afm",
-          value: c.doctoR_AFM,
-        }),
-      );
-      dispatch(
-        setDraftProperty({
-          key: "otherDoctorSuggested_ErpGID",
-          value: c.gid,
-        }),
-      );
-      dispatch(
-        setDraftProperty({
-          key: "otherDoctorSuggested_domi",
-          value: c.domi?.trim() ?? "",
-        }),
-      );
-      dispatch(
-        setDraftProperty({
-          key: "otherDoctorSuggested_mobile",
-          value: (c.mobile1?.trim() || c.mobile2?.trim()) ?? "",
-        }),
-      );
-    } else if (isSuggested) {
-      dispatch(
-        setDraftProperty({ key: "doctorSuggested_name", value: c.doctoR_NAME }),
-      );
-      dispatch(
-        setDraftProperty({ key: "doctorSuggested_amka", value: c.doctoR_AMKA }),
-      );
-      dispatch(
-        setDraftProperty({ key: "doctorSuggested_afm", value: c.doctoR_AFM }),
-      );
-      dispatch(
-        setDraftProperty({ key: "doctorSuggested_ErpGID", value: c.gid }),
-      );
-      dispatch(
-        setDraftProperty({
-          key: "doctorSuggested_domi",
-          value: c.domi?.trim() ?? "",
-        }),
-      );
-      dispatch(
-        setDraftProperty({
-          key: "doctorSuggested_tel",
-          value: (c.mobile1?.trim() || c.mobile2?.trim()) ?? "",
-        }),
-      );
-    } else {
-      dispatch(setDraftProperty({ key: "doctor_name", value: c.doctoR_NAME }));
-      dispatch(setDraftProperty({ key: "doctor_amka", value: c.doctoR_AMKA }));
-      dispatch(setDraftProperty({ key: "doctor_afm", value: c.doctoR_AFM }));
-      dispatch(setDraftProperty({ key: "doctor_ErpGID", value: c.gid }));
+      onClose();
+    } finally {
+      setApplying(false);
     }
-
-    onClose();
   }
 
   return (
@@ -168,7 +152,7 @@ export default function DoctorLookupModal({
             type="button"
             className="btn btn-primary"
             onClick={search}
-            disabled={q.trim().length < 2 || loading}
+            disabled={q.trim().length < 2 || loading || applying}
           >
             <i className="bi bi-search" />
           </button>
@@ -188,7 +172,8 @@ export default function DoctorLookupModal({
                   key={idx}
                   type="button"
                   className="list-group-item list-group-item-action"
-                  onClick={() => applyDoctor(r)}
+                  onClick={() => void applyDoctor(r)}
+                  disabled={applying}
                 >
                   <div className="fw-semibold">{r.doctoR_NAME || "—"}</div>
                   <div className="small text-secondary">
@@ -212,6 +197,16 @@ export default function DoctorLookupModal({
             </div>
           )}
         </div>
+        {applying ? (
+          <div className="small text-secondary d-flex align-items-center mt-2 gap-2">
+            <span
+              className="spinner-border spinner-border-sm"
+              role="status"
+              aria-hidden
+            />
+            Εφαρμογή επιλογής…
+          </div>
+        ) : null}
       </Modal.Body>
     </Modal>
   );
