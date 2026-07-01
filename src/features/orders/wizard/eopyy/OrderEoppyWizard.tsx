@@ -339,7 +339,6 @@ export default function OrderEoppyWizard() {
 
   const showWizardNav = step > 0;
   const activeStepKey = effectiveSteps[step]?.key;
-  console.log(draftOrder);
   return (
     <div
       className={`order-wizard d-flex flex-column gap-2${showWizardNav ? "order-wizard--has-nav" : ""}`}

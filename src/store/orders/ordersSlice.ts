@@ -535,6 +535,32 @@ const ordersSlice = createSlice({
 
       persistStateToLocalStorage(state);
     },
+    patchDraftOrder(state, action: PayloadAction<Partial<Order>>) {
+      state.draft.order = {
+        ...state.draft.order,
+        ...action.payload,
+      };
+
+      if (
+        (
+          [
+            "symmPercentage",
+            "kostos",
+            "eidos_Egkrisis",
+            "plafonGiftAmount",
+            "maxPosoKostousGiaSymmetoxi",
+            "posoPlafon",
+            "katigoriaParoxis",
+          ] as (keyof Order)[]
+        ).some((key) => key in action.payload)
+      ) {
+        state.draft.order.posoSymmetoxis = calcPosoSymmetoxisForOrder(
+          state.draft.order,
+        );
+      }
+
+      persistStateToLocalStorage(state);
+    },
     setAIMaterials(state, action: PayloadAction<AIMaterials[]>) {
       state.draft.ai_ylika = action.payload;
       persistStateToLocalStorage(state);
@@ -1077,6 +1103,7 @@ export const {
   submitDraft,
   clearDraftSubmitError,
   setDraftProperty,
+  patchDraftOrder,
   addDraftYliko,
   updateDraftYlikoQuantity,
   removeDraftYliko,
