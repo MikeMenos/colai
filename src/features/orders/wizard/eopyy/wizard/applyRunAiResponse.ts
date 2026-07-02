@@ -9,7 +9,11 @@ import {
   syncShipToOtherAddressFlags,
 } from "@/lib/applyLastOrderData";
 import { hasText, isBlank, trimmedString } from "@/lib/utils/string";
-import { hasAnyValue, normalizeBarcode, normalizeSymmPercentage } from "./wizardUtils";
+import {
+  hasAnyValue,
+  normalizeBarcode,
+  normalizeSymmPercentage,
+} from "./wizardUtils";
 import {
   clearDraftAddressesList,
   loadCustomerAddressesAsync,
@@ -93,13 +97,9 @@ export async function applyRunAiResponse(
   if (hasLastOrderInfo) {
     const raw = lastOrderInfo as Record<string, unknown>;
     const orderObj =
-      raw?.order &&
-      typeof raw.order === "object" &&
-      !Array.isArray(raw.order)
+      raw?.order && typeof raw.order === "object" && !Array.isArray(raw.order)
         ? (raw.order as Record<string, unknown>)
-        : raw?.data &&
-            typeof raw.data === "object" &&
-            !Array.isArray(raw.data)
+        : raw?.data && typeof raw.data === "object" && !Array.isArray(raw.data)
           ? (raw.data as Record<string, unknown>)
           : raw;
 
@@ -120,7 +120,9 @@ export async function applyRunAiResponse(
     }
     applyLastOrderData(orderObj, dispatch);
     if (Array.isArray(orderObj?.items ?? orderObj?.ylika)) {
-      dispatch(setDraftYlika((orderObj.items ?? orderObj.ylika) as OrderYlika[]));
+      dispatch(
+        setDraftYlika((orderObj.items ?? orderObj.ylika) as OrderYlika[]),
+      );
     }
     if (Array.isArray(orderObj?.ai_ylika)) {
       dispatch(setAIMaterials(orderObj.ai_ylika as AIMaterialsType[]));
@@ -205,8 +207,7 @@ export async function applyRunAiResponse(
                 ? String(orderObj.customer_address)
                 : undefined,
             customer_amka: lastOrderAmka,
-            preferredPersonErpGID:
-              personErpIdFromJson ?? personFromLastOrder,
+            preferredPersonErpGID: personErpIdFromJson ?? personFromLastOrder,
             preferredAddressErpGID:
               addressErpIdFromJson ?? addressFromLastOrder,
           }),
@@ -230,12 +231,8 @@ export async function applyRunAiResponse(
             );
           }
         } else {
-          dispatch(
-            setDraftProperty({ key: "shipTo_other_address", value: 0 }),
-          );
-          dispatch(
-            setDraftProperty({ key: "has_other_recipient", value: 0 }),
-          );
+          dispatch(setDraftProperty({ key: "shipTo_other_address", value: 0 }));
+          dispatch(setDraftProperty({ key: "has_other_recipient", value: 0 }));
         }
       } catch {
         if (shipToFromLastOrder === 1) {
@@ -505,9 +502,7 @@ export async function applyRunAiResponse(
         value: normalizeSymmPercentage(gnomatevsi.symmetoxi_percentage),
       }),
     );
-    dispatch(
-      setDraftProperty({ key: "symm", value: gnomatevsi.symmetoxi }),
-    );
+    dispatch(setDraftProperty({ key: "symm", value: gnomatevsi.symmetoxi }));
     gnomatevsi.symmetoxi_percentage == 0 &&
       dispatch(
         setDraftProperty({ key: "eopyyVerifyNoParticipation", value: 0 }),
@@ -563,9 +558,7 @@ export async function applyRunAiResponse(
     );
     gnomatevsi.max_poso_symmetoxis != null &&
       gnomatevsi.max_poso_symmetoxis > 0 &&
-      (await dispatch(
-        setDraftProperty({ key: "plafonGiftAmount", value: 6 }),
-      ));
+      (await dispatch(setDraftProperty({ key: "plafonGiftAmount", value: 6 })));
   }
 
   const aiMaterials = jsonDoc.ylika as AIMaterialsType[] | undefined;
@@ -627,7 +620,7 @@ export async function applyRunAiResponse(
           }),
         ).unwrap();
 
-        if (!hasLastOrderInfo && addressResult.ok) {
+        if (addressResult.ok) {
           const addresses = (addressResult.addresses ??
             []) as OrderListOfAddressPersons[];
           const matchedPerson = findAddressPersonByAmka(addresses, amka);
@@ -641,7 +634,10 @@ export async function applyRunAiResponse(
             );
           }
           const mobile = getCustomerMobileFromAddressPerson(matchedPerson);
-          if (mobile && isBlank(store.getState().orders.draft.order.customer_mobile)) {
+          if (
+            mobile &&
+            isBlank(store.getState().orders.draft.order.customer_mobile)
+          ) {
             dispatch(
               setDraftProperty({
                 key: "customer_mobile",

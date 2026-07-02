@@ -3,7 +3,11 @@
 import React from "react";
 import { StepIndicator } from "@/components/ui/StepIndicator";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
-import { fetchOrders, submitDraftAsync, clearDraftSubmitError } from "@/store/orders/ordersSlice";
+import {
+  fetchOrders,
+  submitDraftAsync,
+  clearDraftSubmitError,
+} from "@/store/orders/ordersSlice";
 import { shouldShowSynainesiStep } from "@/lib/customerUtils";
 import { isConsentScoreTooLow } from "@/lib/consentUpload";
 import {
@@ -37,7 +41,10 @@ import {
   hasCustomerFieldErrors,
   isCustomerTouchdownOnlyField,
 } from "./wizard/customerFieldValidation";
-import { focusWizardField, isAllowedSymmPercentage } from "./wizard/wizardUtils";
+import {
+  focusWizardField,
+  isAllowedSymmPercentage,
+} from "./wizard/wizardUtils";
 import { shouldShowYpervasiPlafonStep } from "@/lib/utils/plafon";
 import { runEoppyAi } from "./wizard/runEoppyAi";
 import {
@@ -186,7 +193,7 @@ export default function OrderEoppyWizard() {
       lastOrderInfoDateIn,
     ],
   );
-
+  console.log(draftOrder);
   const runAi = React.useCallback(
     async (aiclient: AiClient) => {
       setAiStatus("running");
