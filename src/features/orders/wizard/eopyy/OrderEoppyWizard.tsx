@@ -193,7 +193,6 @@ export default function OrderEoppyWizard() {
       lastOrderInfoDateIn,
     ],
   );
-  console.log(draftOrder);
   const runAi = React.useCallback(
     async (aiclient: AiClient) => {
       setAiStatus("running");

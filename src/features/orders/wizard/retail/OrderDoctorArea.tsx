@@ -1,6 +1,9 @@
 import OrderField from "@/components/ui/OrderField";
 import FormErrorsContext from "@/components/ui/FormErrorContect";
-import { isSuggestedDoctorChoiceLocked, shouldShowSuggestedDoctorChangeToggle } from "@/lib/customerUtils";
+import {
+  isSuggestedDoctorChoiceLocked,
+  shouldShowSuggestedDoctorChangeToggle,
+} from "@/lib/customerUtils";
 import { setDraftProperty } from "@/store/orders/ordersSlice";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import type { AppDispatch } from "@/store/store";
@@ -190,7 +193,7 @@ export default function OrderDoctorArea({
                 className="form-check-label"
                 htmlFor="propose_other_suggested_doctor"
               >
-                Αλλαγή συστήνοντος ιατρού
+                Αλλαγή συστήνοντος ιατρού (μετά από έγκριση)
               </label>
             </div>
 

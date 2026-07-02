@@ -7,7 +7,10 @@ import React from "react";
 import DoctorLookupModal from "../modals/DoctorLookupModal";
 import type { OrderDoctorAreaProps } from "./componentProps";
 import type { Order } from "@/types/orders";
-import { isSuggestedDoctorChoiceLocked, shouldShowSuggestedDoctorChangeToggle } from "@/lib/customerUtils";
+import {
+  isSuggestedDoctorChoiceLocked,
+  shouldShowSuggestedDoctorChangeToggle,
+} from "@/lib/customerUtils";
 
 const OTHER_SUGGESTED_DOCTOR_KEYS = [
   "otherDoctorSuggested_amka",
@@ -355,7 +358,7 @@ export default function OrderDoctorArea({
                 className="form-check-label"
                 htmlFor="propose_other_suggested_doctor"
               >
-                Αλλαγή συστήνοντος ιατρού
+                Αλλαγή συστήνοντος ιατρού (μετά από έγκριση)
               </label>
             </div>
 
