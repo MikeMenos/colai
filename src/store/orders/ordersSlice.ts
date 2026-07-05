@@ -74,41 +74,6 @@ export interface DraftState {
   customerAmkaGateCompleted?: boolean;
 }
 
-/** Isolated draft payload used by bulk ΕΟΠΥΥ slot processing (not persisted to localStorage). */
-export type BulkDraftSnapshot = Pick<
-  DraftState,
-  | "order"
-  | "ylika"
-  | "files"
-  | "ai_ylika"
-  | "list_AddressesPersons"
-  | "preselected_address_GID"
-  | "preselected_person_GID"
-  | "lastOrderInfoCustomerErpGID"
-  | "customerProsEbs"
-  | "customerSelectedFromList"
-  | "customerIsCompletelyNew"
-  | "lastWebOrderFromLoadInfo"
->;
-
-export function captureBulkDraftSnapshot(state: RootState): BulkDraftSnapshot {
-  const { draft } = state.orders;
-  return {
-    order: { ...draft.order },
-    ylika: [...draft.ylika],
-    files: [...draft.files],
-    ai_ylika: [...draft.ai_ylika],
-    list_AddressesPersons: [...draft.list_AddressesPersons],
-    preselected_address_GID: draft.preselected_address_GID,
-    preselected_person_GID: draft.preselected_person_GID,
-    lastOrderInfoCustomerErpGID: draft.lastOrderInfoCustomerErpGID,
-    customerProsEbs: draft.customerProsEbs,
-    customerSelectedFromList: draft.customerSelectedFromList,
-    customerIsCompletelyNew: draft.customerIsCompletelyNew,
-    lastWebOrderFromLoadInfo: draft.lastWebOrderFromLoadInfo,
-  };
-}
-
 export interface SelectedOrderState {
   order: Order;
   ylika: OrderYlika[];
@@ -549,23 +514,6 @@ const ordersSlice = createSlice({
       state.draft.lastWebOrderFromLoadInfo = undefined;
       state.draft.customerAmkaGateCompleted = undefined;
       persistStateToLocalStorage(state);
-    },
-    /** Hydrate Redux draft from a bulk slot snapshot for AI apply (does not persist). */
-    replaceDraftSnapshot(state, action: PayloadAction<BulkDraftSnapshot>) {
-      const snapshot = action.payload;
-      state.draft.order = snapshot.order;
-      state.draft.ylika = snapshot.ylika;
-      state.draft.files = snapshot.files;
-      state.draft.ai_ylika = snapshot.ai_ylika;
-      state.draft.list_AddressesPersons = snapshot.list_AddressesPersons;
-      state.draft.preselected_address_GID = snapshot.preselected_address_GID;
-      state.draft.preselected_person_GID = snapshot.preselected_person_GID;
-      state.draft.lastOrderInfoCustomerErpGID =
-        snapshot.lastOrderInfoCustomerErpGID;
-      state.draft.customerProsEbs = snapshot.customerProsEbs;
-      state.draft.customerSelectedFromList = snapshot.customerSelectedFromList;
-      state.draft.customerIsCompletelyNew = snapshot.customerIsCompletelyNew;
-      state.draft.lastWebOrderFromLoadInfo = snapshot.lastWebOrderFromLoadInfo;
     },
     clearDraftAddressesList(state) {
       state.draft.list_AddressesPersons = [] as OrderListOfAddressPersons[];
@@ -1162,7 +1110,6 @@ export const {
   setLastWebOrderFromLoadInfo,
   setCustomerAmkaGateCompleted,
   resetEntireDraft,
-  replaceDraftSnapshot,
   resetOrdersListCache,
   clearDraftAddressesList,
   deletedDraftTemplate,
