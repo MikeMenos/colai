@@ -14,7 +14,6 @@ import {
 import { getBulkLeaveGuard } from "@/features/orders/wizard/eopyy/bulk/bulkLeaveGuard";
 import {
   fetchOrders,
-  fetchPendingOrdersCount,
   setDraftProperty,
   submitDraftAsync,
 } from "@/store/orders/ordersSlice";
@@ -39,7 +38,6 @@ export default function BottomNav() {
   const pendingDiscounts = useAppSelector(
     (s) => s.discountRequests.requests.filter((r) => r.statusId == -1).length,
   );
-  const pendingOrders = useAppSelector((s) => s.orders.pendingOrdersCount);
   const draft = useAppSelector((s) => s.orders.draft);
   const submitState = useAppSelector((s) => s.orders.draft.submitState);
   const hasDraftContent = React.useMemo(
@@ -54,18 +52,12 @@ export default function BottomNav() {
   const guardWizardLeave = shouldGuardOrderWizardLeave(pathname);
   const onBulkPage = isOrderEoppyBulkPath(pathname);
 
-  React.useEffect(() => {
-    void dispatch(fetchPendingOrdersCount());
-  }, [dispatch]);
-
   const items: Item[] = [
     { href: "/", icon: "bi-house", label: "Αρχική" },
     {
       href: "/orders",
       icon: "bi-list-check",
       label: "Παραγγελίες",
-      badge: pendingOrders || undefined,
-      badgeVariant: "warning",
     },
     { href: "/diadikasia-wc", icon: "bi-calendar-check", label: "WC" },
     { href: "/salesWC", icon: "bi-receipt", label: "Πωλήσεις" },

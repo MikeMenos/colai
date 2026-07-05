@@ -1,7 +1,7 @@
 import type { AppDispatch } from "@/store/store";
 import type { RootState } from "@/store/store";
 import type { AiClient } from "@/lib/utils/ai";
-import { fetchOrders, fetchPendingOrdersCount } from "@/store/orders/ordersSlice";
+import { fetchOrders } from "@/store/orders/ordersSlice";
 import { EOPPY_AI_TIMEOUT_MS } from "../wizard/runEoppyAiWithFallback";
 import {
   beginSlotRun,
@@ -25,19 +25,8 @@ export type BulkSlotJobListener = (job: BulkSlotJob) => void;
 
 type BulkSlotAuth = RootState["auth"];
 
-let pendingCountTimer: ReturnType<typeof setTimeout> | null = null;
-
-function schedulePendingCountRefresh(dispatch: AppDispatch): void {
-  if (pendingCountTimer) clearTimeout(pendingCountTimer);
-  pendingCountTimer = setTimeout(() => {
-    pendingCountTimer = null;
-    void dispatch(fetchPendingOrdersCount({ force: true }));
-  }, 400);
-}
-
 async function refreshOrdersList(dispatch: AppDispatch): Promise<void> {
   await dispatch(fetchOrders({ force: true }));
-  schedulePendingCountRefresh(dispatch);
 }
 
 function patchAndNotify(

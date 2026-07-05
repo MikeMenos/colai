@@ -22,8 +22,6 @@ import {
   buildOrderListSearchParams,
   DEFAULT_ORDER_LIST_PAGE,
   DEFAULT_ORDER_LIST_PAGE_SIZE,
-  PENDING_ORDER_STATUS_ID,
-  sortOrdersPendingFirst,
 } from "@/lib/api/orderListQuery";
 import type {
   IDoctorFormData,
@@ -131,8 +129,6 @@ export interface OrdersState {
   ordersPageSize: number;
   ordersPaging: PagingResults | null;
   ordersFetchedAt: number;
-  pendingOrdersCount: number;
-  loadingPendingOrdersCount: boolean;
 }
 
 export const fetchOrders = createAsyncThunk<
@@ -173,7 +169,7 @@ export const fetchOrders = createAsyncThunk<
     );
 
     return {
-      orders: sortOrdersPendingFirst((data.orders ?? []) as Order[]),
+      orders: (data.orders ?? []) as Order[],
       paging: data.paging ?? null,
     };
   },
@@ -211,44 +207,6 @@ export const fetchOrders = createAsyncThunk<
   },
 );
 
-export const fetchPendingOrdersCount = createAsyncThunk<
-  number,
-  void | { force?: boolean },
-  { state: RootState }
->(
-  "orders/fetchPendingOrdersCount",
-  async () => {
-    const params = buildOrderListSearchParams({
-      page: 1,
-      pagesize: 500,
-      _ts: Date.now(),
-    });
-
-    const res = await fetch(`/api/orders?${params.toString()}`, {
-      cache: "no-store",
-      headers: {
-        "Cache-Control": "no-cache",
-        Pragma: "no-cache",
-      },
-    });
-
-    const data = await parseProxyJson<GetOrdersSuccess>(
-      res,
-      "Failed to load pending orders count",
-    );
-
-    return (data.orders ?? []).filter(
-      (o) => o.statusId === PENDING_ORDER_STATUS_ID,
-    ).length;
-  },
-  {
-    condition: (arg, { getState }) => {
-      if (arg && typeof arg === "object" && arg.force) return true;
-      return !getState().orders.loadingPendingOrdersCount;
-    },
-  },
-);
-
 export const fetchOrderById = createAsyncThunk<
   GetOrderViewSuccess,
   { orderId: number; orderUID: string }
@@ -262,9 +220,8 @@ export const fetchOrderById = createAsyncThunk<
 
 export const deleteOrderAsync = createAsyncThunk<
   DeleteOrderSuccess & { orderId: number; orderUID: string },
-  { orderId: number; orderUID: string },
-  { dispatch: AppDispatch }
->("orders/deleteOrder", async ({ orderId, orderUID }, { dispatch }) => {
+  { orderId: number; orderUID: string }
+>("orders/deleteOrder", async ({ orderId, orderUID }) => {
   const res = await fetch(`/api/orders/${orderId}?uid=${orderUID}`, {
     method: "DELETE",
     cache: "no-store",
@@ -273,7 +230,6 @@ export const deleteOrderAsync = createAsyncThunk<
     res,
     "Failed to delete order",
   );
-  void dispatch(fetchPendingOrdersCount({ force: true }));
   return { ...data, orderId, orderUID };
 });
 
@@ -434,8 +390,6 @@ const initialStateBase: OrdersState = {
   ordersPageSize: DEFAULT_ORDER_LIST_PAGE_SIZE,
   ordersPaging: null,
   ordersFetchedAt: 0,
-  pendingOrdersCount: 0,
-  loadingPendingOrdersCount: false,
 };
 
 const LS_KEY = "orders";
@@ -983,16 +937,6 @@ const ordersSlice = createSlice({
 
       state.ordersError = action.error.message || "Failed to load orders";
     });
-    b.addCase(fetchPendingOrdersCount.pending, (state) => {
-      state.loadingPendingOrdersCount = true;
-    });
-    b.addCase(fetchPendingOrdersCount.fulfilled, (state, action) => {
-      state.loadingPendingOrdersCount = false;
-      state.pendingOrdersCount = action.payload;
-    });
-    b.addCase(fetchPendingOrdersCount.rejected, (state) => {
-      state.loadingPendingOrdersCount = false;
-    });
     b.addCase(fetchOrderById.pending, (state) => {
       if (!state.selected) state.selected = {} as SelectedOrderState;
       state.selected.loading = true;
@@ -1162,10 +1106,7 @@ const ordersSlice = createSlice({
           x.id === action.payload.orderId && x.uid === action.payload.orderUID,
       );
       if (idx !== -1) {
-        const [deleted] = state.orders.splice(idx, 1);
-        if (deleted.statusId === PENDING_ORDER_STATUS_ID) {
-          state.pendingOrdersCount = Math.max(0, state.pendingOrdersCount - 1);
-        }
+        state.orders.splice(idx, 1);
       }
     });
     b.addCase(loadCustomerAddressesAsync.fulfilled, (state, action) => {
