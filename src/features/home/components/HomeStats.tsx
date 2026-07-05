@@ -2,6 +2,7 @@
 
 import { FloatingActionButton } from "@/components/ui/FloatingActionButton";
 import AppLoader from "@/components/ui/AppLoader";
+import OrderSellerScopeToggle from "@/features/orders/components/OrderSellerScopeToggle";
 import { fetchDashboardData } from "@/store/dashboard/slice";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import {
@@ -17,6 +18,7 @@ import { formatIntGR, parseLocaleNumber } from "@/lib/utils/number";
 import type { WcStoixoiMina } from "@/types/dashboard";
 import type { GetWcTeamatesSuccess, SellerTeamatesWC } from "@/types/api";
 import Link from "next/link";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import React from "react";
 import { Alert } from "react-bootstrap";
 
@@ -320,11 +322,51 @@ function MonthComparisonCard({
 
 export default function HomeStats() {
   const dispatch = useAppDispatch();
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
   const dash = useAppSelector((s) => s.dashboard);
+  const userInfo = useAppSelector((s) => s.auth.userInfos);
+  const [showAllAccounts, setShowAllAccounts] = React.useState(false);
+  const loggedSellerCode = userInfo?.sellerCode?.trim() ?? "";
+  const urlSellerCode = (searchParams.get("sellercode") ?? "").trim();
+  const sellerCodeFilter = showAllAccounts ? "" : loggedSellerCode;
 
   React.useEffect(() => {
-    void dispatch(fetchDashboardData());
-  }, [dispatch]);
+    if (showAllAccounts || !loggedSellerCode) return;
+    if (urlSellerCode === loggedSellerCode) return;
+
+    const params = new URLSearchParams(searchParams.toString());
+    params.set("sellercode", loggedSellerCode);
+    const qs = params.toString();
+    router.push(qs ? `${pathname}?${qs}` : pathname, { scroll: false });
+  }, [
+    loggedSellerCode,
+    pathname,
+    router,
+    searchParams,
+    showAllAccounts,
+    urlSellerCode,
+  ]);
+
+  React.useEffect(() => {
+    void dispatch(fetchDashboardData({ sellerCode: sellerCodeFilter }));
+  }, [dispatch, sellerCodeFilter]);
+
+  const handleSellerScopeChange = React.useCallback(
+    (nextShowAllAccounts: boolean) => {
+      setShowAllAccounts(nextShowAllAccounts);
+      const params = new URLSearchParams(searchParams.toString());
+      if (nextShowAllAccounts || !loggedSellerCode) {
+        params.delete("sellercode");
+      } else {
+        params.set("sellercode", loggedSellerCode);
+      }
+      const qs = params.toString();
+      router.push(qs ? `${pathname}?${qs}` : pathname, { scroll: false });
+    },
+    [loggedSellerCode, pathname, router, searchParams],
+  );
 
   const showInitialDashLoader = dash.loading && dash.lastFetchedAt === 0;
 
@@ -348,6 +390,11 @@ export default function HomeStats() {
 
       <div className={showInitialDashLoader ? "d-none" : undefined}>
         <div className="d-grid gap-3">
+          <OrderSellerScopeToggle
+            allAccounts={showAllAccounts}
+            disabled={!loggedSellerCode || (dash.loading && dash.lastFetchedAt === 0)}
+            onChange={handleSellerScopeChange}
+          />
           <div
             className="d-grid gap-3"
             style={{ gridTemplateColumns: "repeat(2, minmax(0, 1fr))" }}
