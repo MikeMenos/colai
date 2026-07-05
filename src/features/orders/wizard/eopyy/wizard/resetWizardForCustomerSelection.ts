@@ -8,6 +8,7 @@ import {
   setDraftProperty,
   setDraftYlika,
   setLastOrderInfoCustomerErpGID,
+  setLastOrderInfoDateIn,
   setLastWebOrderFromLoadInfo,
 } from "@/store/orders/ordersSlice";
 import type { AppDispatch } from "@/store/store";
@@ -152,6 +153,7 @@ export function resetDraftForDifferentCustomerSelection(
 ): void {
   dispatch(clearDraftAddressesList());
   dispatch(setLastOrderInfoCustomerErpGID(undefined));
+  dispatch(setLastOrderInfoDateIn(undefined));
   dispatch(setCustomerProsEbs(undefined));
   dispatch(setCustomerSelectedFromList(undefined));
   dispatch(setCustomerIsCompletelyNew(true));

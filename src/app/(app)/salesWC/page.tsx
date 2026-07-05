@@ -9,7 +9,25 @@ import { CollapsibleAppTile } from "@/components/ui/CollapsibleAppTile";
 import PullToRefresh from "@/components/ui/PullToRefresh";
 import { SearchBar } from "@/components/ui/SearchBar";
 import TrackingTraceAccordion from "@/features/salesWC/TrackingTraceAccordion";
+import SalesWCInlinePagination from "@/features/salesWC/SalesWCInlinePagination";
+import SalesWCDateFilterModal, {
+  formatSalesWCDateRangeLabel,
+} from "@/features/salesWC/SalesWCDateFilterModal";
+import {
+  filterSalesByDateRange,
+  getClientPaginationState,
+  getCurrentMonthStartDateInputValue,
+  getPreviousMonthEndDateInputValue,
+  getPreviousMonthStartDateInputValue,
+  getSalesWCResultTitle,
+  getTodayDateInputValue,
+  paginateItems,
+  SALES_WC_PAGE_SIZE,
+  summarizeSalesWCRecords,
+  type SalesWCSummaryStats,
+} from "@/features/salesWC/salesWcFilters";
 import { parseProxyJson } from "@/lib/api/client";
+import ListPagination from "@/components/ui/ListPagination";
 import {
   isManagerWithoutSellerRole,
   normalizeSellerCode,
@@ -362,13 +380,33 @@ function SalesWCCard({
 function SellerOrderDetails({
   state,
   onRetry,
+  dateFrom,
+  dateTo,
+  page,
+  onPageChange,
 }: {
   state: SellerOrderDetailsState | undefined;
   onRetry: () => void;
+  dateFrom: string;
+  dateTo: string;
+  page: number;
+  onPageChange: (page: number) => void;
 }) {
-  const records = state?.records ?? [];
+  const allRecords = state?.records ?? [];
+  const filteredRecords = React.useMemo(
+    () => filterSalesByDateRange(allRecords, dateFrom, dateTo),
+    [allRecords, dateFrom, dateTo],
+  );
+  const pagination = React.useMemo(
+    () => getClientPaginationState(filteredRecords.length, page, SALES_WC_PAGE_SIZE),
+    [filteredRecords.length, page],
+  );
+  const records = React.useMemo(
+    () => paginateItems(filteredRecords, pagination.currentPage, SALES_WC_PAGE_SIZE),
+    [filteredRecords, pagination.currentPage],
+  );
 
-  if (state?.loading && !records.length) {
+  if (state?.loading && !allRecords.length) {
     return (
       <div className="d-flex align-items-center text-secondary gap-2 py-2">
         <span className="spinner-border spinner-border-sm" aria-hidden />
@@ -392,10 +430,18 @@ function SellerOrderDetails({
     );
   }
 
-  if (!records.length) {
+  if (!allRecords.length) {
     return (
       <div className="text-secondary py-2 text-center" style={{ fontSize: 13 }}>
         Δεν βρέθηκαν αναλυτικές πωλήσεις.
+      </div>
+    );
+  }
+
+  if (!filteredRecords.length) {
+    return (
+      <div className="text-secondary py-2 text-center" style={{ fontSize: 13 }}>
+        Δεν βρέθηκαν αναλυτικές πωλήσεις για το επιλεγμένο διάστημα.
       </div>
     );
   }
@@ -515,6 +561,11 @@ function SellerOrderDetails({
           </CollapsibleAppTile>
         );
       })}
+      <SalesWCInlinePagination
+        pagination={pagination}
+        disabled={!!state?.loading}
+        onPageChange={onPageChange}
+      />
       {state?.loading ? (
         <div className="text-secondary pt-2" style={{ fontSize: 12 }}>
           Ενημέρωση...
@@ -530,13 +581,30 @@ function TeamSalesCard({
   onOpenChange,
   orderState,
   onRetryOrders,
+  dateFrom,
+  dateTo,
+  detailPage,
+  onDetailPageChange,
+  filteredStats,
 }: {
   sale: SellerTeamatesWC;
   open: boolean;
   onOpenChange: (open: boolean) => void;
   orderState: SellerOrderDetailsState | undefined;
   onRetryOrders: () => void;
+  dateFrom: string;
+  dateTo: string;
+  detailPage: number;
+  onDetailPageChange: (page: number) => void;
+  filteredStats: SalesWCSummaryStats | null;
 }) {
+  const stats = filteredStats ?? {
+    newCount: parseLocaleNumber(sale.NEW),
+    repeatCount: parseLocaleNumber(sale.REP),
+    totalCount: parseLocaleNumber(sale.TOT),
+    turnoverTotal: parseLocaleNumber(sale.TURNOVER),
+  };
+
   return (
     <CollapsibleAppTile
       open={open}
@@ -575,7 +643,7 @@ function TeamSalesCard({
             >
               <i className="bi bi-cash-coin text-secondary" aria-hidden />
               <span className="fw-semibold">
-                {formatCurrencyWithEuro(sale.TURNOVER)}
+                {formatCurrencyWithEuro(stats.turnoverTotal)}
               </span>
             </span>
           </div>
@@ -589,21 +657,23 @@ function TeamSalesCard({
                 style={{ fontSize: 12 }}
               >
                 <span className="fw-medium">N:</span>
-                <span className="fw-semibold">{displayMetric(sale.NEW)}</span>
+                <span className="fw-semibold">{stats.newCount}</span>
               </span>
               <span
                 className="badge rounded-pill text-bg-success d-inline-flex align-items-center gap-1"
                 style={{ fontSize: 12 }}
               >
                 <span className="fw-medium">E:</span>
-                <span className="fw-semibold">{displayMetric(sale.REP)}</span>
+                <span className="fw-semibold">{stats.repeatCount}</span>
               </span>
               <span
                 className="badge rounded-pill bg-body-tertiary text-body d-inline-flex align-items-center gap-1 border"
                 style={{ fontSize: 12 }}
               >
                 <span className="text-secondary fw-medium">Σύνολο:</span>
-                <span className="fw-semibold">{displayMetric(sale.TOT)}</span>
+                <span className="fw-semibold">
+                  {formatCurrencyGR(stats.turnoverTotal)}€
+                </span>
               </span>
             </div>
             <i
@@ -619,24 +689,38 @@ function TeamSalesCard({
         </div>
       )}
     >
-      <SellerOrderDetails state={orderState} onRetry={onRetryOrders} />
+      <SellerOrderDetails
+        state={orderState}
+        onRetry={onRetryOrders}
+        dateFrom={dateFrom}
+        dateTo={dateTo}
+        page={detailPage}
+        onPageChange={onDetailPageChange}
+      />
     </CollapsibleAppTile>
   );
 }
 
 export default function SalesWCPage() {
   const userInfos = useAppSelector((s) => s.auth.userInfos);
-  const loggedSellerCode = userInfos?.sellerCode;
   const isManagerMode = isManagerWithoutSellerRole(userInfos);
   const [records, setRecords] = React.useState<SellerSalesWC[]>([]);
   const [teamRecords, setTeamRecords] = React.useState<SellerTeamatesWC[]>([]);
-  const [summaryRecord, setSummaryRecord] =
-    React.useState<SellerTeamatesWC | null>(null);
   const [loading, setLoading] = React.useState(true);
   const [refreshing, setRefreshing] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
   const [q, setQ] = React.useState("");
   const [sortMode, setSortMode] = React.useState<SortMode>("date");
+  const [dateFrom, setDateFrom] = React.useState(() =>
+    getCurrentMonthStartDateInputValue(),
+  );
+  const [dateTo, setDateTo] = React.useState(() => getTodayDateInputValue());
+  const [currentPage, setCurrentPage] = React.useState(1);
+  const [sellerDetailPages, setSellerDetailPages] = React.useState<
+    Record<string, number>
+  >({});
+  const [showDateFilterModal, setShowDateFilterModal] = React.useState(false);
+  const maxSelectableDate = getTodayDateInputValue();
   const [openTiles, setOpenTiles] = React.useState<Record<string, boolean>>({});
   const [orderDetailsBySeller, setOrderDetailsBySeller] = React.useState<
     Record<string, SellerOrderDetailsState>
@@ -665,51 +749,23 @@ export default function SalesWCPage() {
 
           setTeamRecords(data.records ?? []);
           setRecords([]);
-          setSummaryRecord(null);
           return;
         }
 
-        const [orderRes, teamatesRes] = await Promise.all([
-          fetch("/api/wc/order-list", {
-            cache: "no-store",
-            headers: {
-              "Cache-Control": "no-cache",
-              Pragma: "no-cache",
-            },
-          }),
-          fetch("/api/wc/teamates", {
-            cache: "no-store",
-            headers: {
-              "Cache-Control": "no-cache",
-              Pragma: "no-cache",
-            },
-          }),
-        ]);
-        const [orderData, teamatesData] = await Promise.all([
-          parseProxyJson<GetWcOrderListSuccess>(
-            orderRes,
-            "Failed to load seller sales",
-          ),
-          parseProxyJson<GetWcTeamatesSuccess>(
-            teamatesRes,
-            "Failed to load seller summary",
-          ),
-        ]);
-        const teamatesRecords = teamatesData.records ?? [];
-        const normalizedLoggedSellerCode =
-          normalizeSellerCode(loggedSellerCode);
+        const orderRes = await fetch("/api/wc/order-list", {
+          cache: "no-store",
+          headers: {
+            "Cache-Control": "no-cache",
+            Pragma: "no-cache",
+          },
+        });
+        const orderData = await parseProxyJson<GetWcOrderListSuccess>(
+          orderRes,
+          "Failed to load seller sales",
+        );
 
         setTeamRecords([]);
         setRecords(orderData.records ?? []);
-        setSummaryRecord(
-          teamatesRecords.find(
-            (record) =>
-              normalizeSellerCode(record.SELLERCODE) ===
-              normalizedLoggedSellerCode,
-          ) ??
-            teamatesRecords[0] ??
-            null,
-        );
       } catch (err) {
         const message =
           err instanceof Error ? err.message : "Failed to load seller sales";
@@ -719,7 +775,7 @@ export default function SalesWCPage() {
         setRefreshing(false);
       }
     },
-    [isManagerMode, loggedSellerCode],
+    [isManagerMode],
   );
 
   const loadOrderDetails = React.useCallback(
@@ -783,9 +839,23 @@ export default function SalesWCPage() {
     void loadSales();
   }, [loadSales]);
 
+  React.useEffect(() => {
+    setCurrentPage(1);
+    setSellerDetailPages({});
+  }, [dateFrom, dateTo]);
+
+  React.useEffect(() => {
+    setCurrentPage(1);
+  }, [q, sortMode]);
+
+  const dateFilteredRecords = React.useMemo(
+    () => filterSalesByDateRange(records, dateFrom, dateTo),
+    [records, dateFrom, dateTo],
+  );
+
   const visibleRecords = React.useMemo(
     () =>
-      records
+      dateFilteredRecords
         .filter((sale) => matchesQuery(sale, q))
         .sort((a, b) => {
           if (sortMode === "newrep") {
@@ -799,7 +869,31 @@ export default function SalesWCPage() {
             parseLocalDateTimeMs(a.RegistrationDate)
           );
         }),
-    [q, records, sortMode],
+    [dateFilteredRecords, q, sortMode],
+  );
+
+  const salesPagination = React.useMemo(
+    () =>
+      getClientPaginationState(
+        visibleRecords.length,
+        currentPage,
+        SALES_WC_PAGE_SIZE,
+      ),
+    [visibleRecords.length, currentPage],
+  );
+
+  React.useEffect(() => {
+    setCurrentPage((page) => Math.min(page, salesPagination.totalPages));
+  }, [salesPagination.totalPages]);
+
+  const paginatedRecords = React.useMemo(
+    () =>
+      paginateItems(
+        visibleRecords,
+        salesPagination.currentPage,
+        SALES_WC_PAGE_SIZE,
+      ),
+    [visibleRecords, salesPagination.currentPage],
   );
 
   const visibleTeamRecords = React.useMemo(
@@ -820,20 +914,21 @@ export default function SalesWCPage() {
   );
 
   const summary = React.useMemo(
-    () => ({
-      newCount: displayMetric(summaryRecord?.NEW),
-      repeatCount: displayMetric(summaryRecord?.REP),
-      turnoverTotal: parseLocaleNumber(summaryRecord?.TURNOVER),
-    }),
-    [summaryRecord],
+    () => summarizeSalesWCRecords(dateFilteredRecords),
+    [dateFilteredRecords],
+  );
+
+  const resultTitle = React.useMemo(
+    () => getSalesWCResultTitle(dateFrom, dateTo),
+    [dateFrom, dateTo],
   );
 
   const visibleTileKeys = React.useMemo(
     () =>
       isManagerMode
         ? visibleTeamRecords.map((sale, index) => getTeamTileKey(sale, index))
-        : visibleRecords.map((sale, index) => getSaleTileKey(sale, index)),
-    [isManagerMode, visibleRecords, visibleTeamRecords],
+        : paginatedRecords.map((sale, index) => getSaleTileKey(sale, index)),
+    [isManagerMode, paginatedRecords, visibleTeamRecords],
   );
   const allTilesExpanded =
     visibleTileKeys.length > 0 &&
@@ -866,6 +961,53 @@ export default function SalesWCPage() {
     loading &&
     (isManagerMode ? teamRecords.length === 0 : records.length === 0);
 
+  const applyCurrentMonthFilter = React.useCallback(() => {
+    setDateFrom(getCurrentMonthStartDateInputValue());
+    setDateTo(getTodayDateInputValue());
+  }, []);
+
+  const applyPreviousMonthFilter = React.useCallback(() => {
+    setDateFrom(getPreviousMonthStartDateInputValue());
+    setDateTo(getPreviousMonthEndDateInputValue());
+  }, []);
+
+  const dateRangeLabel = formatSalesWCDateRangeLabel(dateFrom, dateTo);
+
+  const handleDateFromChange = React.useCallback(
+    (value: string) => {
+      if (!value) return;
+      const nextValue =
+        value > maxSelectableDate ? maxSelectableDate : value;
+      setDateFrom(nextValue);
+      if (nextValue > dateTo) setDateTo(nextValue);
+    },
+    [dateTo, maxSelectableDate],
+  );
+
+  const handleDateToChange = React.useCallback(
+    (value: string) => {
+      if (!value) return;
+      const nextValue = value > maxSelectableDate ? maxSelectableDate : value;
+      setDateTo(nextValue);
+      if (nextValue < dateFrom) setDateFrom(nextValue);
+    },
+    [dateFrom, maxSelectableDate],
+  );
+
+  const getSellerDetailPage = React.useCallback(
+    (sellerCode: string) => sellerDetailPages[getSellerStateKey(sellerCode)] ?? 1,
+    [sellerDetailPages],
+  );
+
+  const setSellerDetailPage = React.useCallback(
+    (sellerCode: string, page: number) => {
+      const sellerKey = getSellerStateKey(sellerCode);
+      if (!sellerKey) return;
+      setSellerDetailPages((prev) => ({ ...prev, [sellerKey]: page }));
+    },
+    [],
+  );
+
   return (
     <>
       <div className="app-card mb-3 p-3">
@@ -875,9 +1017,7 @@ export default function SalesWCPage() {
               className="d-flex flex-column align-items-center flex-md-row flex-md-nowrap align-items-md-center text-md-start gap-md-2 gap-2 text-center"
               style={{ minWidth: 0 }}
             >
-              <div className="h5 fw-bold mb-0 flex-shrink-0">
-                Αποτέλεσμα WC 30 ημερών
-              </div>
+              <div className="h5 fw-bold mb-0 flex-shrink-0">{resultTitle}</div>
               {!isManagerMode ? (
                 <div className="d-flex align-items-center justify-content-center ms-md-auto flex-shrink-0 gap-1">
                   <span
@@ -914,6 +1054,15 @@ export default function SalesWCPage() {
       </div>
 
       <div className="d-flex align-items-center mb-2 flex-wrap gap-2">
+        <button
+          type="button"
+          className="btn btn-sm btn-outline-secondary d-inline-flex align-items-center flex-shrink-0 gap-2"
+          onClick={() => setShowDateFilterModal(true)}
+          aria-label="Φίλτρο ημερομηνίας"
+        >
+          <i className="bi bi-calendar3" aria-hidden />
+          <span className="text-nowrap">{dateRangeLabel}</span>
+        </button>
         <div className="app-card flex-grow-1">
           <SearchBar
             placeholder="Αναζήτηση"
@@ -993,6 +1142,16 @@ export default function SalesWCPage() {
               ? visibleTeamRecords.map((sale, index) => {
                   const tileKey = getTeamTileKey(sale, index);
                   const sellerStateKey = getSellerStateKey(sale.SELLERCODE);
+                  const sellerState = orderDetailsBySeller[sellerStateKey];
+                  const filteredStats = sellerState?.records
+                    ? summarizeSalesWCRecords(
+                        filterSalesByDateRange(
+                          sellerState.records,
+                          dateFrom,
+                          dateTo,
+                        ),
+                      )
+                    : null;
                   return (
                     <TeamSalesCard
                       key={tileKey}
@@ -1002,14 +1161,21 @@ export default function SalesWCPage() {
                         setOpenTiles((prev) => ({ ...prev, [tileKey]: open }));
                         if (open) void loadOrderDetails(sale.SELLERCODE);
                       }}
-                      orderState={orderDetailsBySeller[sellerStateKey]}
+                      orderState={sellerState}
                       onRetryOrders={() =>
                         void loadOrderDetails(sale.SELLERCODE, true)
                       }
+                      dateFrom={dateFrom}
+                      dateTo={dateTo}
+                      detailPage={getSellerDetailPage(sale.SELLERCODE)}
+                      onDetailPageChange={(page) =>
+                        setSellerDetailPage(sale.SELLERCODE, page)
+                      }
+                      filteredStats={filteredStats}
                     />
                   );
                 })
-              : visibleRecords.map((sale, index) => {
+              : paginatedRecords.map((sale, index) => {
                   const tileKey = getSaleTileKey(sale, index);
                   return (
                     <SalesWCCard
@@ -1025,10 +1191,43 @@ export default function SalesWCPage() {
           </div>
         ) : (
           <div className="app-card text-secondary p-3 text-center">
-            Δεν βρέθηκαν πωλήσεις.
+            {records.length > 0
+              ? "Δεν βρέθηκαν πωλήσεις για το επιλεγμένο διάστημα."
+              : "Δεν βρέθηκαν πωλήσεις."}
           </div>
         )}
       </PullToRefresh>
+
+      {!isManagerMode ? (
+        <ListPagination
+          currentPage={salesPagination.currentPage}
+          canGoPrev={salesPagination.canGoPrev}
+          canGoNext={salesPagination.canGoNext}
+          showPagination={salesPagination.showPagination}
+          onPageChange={setCurrentPage}
+          pageInfo={{
+            currentPage: salesPagination.currentPage,
+            totalPages: salesPagination.totalPages,
+            hasKnownTotalPages: true,
+            canGoPrev: salesPagination.canGoPrev,
+            canGoNext: salesPagination.canGoNext,
+            showPagination: salesPagination.showPagination,
+            totalRecords: salesPagination.totalRecords,
+          }}
+        />
+      ) : null}
+
+      <SalesWCDateFilterModal
+        show={showDateFilterModal}
+        onHide={() => setShowDateFilterModal(false)}
+        dateFrom={dateFrom}
+        dateTo={dateTo}
+        maxSelectableDate={maxSelectableDate}
+        onDateFromChange={handleDateFromChange}
+        onDateToChange={handleDateToChange}
+        onApplyCurrentMonth={applyCurrentMonthFilter}
+        onApplyPreviousMonth={applyPreviousMonthFilter}
+      />
     </>
   );
 }

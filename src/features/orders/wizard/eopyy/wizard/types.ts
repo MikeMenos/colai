@@ -42,6 +42,7 @@ export type UploadingInfo = {
 export type ValidateEoppyOrderInput = {
   draftOrder: Order;
   customerIsCompletelyNew?: boolean;
+  lastOrderInfoDateIn?: string;
   hasFiles: boolean;
   hasConsentFormFiles: boolean;
 };

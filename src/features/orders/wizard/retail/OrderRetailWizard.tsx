@@ -3,40 +3,59 @@
 import React from "react";
 import { StepIndicator } from "@/components/ui/StepIndicator";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
-import { fetchOrders, submitDraftAsync } from "@/store/orders/ordersSlice";
-import { isConsentScoreTooLow, isVoiceConsentOrder } from "@/lib/consentUpload";
-import { getAmkaInlineFieldError } from "@/lib/utils/amka";
+import {
+  clearDraftSubmitError,
+  fetchOrders,
+  submitDraftAsync,
+} from "@/store/orders/ordersSlice";
+import { isConsentScoreTooLow } from "@/lib/consentUpload";
+import { getActingSellerDisplayLabel } from "@/lib/sellerAccess";
 import SynenaiseisArea from "@/features/orders/wizard/eopyy/SynenaiseisArea";
+import SubmitOrderConfirmModal from "@/features/orders/wizard/modals/SubmitOrderConfirmModal";
+import { getSubmitConfirmRecipientAddress, getSubmitConfirmRecipientName } from "@/features/orders/wizard/eopyy/wizard/submitConfirmAmka";
 import OrderRetailCustomerArea from "./OrderRetailCustomerArea";
 import OrderDoctorArea from "./OrderDoctorArea";
 import MaterialsArea from "./MaterialsArea";
 import CompletionArea from "./CompletionArea";
 import SellerActingSelector from "@/features/orders/components/SellerActingSelector";
 import { useRouter } from "next/navigation";
+import { getRetailOrderValidationIssues } from "./validateRetailOrder";
 
 const steps = ["Ασθενής", "Ιατρός", "Υλικά", "Συναίνεση", "Touchdown"] as const;
+
+const RETAIL_DOCTOR_STEP_INDEX = 1;
+const RETAIL_TOUCHDOWN_STEP_INDEX = 4;
 
 export default function OrderRetailWizard() {
   const dispatch = useAppDispatch();
   const router = useRouter();
 
   const [step, setStep] = React.useState(0);
+  const [fieldErrors, setFieldErrors] = React.useState<
+    Record<string, string | boolean>
+  >({});
+  const [showSubmitConfirm, setShowSubmitConfirm] = React.useState(false);
   const submitState = useAppSelector((s) => s.orders.draft.submitState);
   const draftOrder = useAppSelector((s) => s.orders.draft.order);
   const files = useAppSelector((s) => s.orders?.draft?.files) ?? [];
   const synaineseisResults = useAppSelector(
     (s) => s.orders.draft.synaineseisResults,
   );
-  const hasAmkaError = Boolean(
-    getAmkaInlineFieldError(draftOrder.customer_amka),
+  const userInfos = useAppSelector((s) => s.auth.userInfos);
+  const actingSellerCode = useAppSelector((s) => s.auth.actingSellerCode);
+  const listAddressesPersons = useAppSelector(
+    (s) => s.orders.draft.list_AddressesPersons,
   );
+  const suggestedDoctorValidationContext = useAppSelector((s) => ({
+    customerIsCompletelyNew: s.orders.draft.customerIsCompletelyNew,
+    lastOrderInfoDateIn: s.orders.draft.lastOrderInfoDateIn,
+  }));
   const hasConsentFormFiles = files.some(
     (file) => file?.documentCategory === "consent_form",
   );
   const consentScoreTooLow = isConsentScoreTooLow(synaineseisResults);
-  const isVoiceConsent = isVoiceConsentOrder(draftOrder);
-  const consentBlocksProgress =
-    consentScoreTooLow && hasConsentFormFiles && !isVoiceConsent;
+  const consentBlocksProgress = consentScoreTooLow && hasConsentFormFiles;
+  const isTempSave = draftOrder.isTempSave == 1;
 
   const effectiveSteps = React.useMemo(() => {
     return [...steps];
@@ -45,6 +64,15 @@ export default function OrderRetailWizard() {
   const maxStep = effectiveSteps.length - 1;
   const currentLabel = effectiveSteps[step];
 
+  const clearError = React.useCallback((field: string) => {
+    setFieldErrors((prev) => {
+      if (!(field in prev)) return prev;
+      const next = { ...prev };
+      delete next[field];
+      return next;
+    });
+  }, []);
+
   function goNext() {
     setStep((s) => Math.min(s + 1, maxStep));
   }
@@ -52,12 +80,12 @@ export default function OrderRetailWizard() {
   function goPrev() {
     setStep((s) => Math.max(s - 1, 0));
   }
-  console.log(draftOrder);
 
-  async function onSave() {
+  async function confirmSave() {
     try {
       const result = await dispatch(submitDraftAsync()).unwrap();
       if (result.result) {
+        setShowSubmitConfirm(false);
         router.replace("/orders");
         await dispatch(fetchOrders({ force: true }));
       } else {
@@ -68,12 +96,64 @@ export default function OrderRetailWizard() {
     }
   }
 
-  const nextDisabled =
-    (step === 0 && hasAmkaError) ||
-    (currentLabel === "Συναίνεση" && consentBlocksProgress);
+  function onSaveClick() {
+    const issues = getRetailOrderValidationIssues(
+      draftOrder,
+      suggestedDoctorValidationContext,
+    );
+    if (issues.length > 0) {
+      const nextErrors = Object.fromEntries(
+        issues.map((issue) => [issue.field, issue.message]),
+      );
+      setFieldErrors(nextErrors);
+      const firstIssue = issues[0];
+      const doctorStepFields = new Set([
+        "otherDoctorSuggested_name",
+        "otherDoctorSuggested_mobile",
+        "doctorSuggested_name",
+        "doctorSuggested_tel",
+      ]);
+      setStep(
+        doctorStepFields.has(firstIssue.field)
+          ? RETAIL_DOCTOR_STEP_INDEX
+          : RETAIL_TOUCHDOWN_STEP_INDEX,
+      );
+      window.setTimeout(() => {
+        document
+          .querySelector<HTMLElement>(`[name="${issues[0].field}"]`)
+          ?.focus();
+      }, 0);
+      return;
+    }
 
-  const saveDisabled =
-    submitState.loading || hasAmkaError || consentBlocksProgress;
+    setFieldErrors({});
+    if (isTempSave) {
+      void confirmSave();
+      return;
+    }
+
+    setShowSubmitConfirm(true);
+  }
+
+  const nextDisabled =
+    currentLabel === "Συναίνεση" && consentBlocksProgress;
+
+  const saveDisabled = submitState.loading || consentBlocksProgress;
+
+  const submitConfirmOrderAsSeller = getActingSellerDisplayLabel(
+    userInfos,
+    actingSellerCode,
+  );
+
+  const submitConfirmRecipientName = React.useMemo(
+    () => getSubmitConfirmRecipientName(draftOrder, listAddressesPersons),
+    [draftOrder, listAddressesPersons],
+  );
+
+  const submitConfirmRecipientAddress = React.useMemo(
+    () => getSubmitConfirmRecipientAddress(draftOrder, listAddressesPersons),
+    [draftOrder, listAddressesPersons],
+  );
 
   return (
     <div className="order-wizard order-wizard--has-nav d-flex flex-column gap-2">
@@ -86,10 +166,14 @@ export default function OrderRetailWizard() {
       <SellerActingSelector />
 
       {currentLabel === "Ασθενής" ? <OrderRetailCustomerArea /> : null}
-      {currentLabel === "Ιατρός" ? <OrderDoctorArea /> : null}
+      {currentLabel === "Ιατρός" ? (
+        <OrderDoctorArea errors={fieldErrors} clearError={clearError} />
+      ) : null}
       {currentLabel === "Υλικά" ? <MaterialsArea /> : null}
       {currentLabel === "Συναίνεση" ? <SynenaiseisArea /> : null}
-      {currentLabel === "Touchdown" ? <CompletionArea /> : null}
+      {currentLabel === "Touchdown" ? (
+        <CompletionArea errors={fieldErrors} clearError={clearError} />
+      ) : null}
 
       <div className="order-wizard-nav">
         <button
@@ -117,13 +201,34 @@ export default function OrderRetailWizard() {
             type="button"
             disabled={saveDisabled}
             className="btn btn-success flex-fill"
-            onClick={onSave}
+            onClick={onSaveClick}
           >
             <i className="bi bi-check2-circle me-2" />
             {submitState.loading ? "Αποθήκευση..." : "Αποθήκευση"}
           </button>
         )}
       </div>
+
+      <SubmitOrderConfirmModal
+        show={showSubmitConfirm}
+        loading={submitState.loading}
+        error={submitState.error}
+        otp={draftOrder.customer_tel_otp}
+        amka={draftOrder.customer_amka}
+        recipientName={submitConfirmRecipientName}
+        recipientAddress={submitConfirmRecipientAddress}
+        barcode={draftOrder.barcode}
+        orderAsSeller={submitConfirmOrderAsSeller}
+        isPaid={draftOrder.isPaid == 1}
+        showPaymentMethodInfo
+        onClose={() => {
+          if (!submitState.loading) {
+            setShowSubmitConfirm(false);
+            dispatch(clearDraftSubmitError());
+          }
+        }}
+        onConfirm={confirmSave}
+      />
     </div>
   );
 }

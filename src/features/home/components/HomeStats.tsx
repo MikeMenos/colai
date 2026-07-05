@@ -89,7 +89,7 @@ function MetricCard({
 
   const body = (
     <div
-      className={`app-card px-3 py-2 h-100${href ? "app-card-pressable" : ""}`}
+      className={`app-card h-100 p-3 ${href ? "app-card-pressable" : ""}`}
       style={href ? { WebkitTapHighlightColor: "transparent" } : undefined}
     >
       <div className="d-flex align-items-start justify-content-between">
@@ -129,21 +129,19 @@ function MetricCard({
     </div>
   );
 
-  return (
-    <div className="col-6">
-      {href ? (
-        <Link
-          href={href}
-          className="text-decoration-none text-reset d-block h-100"
-          aria-label={`${title} — μετάβαση`}
-        >
-          {body}
-        </Link>
-      ) : (
-        body
-      )}
-    </div>
-  );
+  if (href) {
+    return (
+      <Link
+        href={href}
+        className="text-decoration-none text-reset d-block h-100"
+        aria-label={`${title} — μετάβαση`}
+      >
+        {body}
+      </Link>
+    );
+  }
+
+  return body;
 }
 
 function WcMonthCard() {
@@ -349,24 +347,26 @@ export default function HomeStats() {
       {showInitialDashLoader ? <AppLoader label="Φόρτωση αρχικής…" /> : null}
 
       <div className={showInitialDashLoader ? "d-none" : undefined}>
-        <div className="row g-3 mb-3">
-          <MetricCard
-            title="Αναφορές πωλητών"
-            value="PowerBI"
-            delta={null}
-            icon="bi-bar-chart-line"
-            href={SELLER_REPORTS_HREF}
-          />
-          <MetricCard
-            title="Συνταγές επόμενων 10 ημερών"
-            value={formatIntGR(dash.next10DaysSyntages)}
-            delta={null}
-            icon="bi-paperclip"
-            href="/diadikasia-wc?next10=1"
-          />
-        </div>
-
         <div className="d-grid gap-3">
+          <div
+            className="d-grid gap-3"
+            style={{ gridTemplateColumns: "repeat(2, minmax(0, 1fr))" }}
+          >
+            <MetricCard
+              title="Αναφορές πωλήσεων"
+              value="PowerBI"
+              delta={null}
+              icon="bi-bar-chart-line"
+              href={SELLER_REPORTS_HREF}
+            />
+            <MetricCard
+              title="Συνταγές επόμενων 10 ημερών"
+              value={formatIntGR(dash.next10DaysSyntages)}
+              delta={null}
+              icon="bi-paperclip"
+              href="/diadikasia-wc?next10=1"
+            />
+          </div>
           <WcMonthCard />
           <MonthComparisonCard
             current={dash.totalOrders_month}

@@ -3,9 +3,13 @@
 import React from "react";
 import { StepIndicator } from "@/components/ui/StepIndicator";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
-import { fetchOrders, submitDraftAsync, clearDraftSubmitError } from "@/store/orders/ordersSlice";
+import {
+  fetchOrders,
+  submitDraftAsync,
+  clearDraftSubmitError,
+} from "@/store/orders/ordersSlice";
 import { shouldShowSynainesiStep } from "@/lib/customerUtils";
-import { isConsentScoreTooLow, isVoiceConsentOrder } from "@/lib/consentUpload";
+import { isConsentScoreTooLow } from "@/lib/consentUpload";
 import {
   getAiRunErrorMessage,
   type AiClient,
@@ -18,6 +22,8 @@ import { useRouter } from "next/navigation";
 import { buildStepDefs } from "./wizard/buildStepDefs";
 import {
   getSubmitConfirmAmka,
+  getSubmitConfirmRecipientAddress,
+  getSubmitConfirmRecipientName,
   getSubmitConfirmSuggestedDoctorName,
 } from "./wizard/submitConfirmAmka";
 import type { StepDef, StepKey, WizardIssue } from "./wizard/types";
@@ -28,10 +34,18 @@ import {
 } from "./wizard/amkaValidation";
 import { getDraftBarcodeFieldErrors } from "./wizard/barcodeValidation";
 import {
+  getDraftDateOfSyntagiFieldErrors,
+  hasDraftDateOfSyntagiErrors,
+} from "./wizard/dateOfSyntagiValidation";
+import {
   hasCustomerFieldErrors,
   isCustomerTouchdownOnlyField,
 } from "./wizard/customerFieldValidation";
-import { focusWizardField } from "./wizard/wizardUtils";
+import {
+  focusWizardField,
+  isAllowedSymmPercentage,
+} from "./wizard/wizardUtils";
+import { shouldShowYpervasiPlafonStep } from "@/lib/utils/plafon";
 import { runEoppyAi } from "./wizard/runEoppyAi";
 import { EOPPY_AI_TIMEOUT_MS } from "./wizard/runEoppyAiWithFallback";
 import {
@@ -82,6 +96,9 @@ export default function OrderEoppyWizard() {
   const customerIsCompletelyNew = useAppSelector(
     (s) => s.orders.draft.customerIsCompletelyNew,
   );
+  const lastOrderInfoDateIn = useAppSelector(
+    (s) => s.orders.draft.lastOrderInfoDateIn,
+  );
   const showSynainesiPanel = shouldShowSynainesiStep({
     customerIsCompletelyNew,
   });
@@ -89,18 +106,9 @@ export default function OrderEoppyWizard() {
     (s) => s.orders.draft.synaineseisResults,
   );
   const consentScoreTooLow = isConsentScoreTooLow(synaineseisResults);
-  const isVoiceConsent = isVoiceConsentOrder(draftOrder);
-  const consentBlocksProgress =
-    consentScoreTooLow && hasConsentFormFiles && !isVoiceConsent;
+  const consentBlocksProgress = consentScoreTooLow && hasConsentFormFiles;
   const aiMaterials = useAppSelector((s) => s.orders.draft.ai_ylika);
-  const maxPosoKostousGiaSymmetoxi = useAppSelector(
-    (s) => s.orders?.draft?.order?.maxPosoKostousGiaSymmetoxi,
-  );
-  const kostos = useAppSelector((s) => s.orders?.draft?.order?.kostos);
-  const ypervasiPlafon = (kostos ?? 0) - (maxPosoKostousGiaSymmetoxi ?? 0);
-  const eidosEgkrisis = draftOrder.eidos_Egkrisis;
-  const shouldShowWarningPlafon =
-    ypervasiPlafon > 6 && Number(eidosEgkrisis) === 1;
+  const shouldShowWarningPlafon = shouldShowYpervasiPlafonStep(draftOrder);
 
   const effectiveStepsRef = React.useRef<StepDef[]>([]);
   const stepOrderRef = React.useRef<Map<StepKey, StepOrderEntry>>(new Map());
@@ -130,10 +138,16 @@ export default function OrderEoppyWizard() {
     [draftOrder],
   );
 
+  const dateOfSyntagiErrorsByField = React.useMemo(
+    () => getDraftDateOfSyntagiFieldErrors(draftOrder),
+    [draftOrder],
+  );
+
   const fieldErrorsByField = React.useMemo(() => {
     const m: Record<string, string | boolean> = {
       ...amkaErrorsByField,
       ...barcodeErrorsByField,
+      ...dateOfSyntagiErrorsByField,
     };
     for (const [field, message] of Object.entries(errorsByField)) {
       if (!isCustomerTouchdownOnlyField(field)) {
@@ -141,10 +155,20 @@ export default function OrderEoppyWizard() {
       }
     }
     return m;
-  }, [amkaErrorsByField, barcodeErrorsByField, errorsByField]);
+  }, [
+    amkaErrorsByField,
+    barcodeErrorsByField,
+    dateOfSyntagiErrorsByField,
+    errorsByField,
+  ]);
 
   const hasAmkaErrors = React.useMemo(
     () => hasDraftAmkaErrors(draftOrder),
+    [draftOrder],
+  );
+
+  const hasDateOfSyntagiErrors = React.useMemo(
+    () => hasDraftDateOfSyntagiErrors(draftOrder),
     [draftOrder],
   );
 
@@ -158,12 +182,18 @@ export default function OrderEoppyWizard() {
       validateEoppyOrderDraft({
         draftOrder,
         customerIsCompletelyNew,
+        lastOrderInfoDateIn,
         hasFiles,
         hasConsentFormFiles,
       }),
-    [customerIsCompletelyNew, draftOrder, hasConsentFormFiles, hasFiles],
+    [
+      customerIsCompletelyNew,
+      draftOrder,
+      hasConsentFormFiles,
+      hasFiles,
+      lastOrderInfoDateIn,
+    ],
   );
-
   const runAi = React.useCallback(
     async (aiclient: AiClient) => {
       setAiStatus("running");
@@ -293,6 +323,16 @@ export default function OrderEoppyWizard() {
     [draftOrder, listAddressesPersons],
   );
 
+  const submitConfirmRecipientName = React.useMemo(
+    () => getSubmitConfirmRecipientName(draftOrder, listAddressesPersons),
+    [draftOrder, listAddressesPersons],
+  );
+
+  const submitConfirmRecipientAddress = React.useMemo(
+    () => getSubmitConfirmRecipientAddress(draftOrder, listAddressesPersons),
+    [draftOrder, listAddressesPersons],
+  );
+
   const submitConfirmSuggestedDoctorName = React.useMemo(
     () => getSubmitConfirmSuggestedDoctorName(draftOrder),
     [draftOrder],
@@ -305,7 +345,6 @@ export default function OrderEoppyWizard() {
 
   const showWizardNav = step > 0;
   const activeStepKey = effectiveSteps[step]?.key;
-  console.log(draftOrder);
   return (
     <div
       className={`order-wizard d-flex flex-column gap-2${showWizardNav ? "order-wizard--has-nav" : ""}`}
@@ -353,6 +392,7 @@ export default function OrderEoppyWizard() {
                 (!isTempSave &&
                   (hasValidationIssues ||
                     hasAmkaErrors ||
+                    hasDateOfSyntagiErrors ||
                     hasEmptyCustomerFields ||
                     consentBlocksProgress))
               }
@@ -372,12 +412,19 @@ export default function OrderEoppyWizard() {
         error={submitState.error}
         otp={draftOrder.customer_tel_otp}
         amka={submitConfirmAmka}
+        recipientName={submitConfirmRecipientName}
+        recipientAddress={submitConfirmRecipientAddress}
         barcode={draftOrder.barcode}
+        dateOfSyntagi={draftOrder.dateOfSyntagi}
         customerIsCompletelyNew={customerIsCompletelyNew === true}
         suggestedDoctorName={submitConfirmSuggestedDoctorName}
         orderAsSeller={submitConfirmOrderAsSeller}
-        isVoiceConsent={isVoiceConsentOrder(draftOrder)}
         isPaid={draftOrder.isPaid == 1}
+        showPaymentMethodInfo={
+          Number(draftOrder.posoSymmetoxis ?? 0) > 0 &&
+          isAllowedSymmPercentage(draftOrder.symmPercentage) &&
+          draftOrder.symmPercentage !== 0
+        }
         onClose={() => {
           if (!submitState.loading) {
             setShowSubmitConfirm(false);

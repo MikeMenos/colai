@@ -11,8 +11,21 @@ import WCDiadikasiaGroupedList from "@/features/orders/components/diadikasia/WCD
 import { fetchWCCalendar } from "@/store/wcDiadikasia/wcDiadikasiaSlice";
 import { Alert, Button, FormSelect, Modal } from "react-bootstrap";
 import { parseOrderDate } from "@/features/orders/diadikasia/groupWcCalendarByLastOrderDate";
+import {
+  describeWcStatusFilter,
+  isDefaultWcStatusFilter,
+  isWcStatusFilterKeyActive,
+  parseWcStatusFilterKeys,
+  rowMatchesStatusFilterKeys,
+  serializeWcStatusFilterKeys,
+  toggleWcStatusFilterKey,
+  WC_STATUS_FILTER_DEFAULT,
+  type WcStatusFilterKey,
+  WC_STATUS_TITLE_EPISOULETHIKE,
+  WC_STATUS_TITLE_APEBIWSE,
+} from "@/features/orders/diadikasia/wcCalendarStatus";
 
-const SEARCH_DEBOUNCE_MS = 400;
+const SEARCH_DEBOUNCE_MS = 500;
 
 export default function DiadikasiaWC() {
   const dispatch = useAppDispatch();
@@ -26,7 +39,8 @@ export default function DiadikasiaWC() {
   const error = useAppSelector((s) => s.wcDiadiaksia.error);
 
   const [showFilters, setShowFilters] = React.useState(false);
-  const [setAllTilesOpenTo, setSetAllTilesOpenTo] = React.useState(false);
+  const [expandAllNonce, setExpandAllNonce] = React.useState(0);
+  const [expandAllOpen, setExpandAllOpen] = React.useState(false);
   const [allTilesExpanded, setAllTilesExpanded] = React.useState(false);
 
   const urlSearch = (
@@ -35,16 +49,12 @@ export default function DiadikasiaWC() {
     ""
   ).trim();
   const onlyNext10Days = searchParams.get("next10") === "1";
+  const urlStatusFilter = searchParams.get("statusFilter");
+  const activeStatusFilters = urlStatusFilter
+    ? parseWcStatusFilterKeys(urlStatusFilter)
+    : WC_STATUS_FILTER_DEFAULT;
   const monthOrder = searchParams.get("monthOrder") === "asc" ? "asc" : "desc";
   const [q, setQ] = React.useState(urlSearch);
-  const debounceTimerRef = React.useRef<number | null>(null);
-
-  const clearDebounceTimer = React.useCallback(() => {
-    if (debounceTimerRef.current != null) {
-      window.clearTimeout(debounceTimerRef.current);
-      debounceTimerRef.current = null;
-    }
-  }, []);
 
   const applySearchToUrl = React.useCallback(
     (next: string) => {
@@ -71,6 +81,51 @@ export default function DiadikasiaWC() {
     [pathname, router, searchParams],
   );
 
+  const applyStatusFiltersToUrl = React.useCallback(
+    (keys: WcStatusFilterKey[]) => {
+      const params = new URLSearchParams(searchParams.toString());
+      params.delete("statusTitle");
+      if (isDefaultWcStatusFilter(keys)) params.delete("statusFilter");
+      else params.set("statusFilter", serializeWcStatusFilterKeys(keys));
+      const qs = params.toString();
+      router.push(qs ? `${pathname}?${qs}` : pathname, { scroll: false });
+    },
+    [pathname, router, searchParams],
+  );
+
+  const toggleStatusFilter = React.useCallback(
+    (key: WcStatusFilterKey) => {
+      applyStatusFiltersToUrl(
+        toggleWcStatusFilterKey(activeStatusFilters, key),
+      );
+    },
+    [activeStatusFilters, applyStatusFiltersToUrl],
+  );
+
+  const toggleExpandAllTiles = React.useCallback(() => {
+    const next = !allTilesExpanded;
+    setExpandAllOpen(next);
+    setExpandAllNonce((nonce) => nonce + 1);
+  }, [allTilesExpanded]);
+
+  const wcStatusFilterButtonClass = (
+    key: WcStatusFilterKey,
+    active: boolean,
+  ): string => {
+    const base =
+      "btn btn-sm rounded-3 fw-semibold px-3 d-inline-flex align-items-center gap-1";
+    if (!active) return `${base} btn-outline-secondary opacity-50`;
+    if (key === "e") return `${base} btn-success border-success`;
+    if (key === "a") return `${base} btn-danger border-danger`;
+    return `${base} btn-primary border-primary`;
+  };
+
+  const wcStatusFilterButtonTitle = (key: WcStatusFilterKey): string => {
+    if (key === "all") return "Όλες οι εγγραφές";
+    if (key === "e") return WC_STATUS_TITLE_EPISOULETHIKE;
+    return WC_STATUS_TITLE_APEBIWSE;
+  };
+
   const toggleMonthSort = React.useCallback(() => {
     const params = new URLSearchParams(searchParams.toString());
     if (monthOrder === "desc") params.set("monthOrder", "asc");
@@ -96,35 +151,9 @@ export default function DiadikasiaWC() {
     void dispatch(fetchWCCalendar(urlSearch ? { q: urlSearch } : undefined));
   }, [dispatch, urlSearch]);
 
-  /** Sync typed input to URL after idle — no Enter required (better on mobile). */
-  React.useEffect(() => {
-    const trimmedQ = q.trim();
-    const trimmedUrl = urlSearch.trim();
-    if (trimmedQ === trimmedUrl) return;
-
-    debounceTimerRef.current = window.setTimeout(() => {
-      debounceTimerRef.current = null;
-      applySearchToUrl(q);
-    }, SEARCH_DEBOUNCE_MS);
-
-    return () => {
-      clearDebounceTimer();
-    };
-  }, [q, urlSearch, applySearchToUrl, clearDebounceTimer]);
-
   const applyFilters = () => {
     setShowFilters(false);
   };
-
-  const onSubmitSearch = React.useCallback(() => {
-    clearDebounceTimer();
-    applySearchToUrl(q);
-  }, [applySearchToUrl, clearDebounceTimer, q]);
-
-  const onClearSearch = React.useCallback(() => {
-    clearDebounceTimer();
-    applySearchToUrl("");
-  }, [applySearchToUrl, clearDebounceTimer]);
 
   const onRefresh = React.useCallback(async () => {
     await dispatch(
@@ -135,7 +164,11 @@ export default function DiadikasiaWC() {
   }, [dispatch, urlSearch]);
 
   const visibleItems = React.useMemo(() => {
-    if (!onlyNext10Days) return wcDiadikasia.calendar;
+    let items = wcDiadikasia.calendar.filter((item) =>
+      rowMatchesStatusFilterKeys(item, activeStatusFilters),
+    );
+
+    if (!onlyNext10Days) return items;
 
     const today = new Date();
     const todayStart = new Date(
@@ -149,15 +182,45 @@ export default function DiadikasiaWC() {
       todayStart.getDate() + 10,
     );
 
-    return wcDiadikasia.calendar.filter((item) => {
+    return items.filter((item) => {
       const d = parseOrderDate(item.expectedNextOrderDate);
       if (!d) return false;
       const localDay = new Date(d.getFullYear(), d.getMonth(), d.getDate());
       return localDay >= todayStart && localDay <= maxDate;
     });
-  }, [onlyNext10Days, wcDiadikasia.calendar]);
+  }, [activeStatusFilters, onlyNext10Days, wcDiadikasia.calendar]);
 
   const showInitialLoader = listLoading && wcDiadikasia.calendar.length === 0;
+  const showFilterLoader = listLoading && wcDiadikasia.calendar.length > 0;
+  const loaderLabel =
+    urlSearch.length > 0 ? "Αναζήτηση…" : "Φόρτωση WC διαδικασίας…";
+
+  const hasActiveStatusFilter = !isDefaultWcStatusFilter(activeStatusFilters);
+  const statusFilterDescription = describeWcStatusFilter(activeStatusFilters);
+  const allFilterActive = isWcStatusFilterKeyActive(activeStatusFilters, "all");
+  const eFilterActive = isWcStatusFilterKeyActive(activeStatusFilters, "e");
+  const aFilterActive = isWcStatusFilterKeyActive(activeStatusFilters, "a");
+
+  const renderMonthSortButton = () => (
+    <button
+      type="button"
+      className="btn btn-sm btn-outline-secondary d-inline-flex align-items-center flex-shrink-0 gap-1"
+      onClick={toggleMonthSort}
+      title="Πατήστε για εναλλαγή σειράς μηνών"
+      aria-pressed={monthOrder === "asc"}
+      aria-label={
+        monthOrder === "desc"
+          ? "Ταξινόμηση μήνα φθίνουσα. Εναλλαγή σε αύξουσα."
+          : "Ταξινόμηση μήνα αύξουσα. Εναλλαγή σε φθίνουσα."
+      }
+    >
+      <i
+        className={`bi ${monthOrder === "desc" ? "bi-sort-down" : "bi-sort-up"}`}
+        aria-hidden
+      />
+      <span className="text-nowrap">Μήνας</span>
+    </button>
+  );
 
   return (
     <>
@@ -167,59 +230,86 @@ export default function DiadikasiaWC() {
             placeholder="Αναζήτηση"
             value={q}
             onChange={setQ}
-            onSubmit={onSubmitSearch}
-            onClear={onClearSearch}
+            debounceMs={SEARCH_DEBOUNCE_MS}
+            debouncedCompareTo={urlSearch}
+            onDebouncedChange={applySearchToUrl}
           />
         </div>
-        <button
-          type="button"
-          className="btn btn-sm btn-outline-secondary flex-shrink-0"
-          onClick={() => setSetAllTilesOpenTo((prev) => !prev)}
+        <div className="d-flex align-items-center gap-2 flex-shrink-0">
+          <button
+            type="button"
+            className="btn btn-sm btn-outline-secondary flex-shrink-0"
+            onClick={toggleExpandAllTiles}
+          >
+            <i
+              className={`bi ${allTilesExpanded ? "bi-arrows-collapse" : "bi-arrows-expand"}`}
+              aria-hidden
+            />
+            <span className="visually-hidden">
+              {allTilesExpanded ? "Σύμπτυξη όλων" : "Ανάπτυξη όλων"}
+            </span>
+          </button>
+          <div className="d-md-none">{renderMonthSortButton()}</div>
+        </div>
+        <div
+          className="d-flex align-items-center flex-shrink-0 gap-2"
+          role="group"
+          aria-label={`Φίλτρο κατάστασης: ${statusFilterDescription}`}
         >
-          <i
-            className={`bi ${allTilesExpanded ? "bi-arrows-collapse" : "bi-arrows-expand"}`}
-            aria-hidden
-          />
-          <span className="visually-hidden">
-            {allTilesExpanded ? "Σύμπτυξη όλων" : "Ανάπτυξη όλων"}
-          </span>
-        </button>
+          <button
+            type="button"
+            className={wcStatusFilterButtonClass("all", allFilterActive)}
+            style={{ minWidth: 56 }}
+            aria-pressed={allFilterActive}
+            title={wcStatusFilterButtonTitle("all")}
+            onClick={() => toggleStatusFilter("all")}
+          >
+            {allFilterActive ? (
+              <i className="bi bi-check2" aria-hidden />
+            ) : null}
+            Όλα
+          </button>
+          <button
+            type="button"
+            className={wcStatusFilterButtonClass("e", eFilterActive)}
+            style={{ minWidth: 48 }}
+            aria-pressed={eFilterActive}
+            title={wcStatusFilterButtonTitle("e")}
+            onClick={() => toggleStatusFilter("e")}
+          >
+            {eFilterActive ? <i className="bi bi-check2" aria-hidden /> : null}E
+          </button>
+          <button
+            type="button"
+            className={wcStatusFilterButtonClass("a", aFilterActive)}
+            style={{ minWidth: 48 }}
+            aria-pressed={aFilterActive}
+            title={wcStatusFilterButtonTitle("a")}
+            onClick={() => toggleStatusFilter("a")}
+          >
+            {aFilterActive ? <i className="bi bi-check2" aria-hidden /> : null}A
+          </button>
+        </div>
         <button
           type="button"
           className={`btn btn-sm flex-shrink-0 ${onlyNext10Days ? "btn-primary" : "btn-outline-primary"}`}
           onClick={() => applyNext10FilterToUrl(!onlyNext10Days)}
         >
-          {onlyNext10Days ? "Προβολή όλων" : "Επόμενες 10 ημέρες"}
+          {onlyNext10Days ? "Προβολή όλων" : "10 ημέρες μετά"}
         </button>
-        <button
-          type="button"
-          className="btn btn-sm btn-outline-secondary d-inline-flex align-items-center flex-shrink-0 gap-1"
-          onClick={toggleMonthSort}
-          title="Πατήστε για εναλλαγή σειράς μηνών"
-          aria-pressed={monthOrder === "asc"}
-          aria-label={
-            monthOrder === "desc"
-              ? "Ταξινόμηση μήνα φθίνουσα. Εναλλαγή σε αύξουσα."
-              : "Ταξινόμηση μήνα αύξουσα. Εναλλαγή σε φθίνουσα."
-          }
-        >
-          <i
-            className={`bi ${monthOrder === "desc" ? "bi-sort-down" : "bi-sort-up"}`}
-            aria-hidden
-          />
-          <span className="text-nowrap">Μήνας</span>
-        </button>
+        <div className="d-none d-md-inline-flex">{renderMonthSortButton()}</div>
       </div>
 
       <PullToRefresh onRefresh={onRefresh} isRefreshing={refreshing}>
         {error ? (
           <Alert variant="danger">{error}</Alert>
-        ) : showInitialLoader ? (
-          <AppLoader label="Φόρτωση WC διαδικασίας…" />
+        ) : showInitialLoader || showFilterLoader ? (
+          <AppLoader label={loaderLabel} />
         ) : visibleItems.length ? (
           <WCDiadikasiaGroupedList
             items={visibleItems}
-            setAllOpenTo={setAllTilesOpenTo}
+            expandAllNonce={expandAllNonce}
+            expandAllOpen={expandAllOpen}
             onAllExpandedChange={setAllTilesExpanded}
             groupOrder={wcGroupOrder}
           />
@@ -227,7 +317,9 @@ export default function DiadikasiaWC() {
           <div className="app-card text-secondary p-3 text-center">
             {onlyNext10Days
               ? "Δεν βρέθηκαν WC διαδικασίες για τις επόμενες 10 ημέρες."
-              : "Δεν βρέθηκαν WC διαδικασίες"}
+              : hasActiveStatusFilter
+                ? "Δεν βρέθηκαν WC διαδικασίες για το επιλεγμένο φίλτρο."
+                : "Δεν βρέθηκαν WC διαδικασίες"}
           </div>
         )}
       </PullToRefresh>

@@ -31,9 +31,11 @@ function useIsDesktop() {
 export default function OrderCard({
   order,
   onDelete,
+  showSellerName = false,
 }: {
   order: Order;
   onDelete?: (id: number) => void;
+  showSellerName?: boolean;
 }) {
   const router = useRouter();
   const dispatch = useAppDispatch();
@@ -210,6 +212,7 @@ export default function OrderCard({
     order.has_suggested_doctor == 2
       ? order.doctorSuggested_amka
       : order.doctor_amka;
+  const sellerName = order.sellerName?.trim();
 
   const chipStyle: React.CSSProperties = {
     display: "inline-flex",
@@ -467,6 +470,15 @@ export default function OrderCard({
                   <div className="fw-medium">{doctorName}</div>
                   <div className="text-secondary small">AMKA: {doctorAmka}</div>
                 </div>
+                {showSellerName && sellerName ? (
+                  <div className="col-12">
+                    <div className="d-flex align-items-center gap-2 text-secondary small">
+                      <i className="bi bi-person-badge" aria-hidden />
+                      <span>Πωλητής</span>
+                    </div>
+                    <div className="fw-medium">{sellerName}</div>
+                  </div>
+                ) : null}
               </div>
 
               <div

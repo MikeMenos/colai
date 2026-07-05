@@ -29,6 +29,7 @@ export type wcCalendar = APLAT_T_WC_DIADIKASIA_CALENDAR & {
   team: string;
   area: string;
   statuS_EA: string;
+  statuS_CUST: string;
 };
 
 export function wcCalendarTaskCode(r: wcCalendar): string {

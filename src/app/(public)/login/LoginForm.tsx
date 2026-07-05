@@ -18,6 +18,7 @@ export default function LoginPage({ appVersion }: { appVersion: string }) {
   const next = params.get("next") || "/";
   const [username, setUsername] = React.useState("");
   const [password, setPassword] = React.useState("");
+  const [showPassword, setShowPassword] = React.useState(false);
   const [loading, setLoading] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
 
@@ -103,13 +104,29 @@ export default function LoginPage({ appVersion }: { appVersion: string }) {
 
             <div className="mb-3">
               <label className="form-label fw-semibold">Password</label>
-              <input
-                className="form-control"
-                type="password"
-                autoComplete="current-password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-              />
+              <div className="input-group">
+                <input
+                  className="form-control"
+                  type={showPassword ? "text" : "password"}
+                  autoComplete="current-password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                />
+                <button
+                  type="button"
+                  className="btn btn-outline-secondary"
+                  onClick={() => setShowPassword((prev) => !prev)}
+                  aria-label={
+                    showPassword ? "Απόκρυψη κωδικού" : "Εμφάνιση κωδικού"
+                  }
+                  aria-pressed={showPassword}
+                >
+                  <i
+                    className={`bi ${showPassword ? "bi-eye-slash" : "bi-eye"}`}
+                    aria-hidden
+                  />
+                </button>
+              </div>
             </div>
 
             <button

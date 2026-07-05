@@ -1,4 +1,4 @@
-import type { ConsentUploadDataObject } from "@/types/api/common";
+import type { ConsentUploadDataObject, Maybe } from "@/types/api/common";
 
 export type SynaineseisResults = ConsentUploadDataObject;
 
@@ -11,12 +11,6 @@ export function getConsentFormScore(
   if (Number.isNaN(formScore)) return null;
 
   return formScore;
-}
-
-export function isVoiceConsentOrder(
-  order: { isVoiceConsent?: number | null } | null | undefined,
-): boolean {
-  return order?.isVoiceConsent == 1;
 }
 
 export function isConsentScoreTooLow(
@@ -45,8 +39,6 @@ export function isConsentScoreHigh(
 
   return formScore >= 80;
 }
-
-import type { Maybe } from "@/types/api/common";
 
 export function getConsentFileCategory(file: {
   documentCategory?: Maybe<string>;

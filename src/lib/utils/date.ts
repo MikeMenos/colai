@@ -168,6 +168,23 @@ export function formatCompactUIDateTime(
     return `${dd}/${mm} ${time}`;
 }
 
+/** True when `value` is strictly more than `months` calendar months before now. */
+export function isDateOlderThanMonths(
+  value: Maybe<string>,
+  months: number,
+): boolean {
+  const date = parseLocalDateTime(value) ?? parseOrderDate(value);
+  if (!date || months <= 0) return false;
+
+  const cutoff = new Date();
+  cutoff.setHours(0, 0, 0, 0);
+  cutoff.setMonth(cutoff.getMonth() - months);
+
+  const compareDate = new Date(date);
+  compareDate.setHours(0, 0, 0, 0);
+  return compareDate.getTime() < cutoff.getTime();
+}
+
 export function formatStringToISODDateTime(
     value: string,
 ): string | null {

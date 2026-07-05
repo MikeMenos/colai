@@ -169,6 +169,7 @@ const RETAIL_EMPTY_ORDER_TEMPLATE: Record<string, unknown> = {
   ...EOPYY_EMPTY_ORDER_TEMPLATE,
   type: "retail",
   appliedPriceList: "retail",
+  isPaid: null,
 };
 
 function isUnsetOrderValue(value: unknown): boolean {

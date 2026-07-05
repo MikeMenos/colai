@@ -28,6 +28,7 @@ import type {
   IPatientFormData,
   IRecipientFormData,
 } from "@/lib/interface";
+import { calcPosoSymmetoxisForOrder } from "@/lib/utils/plafon";
 import { AppDispatch, RootState } from "@/store/store";
 import { formatStringToISODDateTime, formatUIDate } from "@/lib/utils/date";
 import { parseGreekDecimal } from "@/lib/utils/number";
@@ -62,6 +63,8 @@ export interface DraftState {
   ai_ylika: AIMaterials[];
   synaineseisResults: SynaineseisResults | null;
   lastOrderInfoCustomerErpGID?: string;
+  /** `dateIn` from run-AI `last_order_info`, used for doctor-step eligibility rules. */
+  lastOrderInfoDateIn?: string;
   customerProsEbs?: boolean;
   customerSelectedFromList?: boolean;
   customerIsCompletelyNew?: boolean;
@@ -127,22 +130,29 @@ export interface OrdersState {
   ordersQuery: string;
   ordersPage: number;
   ordersPageSize: number;
+  ordersSellerCode: string;
   ordersPaging: PagingResults | null;
   ordersFetchedAt: number;
 }
 
 export const fetchOrders = createAsyncThunk<
   { orders: Order[]; paging: PagingResults | null },
-  { q?: string; page?: number; pagesize?: number; force?: boolean } | void,
+  {
+    q?: string;
+    page?: number;
+    pagesize?: number;
+    sellerCode?: string;
+    force?: boolean;
+  } | void,
   { state: RootState }
 >(
   "orders/fetchOrders",
   async (arg) => {
     const q = typeof arg === "object" && arg?.q ? arg.q.trim() : "";
+    const sellerCode =
+      typeof arg === "object" && arg?.sellerCode ? arg.sellerCode.trim() : "";
     const page =
-      typeof arg === "object" && arg?.page
-        ? arg.page
-        : DEFAULT_ORDER_LIST_PAGE;
+      typeof arg === "object" && arg?.page ? arg.page : DEFAULT_ORDER_LIST_PAGE;
     const pagesize =
       typeof arg === "object" && arg?.pagesize
         ? arg.pagesize
@@ -152,6 +162,7 @@ export const fetchOrders = createAsyncThunk<
       search: q,
       page,
       pagesize,
+      sellerCode,
       _ts: Date.now(),
     });
 
@@ -177,6 +188,8 @@ export const fetchOrders = createAsyncThunk<
     condition: (arg, { getState }) => {
       const state = getState();
       const q = typeof arg === "object" && arg?.q ? arg.q.trim() : "";
+      const sellerCode =
+        typeof arg === "object" && arg?.sellerCode ? arg.sellerCode.trim() : "";
       const page =
         typeof arg === "object" && arg?.page
           ? arg.page
@@ -197,7 +210,8 @@ export const fetchOrders = createAsyncThunk<
         state.orders.orders.length > 0 &&
         state.orders.ordersQuery === q &&
         state.orders.ordersPage === page &&
-        state.orders.ordersPageSize === pagesize
+        state.orders.ordersPageSize === pagesize &&
+        state.orders.ordersSellerCode === sellerCode
       ) {
         return false;
       }
@@ -388,6 +402,7 @@ const initialStateBase: OrdersState = {
   ordersQuery: "",
   ordersPage: DEFAULT_ORDER_LIST_PAGE,
   ordersPageSize: DEFAULT_ORDER_LIST_PAGE_SIZE,
+  ordersSellerCode: "",
   ordersPaging: null,
   ordersFetchedAt: 0,
 };
@@ -430,6 +445,9 @@ function loadStateFromLocalStorage(): OrdersState | null {
         lastOrderInfoCustomerErpGID:
           parsed?.lastOrderInfoCustomerErpGID ??
           initialStateBase.draft.lastOrderInfoCustomerErpGID,
+        lastOrderInfoDateIn:
+          parsed?.lastOrderInfoDateIn ??
+          initialStateBase.draft.lastOrderInfoDateIn,
         customerProsEbs:
           parsed?.customerProsEbs ?? initialStateBase.draft.customerProsEbs,
         customerSelectedFromList:
@@ -465,6 +483,7 @@ function persistStateToLocalStorage(state: OrdersState) {
     list_TroposApostolis: state.draft.list_TroposApostolis,
     ai_ylika: state.draft.ai_ylika,
     lastOrderInfoCustomerErpGID: state.draft.lastOrderInfoCustomerErpGID,
+    lastOrderInfoDateIn: state.draft.lastOrderInfoDateIn,
     customerProsEbs: state.draft.customerProsEbs,
     customerSelectedFromList: state.draft.customerSelectedFromList,
     customerIsCompletelyNew: state.draft.customerIsCompletelyNew,
@@ -500,6 +519,7 @@ const ordersSlice = createSlice({
       state.ordersQuery = "";
       state.ordersPage = DEFAULT_ORDER_LIST_PAGE;
       state.ordersPageSize = DEFAULT_ORDER_LIST_PAGE_SIZE;
+      state.ordersSellerCode = "";
       state.ordersPaging = null;
       state.ordersFetchedAt = 0;
       state.selected = null;
@@ -522,6 +542,7 @@ const ordersSlice = createSlice({
       state.draft.ai_ylika = [] as AIMaterials[];
       state.draft.synaineseisResults = null;
       state.draft.lastOrderInfoCustomerErpGID = undefined;
+      state.draft.lastOrderInfoDateIn = undefined;
       state.draft.customerProsEbs = undefined;
       state.draft.customerSelectedFromList = undefined;
       state.draft.customerIsCompletelyNew = true;
@@ -568,31 +589,39 @@ const ordersSlice = createSlice({
           "eidos_Egkrisis",
           "plafonGiftAmount",
           "maxPosoKostousGiaSymmetoxi",
+          "posoPlafon",
+          "katigoriaParoxis",
         ].includes(action.payload.key)
       ) {
-        const eidosEgkrisis = state.draft.order.eidos_Egkrisis;
-        const type = state.draft.order.type;
-        const kostos = Number(state.draft.order.kostos ?? 0);
-        const symmPercentage = Number(state.draft.order.symmPercentage ?? 0);
-        const maxPosoKostousGiaSymmetoxi = Number(
-          state.draft.order.maxPosoKostousGiaSymmetoxi ?? 0,
+        state.draft.order.posoSymmetoxis = calcPosoSymmetoxisForOrder(
+          state.draft.order,
         );
-        const plafonGiftAmount = Number(
-          state.draft.order.plafonGiftAmount ?? 0,
+      }
+
+      persistStateToLocalStorage(state);
+    },
+    patchDraftOrder(state, action: PayloadAction<Partial<Order>>) {
+      state.draft.order = {
+        ...state.draft.order,
+        ...action.payload,
+      };
+
+      if (
+        (
+          [
+            "symmPercentage",
+            "kostos",
+            "eidos_Egkrisis",
+            "plafonGiftAmount",
+            "maxPosoKostousGiaSymmetoxi",
+            "posoPlafon",
+            "katigoriaParoxis",
+          ] as (keyof Order)[]
+        ).some((key) => key in action.payload)
+      ) {
+        state.draft.order.posoSymmetoxis = calcPosoSymmetoxisForOrder(
+          state.draft.order,
         );
-        if (
-          maxPosoKostousGiaSymmetoxi > 0 &&
-          kostos > maxPosoKostousGiaSymmetoxi &&
-          eidosEgkrisis == 1 &&
-          type == "eopyy"
-        ) {
-          const diafora = kostos - maxPosoKostousGiaSymmetoxi;
-          state.draft.order.posoSymmetoxis =
-            (maxPosoKostousGiaSymmetoxi * symmPercentage) / 100 +
-            (diafora > plafonGiftAmount ? diafora : 0);
-        } else {
-          state.draft.order.posoSymmetoxis = kostos * (symmPercentage / 100);
-        }
       }
 
       persistStateToLocalStorage(state);
@@ -624,27 +653,9 @@ const ordersSlice = createSlice({
         (acc, x) => acc + Number(x.qty) * Number(x.erp_Price || 0),
         0,
       );
-      const eidosEgkrisis = state.draft.order.eidos_Egkrisis;
-      const type = state.draft.order.type;
-      const kostos = Number(state.draft.order.kostos ?? 0);
-      const symmPercentage = Number(state.draft.order.symmPercentage ?? 0);
-      const maxPosoKostousGiaSymmetoxi = Number(
-        state.draft.order.maxPosoKostousGiaSymmetoxi ?? 0,
+      state.draft.order.posoSymmetoxis = calcPosoSymmetoxisForOrder(
+        state.draft.order,
       );
-      const plafonGiftAmount = Number(state.draft.order.plafonGiftAmount ?? 0);
-      if (
-        maxPosoKostousGiaSymmetoxi > 0 &&
-        kostos > maxPosoKostousGiaSymmetoxi &&
-        eidosEgkrisis == 1 &&
-        type == "eopyy"
-      ) {
-        const diafora = kostos - maxPosoKostousGiaSymmetoxi;
-        state.draft.order.posoSymmetoxis =
-          (maxPosoKostousGiaSymmetoxi * symmPercentage) / 100 +
-          (diafora > plafonGiftAmount ? diafora : 0);
-      } else {
-        state.draft.order.posoSymmetoxis = kostos * (symmPercentage / 100);
-      }
       persistStateToLocalStorage(state);
     },
     setDraftFiles(state, action: PayloadAction<OrderFile[]>) {
@@ -662,6 +673,10 @@ const ordersSlice = createSlice({
       action: PayloadAction<string | undefined>,
     ) {
       state.draft.lastOrderInfoCustomerErpGID = action.payload;
+      persistStateToLocalStorage(state);
+    },
+    setLastOrderInfoDateIn(state, action: PayloadAction<string | undefined>) {
+      state.draft.lastOrderInfoDateIn = action.payload;
       persistStateToLocalStorage(state);
     },
     setCustomerProsEbs(state, action: PayloadAction<boolean | undefined>) {
@@ -720,27 +735,9 @@ const ordersSlice = createSlice({
         0,
       );
 
-      const eidosEgkrisis = state.draft.order.eidos_Egkrisis;
-      const type = state.draft.order.type;
-      const kostos = Number(state.draft.order.kostos ?? 0);
-      const symmPercentage = Number(state.draft.order.symmPercentage ?? 0);
-      const maxPosoKostousGiaSymmetoxi = Number(
-        state.draft.order.maxPosoKostousGiaSymmetoxi ?? 0,
+      state.draft.order.posoSymmetoxis = calcPosoSymmetoxisForOrder(
+        state.draft.order,
       );
-      const plafonGiftAmount = Number(state.draft.order.plafonGiftAmount ?? 0);
-      if (
-        maxPosoKostousGiaSymmetoxi > 0 &&
-        kostos > maxPosoKostousGiaSymmetoxi &&
-        eidosEgkrisis == 1 &&
-        type == "eopyy"
-      ) {
-        const diafora = kostos - maxPosoKostousGiaSymmetoxi;
-        state.draft.order.posoSymmetoxis =
-          (maxPosoKostousGiaSymmetoxi * symmPercentage) / 100 +
-          (diafora > plafonGiftAmount ? diafora : 0);
-      } else {
-        state.draft.order.posoSymmetoxis = kostos * (symmPercentage / 100);
-      }
       persistStateToLocalStorage(state);
     },
     updateDraftYlikoQuantity: (
@@ -774,27 +771,9 @@ const ordersSlice = createSlice({
         0,
       );
 
-      const eidosEgkrisis = state.draft.order.eidos_Egkrisis;
-      const type = state.draft.order.type;
-      const kostos = Number(state.draft.order.kostos ?? 0);
-      const symmPercentage = Number(state.draft.order.symmPercentage ?? 0);
-      const maxPosoKostousGiaSymmetoxi = Number(
-        state.draft.order.maxPosoKostousGiaSymmetoxi ?? 0,
+      state.draft.order.posoSymmetoxis = calcPosoSymmetoxisForOrder(
+        state.draft.order,
       );
-      const plafonGiftAmount = Number(state.draft.order.plafonGiftAmount ?? 0);
-      if (
-        maxPosoKostousGiaSymmetoxi > 0 &&
-        kostos > maxPosoKostousGiaSymmetoxi &&
-        eidosEgkrisis == 1 &&
-        type == "eopyy"
-      ) {
-        const diafora = kostos - maxPosoKostousGiaSymmetoxi;
-        state.draft.order.posoSymmetoxis =
-          (maxPosoKostousGiaSymmetoxi * symmPercentage) / 100 +
-          (diafora > plafonGiftAmount ? diafora : 0);
-      } else {
-        state.draft.order.posoSymmetoxis = kostos * (symmPercentage / 100);
-      }
 
       persistStateToLocalStorage(state);
     },
@@ -822,27 +801,9 @@ const ordersSlice = createSlice({
         0,
       );
 
-      const eidosEgkrisis = state.draft.order.eidos_Egkrisis;
-      const type = state.draft.order.type;
-      const kostos = Number(state.draft.order.kostos ?? 0);
-      const symmPercentage = Number(state.draft.order.symmPercentage ?? 0);
-      const maxPosoKostousGiaSymmetoxi = Number(
-        state.draft.order.maxPosoKostousGiaSymmetoxi ?? 0,
+      state.draft.order.posoSymmetoxis = calcPosoSymmetoxisForOrder(
+        state.draft.order,
       );
-      const plafonGiftAmount = Number(state.draft.order.plafonGiftAmount ?? 0);
-      if (
-        maxPosoKostousGiaSymmetoxi > 0 &&
-        kostos > maxPosoKostousGiaSymmetoxi &&
-        eidosEgkrisis == 1 &&
-        type == "eopyy"
-      ) {
-        const diafora = kostos - maxPosoKostousGiaSymmetoxi;
-        state.draft.order.posoSymmetoxis =
-          (maxPosoKostousGiaSymmetoxi * symmPercentage) / 100 +
-          (diafora > plafonGiftAmount ? diafora : 0);
-      } else {
-        state.draft.order.posoSymmetoxis = kostos * (symmPercentage / 100);
-      }
 
       persistStateToLocalStorage(state);
     },
@@ -914,6 +875,10 @@ const ordersSlice = createSlice({
         typeof action.meta.arg === "object" && action.meta.arg?.q
           ? action.meta.arg.q.trim()
           : "";
+      const sellerCode =
+        typeof action.meta.arg === "object" && action.meta.arg?.sellerCode
+          ? action.meta.arg.sellerCode.trim()
+          : "";
       const page =
         typeof action.meta.arg === "object" && action.meta.arg?.page
           ? action.meta.arg.page
@@ -926,6 +891,7 @@ const ordersSlice = createSlice({
       state.ordersQuery = q;
       state.ordersPage = page;
       state.ordersPageSize = pagesize;
+      state.ordersSellerCode = sellerCode;
       state.ordersFetchedAt = Date.now();
     });
     b.addCase(fetchOrders.rejected, (state, action) => {
@@ -1189,6 +1155,7 @@ export const {
   startDraft,
   setSynaineseisResults,
   setLastOrderInfoCustomerErpGID,
+  setLastOrderInfoDateIn,
   setCustomerProsEbs,
   setCustomerSelectedFromList,
   setCustomerIsCompletelyNew,
@@ -1206,6 +1173,7 @@ export const {
   submitDraft,
   clearDraftSubmitError,
   setDraftProperty,
+  patchDraftOrder,
   addDraftYliko,
   updateDraftYlikoQuantity,
   removeDraftYliko,

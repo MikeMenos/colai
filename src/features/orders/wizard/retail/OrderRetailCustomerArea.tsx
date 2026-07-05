@@ -6,16 +6,15 @@ import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import CustomerLookupModal from "../modals/CustomerLookupModal";
 import React from "react";
 import { FormSelect } from "react-bootstrap";
-import FormErrorsContext from "@/components/ui/FormErrorContect";
 import OrderField from "@/components/ui/OrderField";
-import { getAmkaInlineFieldError } from "@/lib/utils/amka";
+import WizardStepBarcodeHint from "../components/WizardStepBarcodeHint";
 
 function Field({
   label,
   children,
   hint,
 }: {
-  label: string;
+  label: React.ReactNode;
   children: React.ReactNode;
   hint?: string;
 }) {
@@ -45,14 +44,6 @@ export default function OrderRetailCustomerArea() {
     );
     return row?.addresses ?? [];
   }, [listAddressesPersons, data.person_ErpGID]);
-
-  const amkaFieldErrors = React.useMemo((): Record<
-    string,
-    string | boolean
-  > => {
-    const message = getAmkaInlineFieldError(data.customer_amka);
-    return message ? { customer_amka: message } : {};
-  }, [data.customer_amka]);
 
   const handleDateInput = (value: string) => {
     if (value.length == 1 && parseInt(value) > 3) return;
@@ -91,8 +82,7 @@ export default function OrderRetailCustomerArea() {
 
   React.useEffect(() => {
     const gid = data.customer_ErpGID?.toString().trim();
-    const amka = data.customer_amka?.trim();
-    if (!gid || !amka || listAddressesPersons.length > 0) return;
+    if (!gid || listAddressesPersons.length > 0) return;
     void dispatch(
       loadCustomerAddressesAsync({
         customer_ErpGID: data.customer_ErpGID,
@@ -111,12 +101,14 @@ export default function OrderRetailCustomerArea() {
   ]);
 
   return (
-    <FormErrorsContext.Provider value={{ errors: amkaFieldErrors }}>
-      <div className="app-card px-3 py-2">
-        <div className="d-flex align-items-center border-bottom mb-3 gap-5 pb-3">
-          <label className="form-label fw-semibold mb-0 flex-shrink-0">
-            Ασθενής
-          </label>
+    <div className="app-card px-3 py-2">
+        <div className="border-bottom mb-1 pb-2">
+          <div className="d-flex align-items-center justify-content-between mb-3 flex-wrap gap-3">
+            <label className="form-label fw-semibold mb-0 flex-shrink-0">
+              Ασθενής
+            </label>
+            <WizardStepBarcodeHint barcode={data.barcode} />
+          </div>
           <div className="input-group flex-grow-1" style={{ minWidth: 0 }}>
             <input
               type="text"
@@ -167,7 +159,7 @@ export default function OrderRetailCustomerArea() {
 
         <div className="row g-2">
           <div className="col-6">
-            <OrderField label="ΑΜΚΑ">
+            <Field label="ΑΜΚΑ">
               <input
                 className="form-control"
                 name="customer_amka"
@@ -182,7 +174,7 @@ export default function OrderRetailCustomerArea() {
                   )
                 }
               />
-            </OrderField>
+            </Field>
           </div>
           <div className="col-6">
             <Field label="Ημ/νία γέννησης" hint="π.χ. 31/12/1990">
@@ -538,7 +530,6 @@ export default function OrderRetailCustomerArea() {
             </div>
           </>
         )}
-      </div>
-    </FormErrorsContext.Provider>
+    </div>
   );
 }

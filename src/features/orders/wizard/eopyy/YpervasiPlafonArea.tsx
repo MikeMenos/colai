@@ -2,9 +2,11 @@
 
 import { useAppSelector } from "@/store/hooks";
 import { formatCurrencyGR } from "@/lib/utils/number";
+import { getPlafonCeilingForCategory } from "@/lib/utils/plafon";
 
 export default function YpervasiPlafonArea() {
   const data = useAppSelector((state) => state.orders.draft.order);
+  const plafonCeiling = getPlafonCeilingForCategory(data);
 
   return (
     <div className="app-card border-warning-subtle border p-3">
@@ -43,7 +45,7 @@ export default function YpervasiPlafonArea() {
           {`Τα υλικά της παραγγελίας ανέρχονται στα ${formatCurrencyGR(data.kostos)} €.`}
         </span>
         <span>
-          {`Το πλαφόν για την συγκεκριμένη κατηγορία είναι ${formatCurrencyGR(data.maxPosoKostousGiaSymmetoxi)} €.`}
+          {`Το πλαφόν για την συγκεκριμένη κατηγορία είναι ${formatCurrencyGR(plafonCeiling)} €.`}
         </span>
       </div>
     </div>

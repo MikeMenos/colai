@@ -57,7 +57,7 @@ export default function Touchdown({
         </div>
 
         <div className="mt-3">
-          <OrderField label="Σχόλια παραγγελίας">
+          <OrderField label="Σχόλια για το τμήμα παραγγελιών">
             <textarea
               className="form-control"
               name="sellerComments"

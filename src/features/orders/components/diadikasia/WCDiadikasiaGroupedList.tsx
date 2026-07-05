@@ -12,6 +12,10 @@ import {
   groupWcCalendarByLastOrderDate,
   type WcCalendarGroupOrder,
 } from "@/features/orders/diadikasia/groupWcCalendarByLastOrderDate";
+import {
+  rowHasMappedStatusEa,
+  wcStatusEaBadgeClassForLabel,
+} from "@/features/orders/diadikasia/wcCalendarStatus";
 
 function telHref(phone: string): string {
   const digits = phone.trim().replace(/[^\d+]/g, "");
@@ -350,6 +354,55 @@ function WcCustomerContactSection({
   );
 }
 
+function WcAmkaLine({ amka }: { amka: string | null | undefined }) {
+  const [copied, setCopied] = React.useState(false);
+  const text = (amka ?? "").trim();
+
+  async function handleCopy() {
+    if (!text) return;
+
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopied(true);
+      window.setTimeout(() => setCopied(false), 2000);
+    } catch {
+      setCopied(false);
+    }
+  }
+
+  return (
+    <div className="text-secondary small mt-1 d-flex align-items-center flex-wrap gap-1">
+      <span>AMKA: {text || "—"}</span>
+      {text ? (
+        <button
+          type="button"
+          className="btn btn-link btn-sm p-0 border-0 d-inline-flex align-items-center"
+          style={{ color: "var(--bs-secondary)", lineHeight: 1 }}
+          aria-label={copied ? "Αντιγράφηκε" : "Αντιγραφή AMKA"}
+          title={copied ? "Αντιγράφηκε" : "Αντιγραφή"}
+          onClick={() => void handleCopy()}
+        >
+          <i
+            className={`bi ${copied ? "bi-check2" : "bi-copy"}`}
+            aria-hidden
+          />
+        </button>
+      ) : null}
+    </div>
+  );
+}
+
+function WcStatusEaBadge({ statusEa }: { statusEa: string }) {
+  return (
+    <span
+      className={wcStatusEaBadgeClassForLabel(statusEa)}
+      style={{ fontSize: 12 }}
+    >
+      {statusEa}
+    </span>
+  );
+}
+
 function WcCalendarRow({
   row,
   showDivider,
@@ -364,14 +417,23 @@ function WcCalendarRow({
   const last = formatUIDate(row.lastPAEO);
   const next = formatUIDate(row.lastOrderDate);
   const nextPart = next ? ` (${next})` : "";
+  const customerName = (row.customerName ?? "").trim() || "—";
+  const showStatusEa = rowHasMappedStatusEa(row);
+  const statusEa = (row.statuS_EA ?? "").trim();
 
   const summary = (
     <div style={{ minWidth: 0, flex: "1 1 auto" }}>
       <div
-        className="fw-semibold"
+        className="fw-semibold d-flex align-items-center flex-wrap gap-1"
         style={{ color: "var(--bs-body-color)", fontSize: 15 }}
       >
-        {(row.customerName ?? "").trim() || "—"}
+        <span>{customerName}</span>
+        {showStatusEa && statusEa ? (
+          <>
+            <span className="text-secondary">-</span>
+            <WcStatusEaBadge statusEa={statusEa} />
+          </>
+        ) : null}
       </div>
       <div className="text-secondary small mt-1">
         {(row.doctoR_SINTAGHS ?? "").trim() || "—"}
@@ -380,9 +442,7 @@ function WcCalendarRow({
         {last || "—"}
         <span className="text-secondary">{nextPart}</span>
       </div>
-      <div className="text-secondary small mt-1">
-        AMKA: {(row.amka ?? "").trim() || "—"}
-      </div>
+      <WcAmkaLine amka={row.amka} />
     </div>
   );
 
@@ -421,12 +481,14 @@ function WcCalendarRow({
 
 export default function WCDiadikasiaGroupedList({
   items,
-  setAllOpenTo,
+  expandAllNonce,
+  expandAllOpen,
   onAllExpandedChange,
   groupOrder,
 }: {
   items: wcCalendar[];
-  setAllOpenTo?: boolean;
+  expandAllNonce?: number;
+  expandAllOpen?: boolean;
   onAllExpandedChange?: (expanded: boolean) => void;
   groupOrder?: WcCalendarGroupOrder;
 }) {
@@ -454,22 +516,16 @@ export default function WCDiadikasiaGroupedList({
     monthKeys.every((k) => !!openMonths[k]) &&
     dayKeys.every((k) => !!openDays[k]);
 
-  const setAllTilesOpen = React.useCallback(
-    (nextOpen: boolean) => {
-      const nextMonths: Record<string, boolean> = {};
-      const nextDays: Record<string, boolean> = {};
-      for (const key of monthKeys) nextMonths[key] = nextOpen;
-      for (const key of dayKeys) nextDays[key] = nextOpen;
-      setOpenMonths(nextMonths);
-      setOpenDays(nextDays);
-    },
-    [monthKeys, dayKeys],
-  );
-
   React.useEffect(() => {
-    if (typeof setAllOpenTo !== "boolean") return;
-    setAllTilesOpen(setAllOpenTo);
-  }, [setAllOpenTo, setAllTilesOpen]);
+    if (!expandAllNonce) return;
+    const nextOpen = expandAllOpen ?? false;
+    const nextMonths: Record<string, boolean> = {};
+    const nextDays: Record<string, boolean> = {};
+    for (const key of monthKeys) nextMonths[key] = nextOpen;
+    for (const key of dayKeys) nextDays[key] = nextOpen;
+    setOpenMonths(nextMonths);
+    setOpenDays(nextDays);
+  }, [expandAllNonce]);
 
   React.useEffect(() => {
     onAllExpandedChange?.(allExpanded);

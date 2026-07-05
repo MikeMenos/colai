@@ -7,6 +7,10 @@ import React from "react";
 import DoctorLookupModal from "../modals/DoctorLookupModal";
 import type { OrderDoctorAreaProps } from "./componentProps";
 import type { Order } from "@/types/orders";
+import {
+  isSuggestedDoctorChoiceLocked,
+  shouldShowSuggestedDoctorChangeToggle,
+} from "@/lib/customerUtils";
 
 const OTHER_SUGGESTED_DOCTOR_KEYS = [
   "otherDoctorSuggested_amka",
@@ -88,11 +92,15 @@ export default function OrderDoctorArea({
   clearError,
 }: OrderDoctorAreaProps) {
   const data = useAppSelector((s) => s.orders.draft.order);
-  const customerIsCompletelyNew = useAppSelector(
-    (s) => s.orders.draft.customerIsCompletelyNew,
+  const draftMeta = useAppSelector((s) => ({
+    customerIsCompletelyNew: s.orders.draft.customerIsCompletelyNew,
+    lastOrderInfoDateIn: s.orders.draft.lastOrderInfoDateIn,
+  }));
+  const disableFieldsBelowTypos = isSuggestedDoctorChoiceLocked(draftMeta);
+  const showSuggestedDoctorChange = shouldShowSuggestedDoctorChangeToggle(
+    draftMeta,
+    data.customer_ErpGID,
   );
-  const disableFieldsBelowTypos = customerIsCompletelyNew !== true;
-  const isExistingCustomer = !!String(data.customer_ErpGID ?? "").trim();
   const proposeOtherSuggestedDoctor = data.propose_other_suggested_doctor == 1;
   const showOtherSuggestedDoctorFields =
     data.has_suggested_doctor == 2 && !proposeOtherSuggestedDoctor;
@@ -113,10 +121,24 @@ export default function OrderDoctorArea({
   const openChangeSuggestedDoctorLookup = () =>
     setShowChangeSuggestedLookup(true);
 
+  React.useEffect(() => {
+    if (showSuggestedDoctorChange || data.propose_other_suggested_doctor != 1) {
+      return;
+    }
+    dispatch(
+      setDraftProperty({ key: "propose_other_suggested_doctor", value: 0 }),
+    );
+    clearOtherSuggestedDoctorFields(dispatch);
+  }, [
+    data.propose_other_suggested_doctor,
+    dispatch,
+    showSuggestedDoctorChange,
+  ]);
+
   return (
     <div className="app-card px-3 py-2">
       <FormErrorsContext.Provider value={{ errors: errors ?? {}, clearError }}>
-        <div className="d-flex align-items-center border-bottom mb-3 gap-3 pb-3">
+        <div className="d-flex align-items-center border-bottom mb-2 gap-3 pb-2">
           <label className="form-label fw-semibold mb-0 flex-shrink-0">
             Ιατρός συνταγής
           </label>
@@ -301,7 +323,7 @@ export default function OrderDoctorArea({
           </div>
         </fieldset>
 
-        {isExistingCustomer ? (
+        {showSuggestedDoctorChange ? (
           <>
             <div className="form-check form-switch switch-lg mb-2">
               <input
@@ -336,13 +358,13 @@ export default function OrderDoctorArea({
                 className="form-check-label"
                 htmlFor="propose_other_suggested_doctor"
               >
-                Αλλαγή συστήνοντος ιατρού
+                Αλλαγή συστήνοντος ιατρού (μετά από έγκριση)
               </label>
             </div>
 
             {proposeOtherSuggestedDoctor ? (
               <>
-                <div className="d-flex align-items-center border-bottom mb-3 gap-3 pb-3">
+                <div className="d-flex align-items-center border-bottom mb-2 gap-3 pb-2">
                   <label className="form-label fw-semibold mb-0 flex-shrink-0">
                     Συστήνων ιατρός
                   </label>
@@ -526,7 +548,7 @@ export default function OrderDoctorArea({
 
           {showOtherSuggestedDoctorFields && (
             <>
-              <div className="d-flex align-items-center border-bottom mb-3 gap-3 pb-3">
+              <div className="d-flex align-items-center border-bottom mb-2 gap-3 pb-2">
                 <label className="form-label fw-semibold mb-0 flex-shrink-0">
                   Συστήνων ιατρός
                 </label>

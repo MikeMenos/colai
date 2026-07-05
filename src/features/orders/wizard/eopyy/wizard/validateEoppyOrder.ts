@@ -3,13 +3,19 @@ import { isBlank } from "@/lib/utils/string";
 import type { Order } from "@/types/orders";
 import { getDraftAmkaWizardIssues } from "./amkaValidation";
 import { getDraftBarcodeWizardIssues } from "./barcodeValidation";
+import { getDraftDateOfSyntagiWizardIssues } from "./dateOfSyntagiValidation";
 import { getCustomerFieldWizardIssues } from "./customerFieldValidation";
+import {
+  getOtherSuggestedDoctorFieldWizardIssues,
+  getSuggestedDoctorFieldWizardIssues,
+} from "./doctorFieldValidation";
 import type { StepKey, ValidateEoppyOrderInput, WizardIssue } from "./types";
 import { onlyDigits } from "./wizardUtils";
 
 export function validateEoppyOrder({
   draftOrder,
   customerIsCompletelyNew,
+  lastOrderInfoDateIn,
   hasFiles,
   hasConsentFormFiles,
 }: ValidateEoppyOrderInput): WizardIssue[] {
@@ -145,11 +151,7 @@ export function validateEoppyOrder({
       );
     }
 
-    if (
-      validateSynainesiPanel &&
-      draftOrder.isVoiceConsent != 1 &&
-      !hasConsentFormFiles
-    ) {
+    if (validateSynainesiPanel && !hasConsentFormFiles) {
       add(
         "synenaiseis",
         "consent_form",
@@ -172,11 +174,26 @@ export function validateEoppyOrder({
       issues.push(issue);
     }
 
+    for (const issue of getOtherSuggestedDoctorFieldWizardIssues(draftOrder)) {
+      issues.push(issue);
+    }
+
+    for (const issue of getSuggestedDoctorFieldWizardIssues(draftOrder, {
+      customerIsCompletelyNew,
+      lastOrderInfoDateIn,
+    })) {
+      issues.push(issue);
+    }
+
     for (const issue of getDraftAmkaWizardIssues(draftOrder)) {
       issues.push(issue);
     }
 
     for (const issue of getDraftBarcodeWizardIssues(draftOrder)) {
+      issues.push(issue);
+    }
+
+    for (const issue of getDraftDateOfSyntagiWizardIssues(draftOrder)) {
       issues.push(issue);
     }
   }

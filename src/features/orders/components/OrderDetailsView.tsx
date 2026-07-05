@@ -8,6 +8,7 @@ import OrderDetailsViewDoctorInfo from "../view/OrderDetailsViewDoctorInfo";
 import OrderDetailsViewSystinon from "../view/OrderDetailsViewSystinon";
 import OrderDetailsYlikaInfo from "../view/OrderDetailsYlikaInfo";
 import OrderDetailsSyntagiInfo from "../view/OrderDetailsSyntagiInfo";
+import OrderDetailsViewRetailPaymentInfo from "../view/OrderDetailsViewRetailPaymentInfo";
 
 export default function OrderDetailsView({
   order,
@@ -54,6 +55,10 @@ export default function OrderDetailsView({
       )}
 
       <OrderDetailsYlikaInfo />
+
+      {order.type === "retail" ? (
+        <OrderDetailsViewRetailPaymentInfo order={order} />
+      ) : null}
 
       <OrderDetailsSyntagiInfo />
     </div>
