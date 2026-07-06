@@ -94,6 +94,8 @@ export default function OrderStartPage() {
           type="eopyy-bulk"
           description="Ανέβασε πολλές παραγγελίες ταυτόχρονα"
           icon="bi-files"
+          disabled
+          badge="Coming soon"
           onClick={() => router.push("/orders/0/eopyy-bulk/new")}
         />
         <PlatformCard
