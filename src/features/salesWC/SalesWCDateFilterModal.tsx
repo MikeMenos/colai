@@ -45,7 +45,10 @@ export default function SalesWCDateFilterModal({
       <Modal.Body>
         <div className="row g-3">
           <div className="col-6">
-            <label className="form-label small mb-1" htmlFor="sales-wc-date-from">
+            <label
+              className="form-label small mb-1"
+              htmlFor="sales-wc-date-from"
+            >
               Από
             </label>
             <input
@@ -96,7 +99,7 @@ export default function SalesWCDateFilterModal({
           }}
           style={{ borderRadius: 12 }}
         >
-          Προηγούμενος μήνας
+          Προηγ. μήνας
         </Button>
         <Button
           variant="primary"

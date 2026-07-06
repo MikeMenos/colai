@@ -16,6 +16,7 @@ export interface WCDiadiadikasiatState {
     refreshingList: boolean;
     error: string | null;
     query: string;
+    sellerCode: string;
     requestsFetchedAt: number;
     listStatuses: listStatuses[]
     showActions: boolean;
@@ -27,16 +28,21 @@ export interface WCDiadiadikasiatState {
 
 export const fetchWCCalendar = createAsyncThunk<
   GetWcCalendarSuccess,
-  { q?: string; force?: boolean } | void,
+  { q?: string; sellerCode?: string; force?: boolean } | void,
   { state: RootState }
 >(
     "wc/fetchWCDiadikasiaCalendar",
     async (arg, { getState }) => {
         const q = typeof arg === "object" && arg?.q ? arg.q : "";
+        const sellerCode =
+          typeof arg === "object" && arg?.sellerCode
+            ? arg.sellerCode.trim()
+            : "";
         const areateam = resolveAreaTeamFromUserInfo(getState().auth.userInfos);
         const params = new URLSearchParams({ _ts: String(Date.now()) });
         if (q) params.set("searchfield", q);
         if (areateam) params.set("areateam", areateam);
+        if (sellerCode) params.set("sellercode", sellerCode);
 
         const res = await fetch(`/api/wc-diadikasia/calendar?${params.toString()}`, {
             cache: "no-store",
@@ -55,13 +61,21 @@ export const fetchWCCalendar = createAsyncThunk<
         condition: (arg, { getState }) => {
             const state = getState();
             const q = typeof arg === "object" && arg?.q ? arg.q.trim() : "";
+            const sellerCode =
+              typeof arg === "object" && arg?.sellerCode
+                ? arg.sellerCode.trim()
+                : "";
             const force = typeof arg === "object" && arg?.force;
 
             if (force) return !(state.wcDiadiaksia.refreshingList || state.wcDiadiaksia.loadingList);
 
             if (state.wcDiadiaksia.loadingList || state.wcDiadiaksia.refreshingList) return false;
 
-            if (state.wcDiadiaksia.calendar.length > 0 && state.wcDiadiaksia.query === q) {
+            if (
+              state.wcDiadiaksia.calendar.length > 0 &&
+              state.wcDiadiaksia.query === q &&
+              state.wcDiadiaksia.sellerCode === sellerCode
+            ) {
                 return false;
             }
 
@@ -109,6 +123,7 @@ const initialStateBase: WCDiadiadikasiatState = {
     refreshingList: false,
     error: null,
     query: "",
+    sellerCode: "",
     requestsFetchedAt: 0,
     showActions: false,
     listStatuses: [],
@@ -164,7 +179,12 @@ const wcDiadikasiaSlice = createSlice({
                 typeof action.meta.arg === "object" && action.meta.arg?.q
                     ? action.meta.arg.q.trim()
                     : "";
+            const sellerCode =
+                typeof action.meta.arg === "object" && action.meta.arg?.sellerCode
+                    ? action.meta.arg.sellerCode.trim()
+                    : "";
             state.query = q;
+            state.sellerCode = sellerCode;
             state.requestsFetchedAt = Date.now();
             persistStateToLocalStorage(state);
         });

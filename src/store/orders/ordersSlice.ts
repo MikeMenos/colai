@@ -95,22 +95,29 @@ export interface OrdersState {
   ordersQuery: string;
   ordersPage: number;
   ordersPageSize: number;
+  ordersSellerCode: string;
   ordersPaging: PagingResults | null;
   ordersFetchedAt: number;
 }
 
 export const fetchOrders = createAsyncThunk<
   { orders: Order[]; paging: PagingResults | null },
-  { q?: string; page?: number; pagesize?: number; force?: boolean } | void,
+  {
+    q?: string;
+    page?: number;
+    pagesize?: number;
+    sellerCode?: string;
+    force?: boolean;
+  } | void,
   { state: RootState }
 >(
   "orders/fetchOrders",
   async (arg) => {
     const q = typeof arg === "object" && arg?.q ? arg.q.trim() : "";
+    const sellerCode =
+      typeof arg === "object" && arg?.sellerCode ? arg.sellerCode.trim() : "";
     const page =
-      typeof arg === "object" && arg?.page
-        ? arg.page
-        : DEFAULT_ORDER_LIST_PAGE;
+      typeof arg === "object" && arg?.page ? arg.page : DEFAULT_ORDER_LIST_PAGE;
     const pagesize =
       typeof arg === "object" && arg?.pagesize
         ? arg.pagesize
@@ -120,6 +127,7 @@ export const fetchOrders = createAsyncThunk<
       search: q,
       page,
       pagesize,
+      sellerCode,
       _ts: Date.now(),
     });
 
@@ -145,6 +153,8 @@ export const fetchOrders = createAsyncThunk<
     condition: (arg, { getState }) => {
       const state = getState();
       const q = typeof arg === "object" && arg?.q ? arg.q.trim() : "";
+      const sellerCode =
+        typeof arg === "object" && arg?.sellerCode ? arg.sellerCode.trim() : "";
       const page =
         typeof arg === "object" && arg?.page
           ? arg.page
@@ -165,7 +175,8 @@ export const fetchOrders = createAsyncThunk<
         state.orders.orders.length > 0 &&
         state.orders.ordersQuery === q &&
         state.orders.ordersPage === page &&
-        state.orders.ordersPageSize === pagesize
+        state.orders.ordersPageSize === pagesize &&
+        state.orders.ordersSellerCode === sellerCode
       ) {
         return false;
       }
@@ -356,6 +367,7 @@ const initialStateBase: OrdersState = {
   ordersQuery: "",
   ordersPage: DEFAULT_ORDER_LIST_PAGE,
   ordersPageSize: DEFAULT_ORDER_LIST_PAGE_SIZE,
+  ordersSellerCode: "",
   ordersPaging: null,
   ordersFetchedAt: 0,
 };
@@ -472,6 +484,7 @@ const ordersSlice = createSlice({
       state.ordersQuery = "";
       state.ordersPage = DEFAULT_ORDER_LIST_PAGE;
       state.ordersPageSize = DEFAULT_ORDER_LIST_PAGE_SIZE;
+      state.ordersSellerCode = "";
       state.ordersPaging = null;
       state.ordersFetchedAt = 0;
       state.selected = null;
@@ -610,10 +623,7 @@ const ordersSlice = createSlice({
       state.draft.lastOrderInfoCustomerErpGID = action.payload;
       persistStateToLocalStorage(state);
     },
-    setLastOrderInfoDateIn(
-      state,
-      action: PayloadAction<string | undefined>,
-    ) {
+    setLastOrderInfoDateIn(state, action: PayloadAction<string | undefined>) {
       state.draft.lastOrderInfoDateIn = action.payload;
       persistStateToLocalStorage(state);
     },
@@ -813,6 +823,10 @@ const ordersSlice = createSlice({
         typeof action.meta.arg === "object" && action.meta.arg?.q
           ? action.meta.arg.q.trim()
           : "";
+      const sellerCode =
+        typeof action.meta.arg === "object" && action.meta.arg?.sellerCode
+          ? action.meta.arg.sellerCode.trim()
+          : "";
       const page =
         typeof action.meta.arg === "object" && action.meta.arg?.page
           ? action.meta.arg.page
@@ -825,6 +839,7 @@ const ordersSlice = createSlice({
       state.ordersQuery = q;
       state.ordersPage = page;
       state.ordersPageSize = pagesize;
+      state.ordersSellerCode = sellerCode;
       state.ordersFetchedAt = Date.now();
     });
     b.addCase(fetchOrders.rejected, (state, action) => {

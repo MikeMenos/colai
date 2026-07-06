@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { cookieName, decodeUserInfoCookie, userCookieName } from "@/lib/auth";
+import { canAccessSeller } from "@/lib/sellerAccess";
 import { resolveAreaTeamFromUserInfo } from "@/lib/wcAreaTeam";
 
 export async function GET(req: Request) {
@@ -17,9 +18,17 @@ export async function GET(req: Request) {
   const incoming = new URL(req.url);
   const searchfield = incoming.searchParams.get("searchfield")?.trim() ?? "";
   const incomingAreaTeam = incoming.searchParams.get("areateam")?.trim() ?? "";
+  const sellerCode = incoming.searchParams.get("sellercode")?.trim() ?? "";
   const userInfo = decodeUserInfoCookie(jar.get(userCookieName)?.value);
   const areateam =
     incomingAreaTeam || resolveAreaTeamFromUserInfo(userInfo) || null;
+
+  if (sellerCode && !canAccessSeller(userInfo, sellerCode)) {
+    return NextResponse.json(
+      { ok: false, message: "Not allowed to filter by this seller code" },
+      { status: 403 },
+    );
+  }
 
   const upstream = new URL(
     `${process.env.AMSA_API_BASE_URL}/api/wc-diadikasia-calendar`,
@@ -29,6 +38,9 @@ export async function GET(req: Request) {
   }
   if (areateam) {
     upstream.searchParams.set("areateam", areateam);
+  }
+  if (sellerCode) {
+    upstream.searchParams.set("sellercode", sellerCode);
   }
 
   const res = await fetch(upstream.toString(), {

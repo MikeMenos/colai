@@ -4,7 +4,8 @@ import {
   DEFAULT_ORDER_LIST_PAGE,
   DEFAULT_ORDER_LIST_PAGE_SIZE,
 } from "@/lib/api/orderListQuery";
-import { cookieName } from "@/lib/auth";
+import { cookieName, decodeUserInfoCookie, userCookieName } from "@/lib/auth";
+import { canAccessSeller } from "@/lib/sellerAccess";
 
 const WEB_ORDERS_PATH = "/api/list-orders";
 const ERP_ORDERS_PATH = "/api/list-erp-orders";
@@ -42,11 +43,23 @@ export async function GET(req: Request) {
       url.searchParams.get("pagesize") ??
       String(DEFAULT_ORDER_LIST_PAGE_SIZE);
     const search = url.searchParams.get("search")?.trim();
+    const sellerCode = url.searchParams.get("sellercode")?.trim();
+
+    if (sellerCode) {
+        const userInfo = decodeUserInfoCookie((await jar).get(userCookieName)?.value);
+        if (!canAccessSeller(userInfo, sellerCode)) {
+            return NextResponse.json(
+                { ok: false, message: "Not allowed to filter by this seller code" },
+                { status: 403 },
+            );
+        }
+    }
 
     const backendParams = new URLSearchParams();
     backendParams.set("page", page);
     backendParams.set("pagesize", pagesize);
     if (search) backendParams.set("search", search);
+    if (sellerCode) backendParams.set("sellercode", sellerCode);
 
     const path = mode === "erp" ? ERP_ORDERS_PATH : WEB_ORDERS_PATH;
     const backendUrl = `${baseUrl}${path}?${backendParams.toString()}`;

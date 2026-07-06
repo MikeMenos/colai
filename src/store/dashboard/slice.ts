@@ -8,6 +8,7 @@ import { parseProxyJson } from "@/lib/api/client";
 export type DashboardState = DashboardData & {
     loading: boolean;
     error: string | null;
+    sellerCode: string;
     /** Set after first fetch completes (success or error) so UI can show initial loader. */
     lastFetchedAt: number;
 };
@@ -37,17 +38,26 @@ const initialState: DashboardState = {
     ...emptyData,
     loading: false,
     error: null,
+    sellerCode: "",
     lastFetchedAt: 0,
 };
 
 export const fetchDashboardData = createAsyncThunk<
   GetDashboardSuccess,
-  void,
+  { sellerCode?: string } | void,
   { state: RootState }
 >(
     "dashboard/fetchDashboardData",
-    async () => {
-        const res = await fetch(`/api/dashboard`, {
+    async (arg) => {
+        const sellerCode =
+          typeof arg === "object" && arg?.sellerCode
+            ? arg.sellerCode.trim()
+            : "";
+        const params = new URLSearchParams();
+        if (sellerCode) params.set("sellercode", sellerCode);
+        const qs = params.toString();
+
+        const res = await fetch(`/api/dashboard${qs ? `?${qs}` : ""}`, {
             cache: "no-store",
             headers: {
                 "Cache-Control": "no-cache",
@@ -92,6 +102,10 @@ const dashboardSlice = createSlice({
             }
 
             state.error = null;
+            state.sellerCode =
+                typeof action.meta.arg === "object" && action.meta.arg?.sellerCode
+                    ? action.meta.arg.sellerCode.trim()
+                    : "";
             state.totalOrders_month = Number(payload.totalOrders_month) || 0;
             state.totalOrders_prev_month = Number(payload.totalOrders_prev_month) || 0;
             state.totalOrders_month_perc = Number(payload.totalOrders_month_perc) || 0;

@@ -8,6 +8,7 @@ import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import AppLoader from "@/components/ui/AppLoader";
 import PullToRefresh from "@/components/ui/PullToRefresh";
 import WCDiadikasiaGroupedList from "@/features/orders/components/diadikasia/WCDiadikasiaGroupedList";
+import OrderSellerScopeToggle from "@/features/orders/components/OrderSellerScopeToggle";
 import { fetchWCCalendar } from "@/store/wcDiadikasia/wcDiadikasiaSlice";
 import { Alert, Button, FormSelect, Modal } from "react-bootstrap";
 import { parseOrderDate } from "@/features/orders/diadikasia/groupWcCalendarByLastOrderDate";
@@ -34,6 +35,7 @@ export default function DiadikasiaWC() {
   const searchParams = useSearchParams();
 
   const wcDiadikasia = useAppSelector((s) => s.wcDiadiaksia);
+  const userInfo = useAppSelector((s) => s.auth.userInfos);
   const listLoading = useAppSelector((s) => s.wcDiadiaksia.loadingList);
   const refreshing = useAppSelector((s) => s.wcDiadiaksia.refreshingList);
   const error = useAppSelector((s) => s.wcDiadiaksia.error);
@@ -55,6 +57,10 @@ export default function DiadikasiaWC() {
     : WC_STATUS_FILTER_DEFAULT;
   const monthOrder = searchParams.get("monthOrder") === "asc" ? "asc" : "desc";
   const [q, setQ] = React.useState(urlSearch);
+  const [showAllAccounts, setShowAllAccounts] = React.useState(false);
+  const loggedSellerCode = userInfo?.sellerCode?.trim() ?? "";
+  const urlSellerCode = (searchParams.get("sellercode") ?? "").trim();
+  const sellerCodeFilter = showAllAccounts ? "" : loggedSellerCode;
 
   const applySearchToUrl = React.useCallback(
     (next: string) => {
@@ -148,8 +154,30 @@ export default function DiadikasiaWC() {
   }, [urlSearch]);
 
   React.useEffect(() => {
-    void dispatch(fetchWCCalendar(urlSearch ? { q: urlSearch } : undefined));
-  }, [dispatch, urlSearch]);
+    if (showAllAccounts || !loggedSellerCode) return;
+    if (urlSellerCode === loggedSellerCode) return;
+
+    const params = new URLSearchParams(searchParams.toString());
+    params.set("sellercode", loggedSellerCode);
+    const qs = params.toString();
+    router.push(qs ? `${pathname}?${qs}` : pathname, { scroll: false });
+  }, [
+    loggedSellerCode,
+    pathname,
+    router,
+    searchParams,
+    showAllAccounts,
+    urlSellerCode,
+  ]);
+
+  React.useEffect(() => {
+    void dispatch(
+      fetchWCCalendar({
+        ...(urlSearch ? { q: urlSearch } : {}),
+        sellerCode: sellerCodeFilter,
+      }),
+    );
+  }, [dispatch, sellerCodeFilter, urlSearch]);
 
   const applyFilters = () => {
     setShowFilters(false);
@@ -157,11 +185,28 @@ export default function DiadikasiaWC() {
 
   const onRefresh = React.useCallback(async () => {
     await dispatch(
-      fetchWCCalendar(
-        urlSearch ? { q: urlSearch, force: true } : { force: true },
-      ),
+      fetchWCCalendar({
+        ...(urlSearch ? { q: urlSearch } : {}),
+        sellerCode: sellerCodeFilter,
+        force: true,
+      }),
     ).unwrap();
-  }, [dispatch, urlSearch]);
+  }, [dispatch, sellerCodeFilter, urlSearch]);
+
+  const handleSellerScopeChange = React.useCallback(
+    (nextShowAllAccounts: boolean) => {
+      setShowAllAccounts(nextShowAllAccounts);
+      const params = new URLSearchParams(searchParams.toString());
+      if (nextShowAllAccounts || !loggedSellerCode) {
+        params.delete("sellercode");
+      } else {
+        params.set("sellercode", loggedSellerCode);
+      }
+      const qs = params.toString();
+      router.push(qs ? `${pathname}?${qs}` : pathname, { scroll: false });
+    },
+    [loggedSellerCode, pathname, router, searchParams],
+  );
 
   const visibleItems = React.useMemo(() => {
     let items = wcDiadikasia.calendar.filter((item) =>
@@ -225,17 +270,27 @@ export default function DiadikasiaWC() {
   return (
     <>
       <div className="d-flex align-items-center mb-2 flex-wrap gap-2">
-        <div className="app-card flex-grow-1">
-          <SearchBar
-            placeholder="Αναζήτηση"
-            value={q}
-            onChange={setQ}
-            debounceMs={SEARCH_DEBOUNCE_MS}
-            debouncedCompareTo={urlSearch}
-            onDebouncedChange={applySearchToUrl}
-          />
+        <div className="app-card flex-grow-1 p-2">
+          <div className="d-flex flex-column gap-2">
+            <SearchBar
+              placeholder="Αναζήτηση..."
+              value={q}
+              onChange={setQ}
+              debounceMs={SEARCH_DEBOUNCE_MS}
+              debouncedCompareTo={urlSearch}
+              onDebouncedChange={applySearchToUrl}
+            />
+            <OrderSellerScopeToggle
+              allAccounts={showAllAccounts}
+              disabled={
+                !loggedSellerCode ||
+                (listLoading && wcDiadikasia.calendar.length === 0)
+              }
+              onChange={handleSellerScopeChange}
+            />
+          </div>
         </div>
-        <div className="d-flex align-items-center gap-2 flex-shrink-0">
+        <div className="d-flex align-items-center flex-shrink-0 gap-2">
           <button
             type="button"
             className="btn btn-sm btn-outline-secondary flex-shrink-0"
