@@ -48,7 +48,7 @@ export default function OrderCard({
   const isDesktop = useIsDesktop();
   const canDelete = order.statusId === 0 && userInfo?.isSeller;
   const aiBatchStatus = order.aiBatchStatus?.trim().toLowerCase() ?? "";
-  const aiQueued = aiBatchStatus === "queued";
+  const aiQueued = aiBatchStatus === "queued" || aiBatchStatus === "processing";
   const aiFailed = aiBatchStatus === "failed";
   const isAiLocked = aiQueued || aiFailed;
   const canSwipeDelete = canDelete && !isDesktop && !isAiLocked;

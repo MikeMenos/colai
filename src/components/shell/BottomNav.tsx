@@ -28,6 +28,9 @@ type Item = {
 
 function isActive(pathname: string, href: string): boolean {
   if (href === "/") return pathname === "/";
+  if (href === "/orders" && /^\/orders\/0(?:\/|$)/.test(pathname)) {
+    return false;
+  }
   return pathname.startsWith(href);
 }
 

@@ -372,11 +372,6 @@ export default function OrderEoppyBulkWizard() {
       if (!res.ok || data?.ok === false) {
         throw new Error(data?.message || "Η αποστολή απέτυχε.");
       }
-
-      updateSection(sectionId, {
-        status: "success",
-        message: "Η παραγγελία στάλθηκε.",
-      });
       void dispatch(fetchOrders({ force: true }));
     } catch (error) {
       updateSection(sectionId, {
