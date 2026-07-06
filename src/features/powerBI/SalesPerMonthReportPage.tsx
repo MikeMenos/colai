@@ -175,7 +175,7 @@ export function SalesPerMonthReportPage({
       : "Πωλήσεις πωλητή ανά μήνα";
 
   return (
-    <div className="d-flex flex-column gap-3">
+    <div className="d-flex flex-column gap-2">
       <ReportHeader
         title="Πωλήσεις ανά μήνα"
         subtitle={sellerLabel}

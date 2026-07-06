@@ -6,9 +6,12 @@ type LeaveOrderWizardConfirmModalProps = {
   show: boolean;
   onCancel: () => void;
   onConfirm: () => void;
-  onTempSave: () => void;
+  onTempSave?: () => void;
   tempSaveLoading?: boolean;
   tempSaveError?: string | null;
+  showTempSave?: boolean;
+  title?: string;
+  message?: string;
 };
 
 export default function LeaveOrderWizardConfirmModal({
@@ -18,6 +21,9 @@ export default function LeaveOrderWizardConfirmModal({
   onTempSave,
   tempSaveLoading = false,
   tempSaveError = null,
+  showTempSave = true,
+  title = "Αποχώρηση από παραγγελία",
+  message = "Είστε σίγουροι ότι θέλετε να αποχωρήσετε; Τα μη αποθηκευμένα στοιχεία της παραγγελίας θα χαθούν.",
 }: LeaveOrderWizardConfirmModalProps) {
   const busy = tempSaveLoading;
 
@@ -43,11 +49,8 @@ export default function LeaveOrderWizardConfirmModal({
           </div>
 
           <div style={{ minWidth: 0 }}>
-            <div className="fw-semibold mb-1">Αποχώρηση από παραγγελία</div>
-            <p className="text-secondary small mb-0">
-              Είστε σίγουροι ότι θέλετε να αποχωρήσετε; Τα μη αποθηκευμένα
-              στοιχεία της παραγγελίας θα χαθούν.
-            </p>
+            <div className="fw-semibold mb-1">{title}</div>
+            <p className="text-secondary small mb-0">{message}</p>
           </div>
         </div>
 
@@ -58,31 +61,33 @@ export default function LeaveOrderWizardConfirmModal({
         ) : null}
 
         <div className="d-grid gap-2">
-          <Button
-            variant="primary"
-            onClick={onTempSave}
-            disabled={busy}
-            className="leave-order-modal__btn"
-          >
-            {busy ? (
-              <>
-                <span
-                  className="spinner-border spinner-border-sm me-2"
-                  role="status"
-                  aria-hidden
-                />
-                Αποθήκευση…
-              </>
-            ) : (
-              <>
-                <i className="bi bi-save me-2" aria-hidden />
-                Προσωρινή αποθήκευση
-              </>
-            )}
-          </Button>
+          {showTempSave ? (
+            <Button
+              variant="primary"
+              onClick={onTempSave}
+              disabled={busy}
+              className="leave-order-modal__btn"
+            >
+              {busy ? (
+                <>
+                  <span
+                    className="spinner-border spinner-border-sm me-2"
+                    role="status"
+                    aria-hidden
+                  />
+                  Αποθήκευση…
+                </>
+              ) : (
+                <>
+                  <i className="bi bi-save me-2" aria-hidden />
+                  Προσωρινή αποθήκευση
+                </>
+              )}
+            </Button>
+          ) : null}
 
           <Button
-            variant="outline-danger"
+            variant={showTempSave ? "outline-danger" : "danger"}
             onClick={onConfirm}
             disabled={busy}
             className="leave-order-modal__btn"

@@ -29,7 +29,7 @@ import type {
   IRecipientFormData,
 } from "@/lib/interface";
 import { calcPosoSymmetoxisForOrder } from "@/lib/utils/plafon";
-import { RootState } from "@/store/store";
+import { AppDispatch, RootState } from "@/store/store";
 import { formatStringToISODDateTime, formatUIDate } from "@/lib/utils/date";
 import { parseGreekDecimal } from "@/lib/utils/number";
 import { pickFirstNonBlankString } from "@/lib/utils/string";
@@ -210,6 +210,21 @@ export const deleteOrderAsync = createAsyncThunk<
     "Failed to delete order",
   );
   return { ...data, orderId, orderUID };
+});
+
+export const retryOrderMassUploadAi = createAsyncThunk<
+  unknown,
+  { orderUID: string; aiClient: string }
+>("orders/retryOrderMassUploadAi", async ({ orderUID, aiClient }) => {
+  const params = new URLSearchParams({
+    order_uid: orderUID,
+    aiclient: aiClient,
+  });
+  const res = await fetch(`/api/order-mass-upload-retry?${params.toString()}`, {
+    method: "POST",
+    cache: "no-store",
+  });
+  return parseProxyJson<unknown>(res, "Failed to retry AI analysis");
 });
 
 export const submitDraftAsync = createAsyncThunk<
@@ -1019,7 +1034,9 @@ const ordersSlice = createSlice({
         (x) =>
           x.id === action.payload.orderId && x.uid === action.payload.orderUID,
       );
-      if (idx !== -1) state.orders.splice(idx, 1);
+      if (idx !== -1) {
+        state.orders.splice(idx, 1);
+      }
     });
     b.addCase(loadCustomerAddressesAsync.fulfilled, (state, action) => {
       if (!action.payload.ok) return;

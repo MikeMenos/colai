@@ -143,7 +143,7 @@ export function PowerBiDatasetsPage() {
   }, [loadDatasets]);
 
   return (
-    <div className="d-flex flex-column gap-3">
+    <div className="d-flex flex-column gap-2">
       <ReportHeader title="Datasets" subtitle={groupName} icon="bi-database" />
 
       <Link

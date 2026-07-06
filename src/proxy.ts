@@ -9,6 +9,9 @@ const PUBLIC_PATHS = [
     "/api/auth/login",
     "/api/auth/logout",
 ];
+const DEV_PUBLIC_PATHS = [
+    "/api/dev/runtime-state",
+];
 const PUBLIC_FILE = /\.(.*)$/;
 
 function isAsset(pathname: string) {
@@ -24,6 +27,13 @@ function isAsset(pathname: string) {
 }
 
 function isPublic(pathname: string) {
+    if (
+        process.env.NODE_ENV !== "production" &&
+        DEV_PUBLIC_PATHS.some((p) => pathname === p || pathname.startsWith(p + "/"))
+    ) {
+        return true;
+    }
+
     return PUBLIC_PATHS.some((p) => pathname === p || pathname.startsWith(p + "/"));
 }
 
