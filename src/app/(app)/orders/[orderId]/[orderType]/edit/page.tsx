@@ -15,11 +15,6 @@ import type { OrderListOfAddressPersons } from "@/types/orders";
 import OrderEoppyWizard from "@/features/orders/wizard/eopyy/OrderEoppyWizard";
 import OrderRetailWizard from "@/features/orders/wizard/retail/OrderRetailWizard";
 
-const WIZARDS: Record<string, React.ComponentType> = {
-  eopyy: OrderEoppyWizard,
-  retail: OrderRetailWizard,
-};
-
 export default function OrderWizardEditPage() {
   const dispatch = useAppDispatch();
   const params = useParams<{ orderType: string }>();
@@ -76,11 +71,16 @@ export default function OrderWizardEditPage() {
     };
   }, [dispatch, orderType, uid]);
 
-  const Wizard = WIZARDS[orderType];
-  if (!Wizard) return <NotFoundView />;
-
   if (editState.loading || isBootstrapping) return <AppLoader label="Φόρτωση παραγγελίας…" />;
   if (editState.error) return <div className="alert alert-danger">{editState.error}</div>;
 
-  return <Wizard />;
+  if (orderType === "eopyy") {
+    return <OrderEoppyWizard initialStepKey="customer" />;
+  }
+
+  if (orderType === "retail") {
+    return <OrderRetailWizard />;
+  }
+
+  return <NotFoundView />;
 }

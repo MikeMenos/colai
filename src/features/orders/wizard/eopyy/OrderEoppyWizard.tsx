@@ -54,9 +54,16 @@ import {
 } from "./wizard/sortWizardIssues";
 import type { StepOrderEntry } from "./componentProps";
 
-export default function OrderEoppyWizard() {
+type OrderEoppyWizardProps = {
+  initialStepKey?: StepKey;
+};
+
+export default function OrderEoppyWizard({
+  initialStepKey,
+}: OrderEoppyWizardProps = {}) {
   const dispatch = useAppDispatch();
   const [step, setStep] = React.useState(0);
+  const initialStepAppliedRef = React.useRef(false);
   const router = useRouter();
   const [aiStatus, setAiStatus] = React.useState<AiStatus>("idle");
   const [aiMessage, setAiMessage] = React.useState<string | null>(null);
@@ -277,6 +284,15 @@ export default function OrderEoppyWizard() {
   React.useEffect(() => {
     setStep((s) => Math.min(s, Math.max(0, effectiveSteps.length - 1)));
   }, [effectiveSteps.length]);
+
+  React.useEffect(() => {
+    if (!initialStepKey || initialStepAppliedRef.current) return;
+    const idx = effectiveSteps.findIndex((s) => s.key === initialStepKey);
+    if (idx < 0) return;
+
+    initialStepAppliedRef.current = true;
+    setStep(idx);
+  }, [effectiveSteps, initialStepKey]);
 
   function goNext() {
     setStep((s) => Math.min(s + 1, maxStep));
