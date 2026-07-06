@@ -91,7 +91,7 @@ function getStatusBadge(status: SectionStatus) {
     return { label: "Αποστολή...", className: "text-bg-primary" };
   }
   if (status === "success") {
-    return { label: "Ολοκληρώθηκε", className: "text-bg-success" };
+    return { label: "Προσωρινά αποθηκευμένη", className: "text-bg-success" };
   }
   if (status === "error") {
     return { label: "Σφάλμα", className: "text-bg-danger" };
