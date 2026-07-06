@@ -1,7 +1,8 @@
 "use client";
 
 import React from "react";
-import { Button, Modal } from "react-bootstrap";
+import { Capacitor } from "@capacitor/core";
+import { Modal } from "react-bootstrap";
 import { useRouter } from "next/navigation";
 import LeaveOrderWizardConfirmModal from "@/features/orders/components/LeaveOrderWizardConfirmModal";
 import SellerActingSelector from "@/features/orders/components/SellerActingSelector";
@@ -10,14 +11,15 @@ import { resolveActingSeller } from "@/lib/sellerAccess";
 import { fetchOrders } from "@/store/orders/ordersSlice";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 
-type MassUploadFile = {
-  id: string;
-  file: File;
-};
+type UploadSide = "front" | "back";
+type SectionStatus = "draft" | "submitting" | "success" | "error";
 
 type MassUploadSection = {
   id: string;
-  files: MassUploadFile[];
+  frontFile: File | null;
+  backFile: File | null;
+  status: SectionStatus;
+  message: string | null;
 };
 
 type MassUploadPayload = {
@@ -38,7 +40,10 @@ const ACCEPTED_FILES = "application/pdf,image/*";
 function createSection(): MassUploadSection {
   return {
     id: `section-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
-    files: [],
+    frontFile: null,
+    backFile: null,
+    status: "draft",
+    message: null,
   };
 }
 
@@ -61,24 +66,240 @@ function readFileAsBase64(file: File): Promise<string> {
 }
 
 async function buildMassUploadPayload(
-  sections: MassUploadSection[],
+  files: File[],
   sellercode: string,
 ): Promise<MassUploadPayload> {
   return {
     catid: 4,
     typeid: "eopyy",
     sellercode,
-    orders: await Promise.all(
-      sections.map(async (section) => ({
+    orders: [
+      {
         files: await Promise.all(
-          section.files.map(async ({ file }) => ({
+          files.map(async (file) => ({
             base64file: await readFileAsBase64(file),
             base64filename: file.name,
           })),
         ),
-      })),
-    ),
+      },
+    ],
   };
+}
+
+function getStatusBadge(status: SectionStatus) {
+  if (status === "submitting") {
+    return { label: "Αποστολή...", className: "text-bg-primary" };
+  }
+  if (status === "success") {
+    return { label: "Ολοκληρώθηκε", className: "text-bg-success" };
+  }
+  if (status === "error") {
+    return { label: "Σφάλμα", className: "text-bg-danger" };
+  }
+  return null;
+}
+
+function getSelectedFiles(section: MassUploadSection): File[] {
+  return [section.frontFile, section.backFile].filter(Boolean) as File[];
+}
+
+function shouldUseUploadSourcePicker(): boolean {
+  if (typeof window === "undefined") return false;
+  const platform = Capacitor.getPlatform();
+  if (platform === "android") return true;
+  if (platform === "web" && /Android/i.test(navigator.userAgent)) return true;
+  return false;
+}
+
+type LocalFilePickerButtonProps = {
+  id: string;
+  disabled: boolean;
+  ariaLabel: string;
+  onFileChange: (file: File) => void;
+};
+
+function LocalFilePickerButton({
+  id,
+  disabled,
+  ariaLabel,
+  onFileChange,
+}: LocalFilePickerButtonProps) {
+  const inputRef = React.useRef<HTMLInputElement | null>(null);
+  const cameraInputRef = React.useRef<HTMLInputElement | null>(null);
+  const galleryInputRef = React.useRef<HTMLInputElement | null>(null);
+  const fileInputRef = React.useRef<HTMLInputElement | null>(null);
+  const [showSourcePicker, setShowSourcePicker] = React.useState(false);
+  const useSourcePicker = React.useMemo(
+    () => shouldUseUploadSourcePicker(),
+    [],
+  );
+
+  function handleChange(event: React.ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0];
+    event.currentTarget.value = "";
+    if (file) onFileChange(file);
+  }
+
+  function openPicker() {
+    if (disabled) return;
+    if (useSourcePicker) {
+      setShowSourcePicker(true);
+      return;
+    }
+    inputRef.current?.click();
+  }
+
+  function pickFrom(ref: React.RefObject<HTMLInputElement | null>) {
+    setShowSourcePicker(false);
+    window.setTimeout(() => ref.current?.click(), 0);
+  }
+
+  return (
+    <>
+      <button
+        type="button"
+        className="btn-icon-pill"
+        aria-label={ariaLabel}
+        disabled={disabled}
+        style={{ borderRadius: 50 }}
+        onClick={openPicker}
+      >
+        <i className="bi bi-plus-lg" />
+      </button>
+
+      <input
+        id={id}
+        ref={inputRef}
+        className="d-none"
+        type="file"
+        accept={ACCEPTED_FILES}
+        onChange={handleChange}
+      />
+
+      {useSourcePicker ? (
+        <>
+          <input
+            ref={cameraInputRef}
+            className="d-none"
+            type="file"
+            accept="image/*"
+            capture="environment"
+            onChange={handleChange}
+          />
+          <input
+            ref={galleryInputRef}
+            className="d-none"
+            type="file"
+            accept="image/*"
+            onChange={handleChange}
+          />
+          <input
+            ref={fileInputRef}
+            className="d-none"
+            type="file"
+            accept={ACCEPTED_FILES}
+            onChange={handleChange}
+          />
+
+          <Modal
+            show={showSourcePicker}
+            onHide={() => setShowSourcePicker(false)}
+            centered
+            contentClassName="premium-modal"
+          >
+            <Modal.Header closeButton>
+              <Modal.Title className="h6 mb-0">Προσθήκη αρχείου</Modal.Title>
+            </Modal.Header>
+            <Modal.Body className="p-0">
+              <div className="list-group list-group-flush">
+                <button
+                  type="button"
+                  className="list-group-item list-group-item-action d-flex align-items-center gap-3 py-3"
+                  onClick={() => pickFrom(cameraInputRef)}
+                >
+                  <i className="bi bi-camera fs-5" aria-hidden />
+                  Λήψη φωτογραφίας
+                </button>
+                <button
+                  type="button"
+                  className="list-group-item list-group-item-action d-flex align-items-center gap-3 py-3"
+                  onClick={() => pickFrom(galleryInputRef)}
+                >
+                  <i className="bi bi-images fs-5" aria-hidden />
+                  Βιβλιοθήκη φωτογραφιών
+                </button>
+                <button
+                  type="button"
+                  className="list-group-item list-group-item-action d-flex align-items-center gap-3 py-3"
+                  onClick={() => pickFrom(fileInputRef)}
+                >
+                  <i className="bi bi-folder2-open fs-5" aria-hidden />
+                  Επιλογή αρχείου (PDF / εικόνα)
+                </button>
+              </div>
+            </Modal.Body>
+          </Modal>
+        </>
+      ) : null}
+    </>
+  );
+}
+
+type PageUploadBoxProps = {
+  id: string;
+  title: string;
+  file: File | null;
+  disabled: boolean;
+  onFileChange: (file: File) => void;
+  onFileRemove: () => void;
+};
+
+function PageUploadBox({
+  id,
+  title,
+  file,
+  disabled,
+  onFileChange,
+  onFileRemove,
+}: PageUploadBoxProps) {
+  return (
+    <div className="rounded border p-2">
+      <div className="d-flex align-items-center justify-content-between border-bottom mb-2 pb-2">
+        <div className="fw-semibold small">{title}</div>
+
+        {!file && !disabled ? (
+          <LocalFilePickerButton
+            id={id}
+            disabled={disabled}
+            ariaLabel={`Προσθήκη ${title}`}
+            onFileChange={onFileChange}
+          />
+        ) : null}
+      </div>
+
+      {file ? (
+        <div className="d-flex align-items-center justify-content-between gap-2">
+          <div className="min-w-0 flex-grow-1" style={{ minWidth: 0 }}>
+            <div className="text-truncate small fw-semibold" title={file.name}>
+              {file.name}
+            </div>
+            <div className="small text-secondary">{formatFileSize(file)}</div>
+          </div>
+          <button
+            type="button"
+            className="btn btn-sm btn-link text-secondary"
+            onClick={onFileRemove}
+            disabled={disabled}
+            aria-label={`Αφαίρεση αρχείου ${file.name}`}
+          >
+            <i className="bi bi-x-lg" />
+          </button>
+        </div>
+      ) : (
+        <div className="small text-secondary">Δεν έχει προστεθεί αρχείο.</div>
+      )}
+    </div>
+  );
 }
 
 export default function OrderEoppyBulkWizard() {
@@ -97,69 +318,136 @@ export default function OrderEoppyBulkWizard() {
   const [pendingLeaveHref, setPendingLeaveHref] = React.useState<string | null>(
     null,
   );
-  const [submitting, setSubmitting] = React.useState(false);
-  const [showSubmitConfirm, setShowSubmitConfirm] = React.useState(false);
   const [message, setMessage] = React.useState<string | null>(null);
-  const [successMessage, setSuccessMessage] = React.useState<string | null>(
-    null,
-  );
 
-  const hasUploadedContent = React.useMemo(
-    () => sections.some((section) => section.files.length > 0),
+  const activeSection = sections[sections.length - 1];
+  const canAddMore = sections.length < MAX_BULK_SECTIONS;
+  const canAddOrder = Boolean(activeSection?.frontFile) && canAddMore;
+  const hasUnsavedContent = React.useMemo(
+    () =>
+      sections.some(
+        (section) =>
+          getSelectedFiles(section).length > 0 && section.status !== "success",
+      ),
     [sections],
   );
-  const canAddMore = sections.length < MAX_BULK_SECTIONS;
 
   React.useEffect(() => {
     return registerBulkLeaveGuard({
-      hasContent: () => hasUploadedContent,
+      hasContent: () => hasUnsavedContent,
       abortAll: () => undefined,
     });
-  }, [hasUploadedContent]);
+  }, [hasUnsavedContent]);
+
+  function updateSection(sectionId: string, patch: Partial<MassUploadSection>) {
+    setSections((prev) =>
+      prev.map((section) =>
+        section.id === sectionId ? { ...section, ...patch } : section,
+      ),
+    );
+  }
+
+  async function submitSection(sectionId: string, files: File[]) {
+    const sellercode = selectedSeller?.sellerCode?.trim() ?? "";
+    if (!sellercode) {
+      updateSection(sectionId, {
+        status: "error",
+        message: "Δεν βρέθηκε κωδικός πωλητή.",
+      });
+      return;
+    }
+    if (files.length === 0) return;
+
+    updateSection(sectionId, { status: "submitting", message: null });
+
+    try {
+      const payload = await buildMassUploadPayload(files, sellercode);
+      const res = await fetch("/api/order-mass-upload", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      const data = await res.json().catch(() => ({}));
+
+      if (!res.ok || data?.ok === false) {
+        throw new Error(data?.message || "Η αποστολή απέτυχε.");
+      }
+
+      updateSection(sectionId, {
+        status: "success",
+        message: "Η παραγγελία στάλθηκε.",
+      });
+      void dispatch(fetchOrders({ force: true }));
+    } catch (error) {
+      updateSection(sectionId, {
+        status: "error",
+        message: error instanceof Error ? error.message : "Η αποστολή απέτυχε.",
+      });
+    }
+  }
+
+  function handleFileChange(sectionId: string, side: UploadSide, file: File) {
+    const section = sections.find((item) => item.id === sectionId);
+    if (!section || section.status === "success") return;
+
+    const nextSection = {
+      ...section,
+      [side === "front" ? "frontFile" : "backFile"]: file,
+      status: "draft" as const,
+      message: null,
+    };
+
+    updateSection(sectionId, nextSection);
+    setMessage(null);
+
+    if (side === "back" && nextSection.frontFile && nextSection.backFile) {
+      void submitSection(sectionId, getSelectedFiles(nextSection));
+    }
+  }
+
+  function handleFileRemove(sectionId: string, side: UploadSide) {
+    const section = sections.find((item) => item.id === sectionId);
+    if (
+      !section ||
+      section.status === "submitting" ||
+      section.status === "success"
+    ) {
+      return;
+    }
+
+    updateSection(sectionId, {
+      [side === "front" ? "frontFile" : "backFile"]: null,
+      status: "draft",
+      message: null,
+    });
+  }
+
+  function handleRetry(section: MassUploadSection) {
+    const files = getSelectedFiles(section);
+    if (files.length === 0) return;
+    void submitSection(section.id, files);
+  }
 
   function addSection() {
-    if (!canAddMore || submitting) return;
+    if (!activeSection?.frontFile) {
+      setMessage("Ανεβάστε πρώτα τη μπροστινή σελίδα.");
+      return;
+    }
+    if (!canAddMore) return;
+
+    if (
+      activeSection.status !== "success" &&
+      activeSection.status !== "submitting"
+    ) {
+      void submitSection(activeSection.id, getSelectedFiles(activeSection));
+    }
+
     setSections((prev) => [...prev, createSection()]);
-  }
-
-  function removeSection(sectionId: string) {
-    if (sections.length <= 1 || submitting) return;
-    setSections((prev) => prev.filter((section) => section.id !== sectionId));
-  }
-
-  function addFiles(sectionId: string, fileList: FileList | null) {
-    if (!fileList || submitting) return;
-    const nextFiles = Array.from(fileList).map((file) => ({
-      id: `${file.name}-${file.lastModified}-${Math.random().toString(36).slice(2, 8)}`,
-      file,
-    }));
-    setSections((prev) =>
-      prev.map((section) =>
-        section.id === sectionId
-          ? { ...section, files: [...section.files, ...nextFiles] }
-          : section,
-      ),
-    );
     setMessage(null);
-    setSuccessMessage(null);
-  }
-
-  function removeFile(sectionId: string, fileId: string) {
-    if (submitting) return;
-    setSections((prev) =>
-      prev.map((section) =>
-        section.id === sectionId
-          ? {
-              ...section,
-              files: section.files.filter((file) => file.id !== fileId),
-            }
-          : section,
-      ),
-    );
   }
 
   function requestLeave(href: string) {
-    if (hasUploadedContent && !successMessage) {
+    if (hasUnsavedContent) {
       setPendingLeaveHref(href);
       return;
     }
@@ -172,70 +460,6 @@ export default function OrderEoppyBulkWizard() {
     router.push(href);
   }
 
-  function requestMassUploadSubmit() {
-    const sellercode = selectedSeller?.sellerCode?.trim() ?? "";
-    if (!sellercode) {
-      setMessage("Δεν βρέθηκε κωδικός πωλητή.");
-      return;
-    }
-
-    const ordersWithFiles = sections.filter(
-      (section) => section.files.length > 0,
-    );
-    if (ordersWithFiles.length === 0) {
-      setMessage("Προσθέστε τουλάχιστον ένα αρχείο σε μία παραγγελία.");
-      return;
-    }
-
-    setShowSubmitConfirm(true);
-  }
-
-  async function submitMassUpload() {
-    const sellercode = selectedSeller?.sellerCode?.trim() ?? "";
-    if (!sellercode) {
-      setMessage("Δεν βρέθηκε κωδικός πωλητή.");
-      return;
-    }
-
-    const ordersWithFiles = sections.filter(
-      (section) => section.files.length > 0,
-    );
-    if (ordersWithFiles.length === 0) {
-      setMessage("Προσθέστε τουλάχιστον ένα αρχείο σε μία παραγγελία.");
-      return;
-    }
-
-    try {
-      setShowSubmitConfirm(false);
-      setSubmitting(true);
-      setMessage(null);
-      setSuccessMessage(null);
-
-      const payload = await buildMassUploadPayload(ordersWithFiles, sellercode);
-      const res = await fetch("/api/order-mass-upload", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      });
-      const data = await res.json().catch(() => ({}));
-
-      if (!res.ok || data?.ok === false) {
-        throw new Error(data?.message || "Η μαζική αποστολή απέτυχε.");
-      }
-
-      setSuccessMessage("Η μαζική αποστολή ολοκληρώθηκε.");
-      setSections([createSection()]);
-      void dispatch(fetchOrders({ force: true }));
-      router.push("/orders");
-    } catch (error) {
-      setMessage(
-        error instanceof Error ? error.message : "Η μαζική αποστολή απέτυχε.",
-      );
-    } finally {
-      setSubmitting(false);
-    }
-  }
-
   return (
     <>
       <div className="d-flex flex-column gap-2">
@@ -246,111 +470,94 @@ export default function OrderEoppyBulkWizard() {
             <span className="small text-secondary fw-semibold">
               Παραγγελίες ({sections.length}/{MAX_BULK_SECTIONS})
             </span>
-
-            <button
-              type="button"
-              className="btn btn-primary d-inline-flex align-items-center justify-content-center gap-2 px-3 py-2"
-              onClick={requestMassUploadSubmit}
-              disabled={submitting}
-            >
-              {submitting ? (
-                <span className="spinner-border spinner-border-sm" aria-hidden />
-              ) : (
-                <i className="bi bi-send" />
-              )}
-              <span className="d-none d-sm-inline">
-                Αποστολή μαζικής καταχώρησης
-              </span>
-              <span className="d-inline d-sm-none">Αποστολή</span>
-            </button>
           </div>
 
-          {sections.map((section, index) => (
-            <div key={section.id} className="app-card border p-2">
-              <div className="d-flex align-items-center justify-content-between border-bottom mb-2 pb-2">
-                <div className="d-flex align-items-center gap-2">
-                  <span
-                    className="d-inline-flex align-items-center justify-content-center rounded-circle fw-bold text-primary"
-                    style={{
-                      width: 34,
-                      height: 34,
-                      background: "rgba(var(--bs-primary-rgb), 0.12)",
-                    }}
-                  >
-                    {index + 1}
-                  </span>
-                  <span className="fw-semibold">
-                    Παραγγελία (μέχρι 2 σελίδες)
-                  </span>
+          {sections.map((section, index) => {
+            const statusBadge = getStatusBadge(section.status);
+            const isLocked =
+              section.status === "submitting" || section.status === "success";
+
+            return (
+              <div key={section.id} className="app-card border p-2">
+                <div className="d-flex align-items-center justify-content-between border-bottom mb-2 pb-2">
+                  <div className="d-flex align-items-center gap-2">
+                    <span
+                      className="d-inline-flex align-items-center justify-content-center rounded-circle fw-bold text-primary"
+                      style={{
+                        width: 34,
+                        height: 34,
+                        background: "rgba(var(--bs-primary-rgb), 0.12)",
+                      }}
+                    >
+                      {index + 1}
+                    </span>
+                    <span className="fw-semibold">Παραγγελία</span>
+                  </div>
+
+                  {statusBadge ? (
+                    <span className={`badge ${statusBadge.className}`}>
+                      {section.status === "submitting" ? (
+                        <span
+                          className="spinner-border spinner-border-sm me-1"
+                          aria-hidden
+                        />
+                      ) : null}
+                      {statusBadge.label}
+                    </span>
+                  ) : null}
                 </div>
 
-                {sections.length > 1 ? (
+                <div className="d-flex flex-column gap-2">
+                  <PageUploadBox
+                    id={`${section.id}-front`}
+                    title={`Μπροστινή σελίδα`}
+                    file={section.frontFile}
+                    disabled={isLocked}
+                    onFileChange={(file) =>
+                      handleFileChange(section.id, "front", file)
+                    }
+                    onFileRemove={() => handleFileRemove(section.id, "front")}
+                  />
+
+                  {section.frontFile &&
+                  (section.status !== "success" || section.backFile) ? (
+                    <PageUploadBox
+                      id={`${section.id}-back`}
+                      title={`Πίσω σελίδα (εάν υπάρχει)`}
+                      file={section.backFile}
+                      disabled={isLocked}
+                      onFileChange={(file) =>
+                        handleFileChange(section.id, "back", file)
+                      }
+                      onFileRemove={() => handleFileRemove(section.id, "back")}
+                    />
+                  ) : null}
+                </div>
+
+                {section.message ? (
+                  <div
+                    className={`small mt-2 ${
+                      section.status === "error"
+                        ? "text-danger"
+                        : "text-success"
+                    }`}
+                  >
+                    {section.message}
+                  </div>
+                ) : null}
+
+                {section.status === "error" ? (
                   <button
                     type="button"
-                    className="btn btn-sm btn-outline-secondary"
-                    onClick={() => removeSection(section.id)}
-                    disabled={submitting}
-                    aria-label={`Αφαίρεση παραγγελίας ${index + 1}`}
+                    className="btn btn-sm btn-outline-primary mt-2"
+                    onClick={() => handleRetry(section)}
                   >
-                    <i className="bi bi-trash" />
+                    Επανάληψη αποστολής
                   </button>
                 ) : null}
               </div>
-
-              <label className="btn btn-outline-primary d-inline-flex align-items-center justify-content-center w-100 gap-2">
-                <i className="bi bi-cloud-upload" />
-                Προσθήκη αρχείων
-                <input
-                  className="d-none"
-                  type="file"
-                  accept={ACCEPTED_FILES}
-                  multiple
-                  disabled={submitting}
-                  onChange={(event) => {
-                    addFiles(section.id, event.target.files);
-                    event.currentTarget.value = "";
-                  }}
-                />
-              </label>
-
-              {section.files.length > 0 ? (
-                <div className="d-flex flex-column mt-2 gap-1">
-                  {section.files.map(({ id, file }) => (
-                    <div
-                      key={id}
-                      className="d-flex align-items-center justify-content-between gap-2 rounded border px-2 py-1"
-                      style={{ minWidth: 0 }}
-                    >
-                      <div className="min-w-0 flex-grow-1" style={{ minWidth: 0 }}>
-                        <div
-                          className="text-truncate small fw-semibold"
-                          title={file.name}
-                        >
-                          {file.name}
-                        </div>
-                        <div className="small text-secondary">
-                          {formatFileSize(file)}
-                        </div>
-                      </div>
-                      <button
-                        type="button"
-                        className="btn btn-sm btn-link text-secondary"
-                        onClick={() => removeFile(section.id, id)}
-                        disabled={submitting}
-                        aria-label={`Αφαίρεση αρχείου ${file.name}`}
-                      >
-                        <i className="bi bi-x-lg" />
-                      </button>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <div className="small text-secondary mt-2">
-                  Δεν έχουν προστεθεί αρχεία.
-                </div>
-              )}
-            </div>
-          ))}
+            );
+          })}
 
           {canAddMore ? (
             <button
@@ -358,7 +565,7 @@ export default function OrderEoppyBulkWizard() {
               className="text-primary btn btn-outline-secondary d-inline-flex align-items-center justify-content-center w-100 gap-2 py-2"
               style={{ borderStyle: "dashed" }}
               onClick={addSection}
-              disabled={submitting}
+              disabled={!canAddOrder}
             >
               <i className="bi bi-plus-circle" />
               Προσθήκη παραγγελίας
@@ -373,77 +580,7 @@ export default function OrderEoppyBulkWizard() {
         {message ? (
           <div className="alert alert-danger mb-0">{message}</div>
         ) : null}
-        {successMessage ? (
-          <div className="alert alert-success mb-0">{successMessage}</div>
-        ) : null}
       </div>
-
-      <Modal
-        show={showSubmitConfirm}
-        onHide={submitting ? undefined : () => setShowSubmitConfirm(false)}
-        centered
-        contentClassName="premium-modal"
-        backdrop={submitting ? "static" : true}
-        keyboard={!submitting}
-      >
-        <Modal.Body className="p-3">
-          <div className="d-flex align-items-start gap-3 mb-3">
-            <div
-              className="rounded-circle d-flex align-items-center justify-content-center flex-shrink-0 text-primary"
-              style={{
-                width: 42,
-                height: 42,
-                background: "rgba(var(--bs-primary-rgb), 0.12)",
-              }}
-              aria-hidden
-            >
-              <i className="bi bi-send" />
-            </div>
-
-            <div style={{ minWidth: 0 }}>
-              <div className="fw-semibold mb-1">
-                Αποστολή μαζικής καταχώρησης
-              </div>
-              <p className="text-secondary small mb-0">
-                Είστε σίγουροι ότι θέλετε να στείλετε τις παραγγελίες που έχουν
-                αρχεία; Η αποστολή θα ξεκινήσει αμέσως.
-              </p>
-            </div>
-          </div>
-
-          <div className="d-grid gap-2">
-            <Button
-              variant="primary"
-              onClick={() => void submitMassUpload()}
-              disabled={submitting}
-            >
-              {submitting ? (
-                <>
-                  <span
-                    className="spinner-border spinner-border-sm me-2"
-                    role="status"
-                    aria-hidden
-                  />
-                  Αποστολή…
-                </>
-              ) : (
-                <>
-                  <i className="bi bi-send me-2" aria-hidden />
-                  Ναι, αποστολή
-                </>
-              )}
-            </Button>
-
-            <Button
-              variant="outline-secondary"
-              onClick={() => setShowSubmitConfirm(false)}
-              disabled={submitting}
-            >
-              Ακύρωση
-            </Button>
-          </div>
-        </Modal.Body>
-      </Modal>
 
       <LeaveOrderWizardConfirmModal
         show={pendingLeaveHref != null}
@@ -451,7 +588,7 @@ export default function OrderEoppyBulkWizard() {
         onConfirm={confirmLeave}
         showTempSave={false}
         title="Αποχώρηση από μαζική καταχώρηση"
-        message="Είστε σίγουροι ότι θέλετε να αποχωρήσετε; Τα επιλεγμένα αρχεία δεν θα σταλούν."
+        message="Είστε σίγουροι ότι θέλετε να αποχωρήσετε; Οι παραγγελίες που δεν ολοκληρώθηκαν δεν θα σταλούν."
       />
     </>
   );

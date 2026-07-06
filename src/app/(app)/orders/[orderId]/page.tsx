@@ -90,7 +90,7 @@ export default function OrderStartPage() {
           onClick={(x) => handleContinue(x)}
         />
         <PlatformCard
-          title="ΕΟΠΥΥ μαζικό (μόνο επαναληπτικά)"
+          title="ΕΟΠΥΥ μαζικό"
           type="eopyy-bulk"
           description="Ανέβασε πολλές παραγγελίες ταυτόχρονα"
           icon="bi-files"

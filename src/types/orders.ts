@@ -145,6 +145,7 @@ export type Order = {
   hasOtherSystinonIatroBool: boolean;
   isTempSave: number;
   aiCalculated: boolean;
+  aiBatchStatus?: string | null;
   hasAnoia: boolean;
   shouldUpdateRecipientInfos?: number;
   updateRecipient_amka?: string;

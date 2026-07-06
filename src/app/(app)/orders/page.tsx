@@ -14,15 +14,20 @@ import {
   DEFAULT_ORDER_LIST_PAGE,
   DEFAULT_ORDER_LIST_PAGE_SIZE,
 } from "@/lib/api/orderListQuery";
+import { getAiClientsByPriority } from "@/lib/utils/ai";
 import { getListPaginationState } from "@/lib/pagination/listPagination";
 import { useUrlListNavigation } from "@/hooks/useUrlListNavigation";
-import { fetchOrders } from "@/store/orders/ordersSlice";
+import {
+  fetchOrders,
+  retryOrderMassUploadAi,
+} from "@/store/orders/ordersSlice";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 
 export default function OrdersPage() {
   const dispatch = useAppDispatch();
   const searchParams = useSearchParams();
   const userInfo = useAppSelector((s) => s.auth.userInfos);
+  const availableAiClients = useAppSelector((s) => s.auth.availableAiClients);
   const orders = useAppSelector((s) => s.orders.orders);
   const paging = useAppSelector((s) => s.orders.ordersPaging);
   const listLoading = useAppSelector((s) => s.orders.loadingOrders);
@@ -45,6 +50,10 @@ export default function OrdersPage() {
   const loggedSellerCode = userInfo?.sellerCode?.trim() ?? "";
   const urlSellerCode = (searchParams.get("sellercode") ?? "").trim();
   const sellerCodeFilter = showAllAccounts ? "" : loggedSellerCode;
+  const retryAiClient = React.useMemo(
+    () => getAiClientsByPriority(availableAiClients)[0] ?? "Claude",
+    [availableAiClients],
+  );
 
   React.useEffect(() => {
     setQ(urlSearch);
@@ -98,6 +107,19 @@ export default function OrdersPage() {
     [loggedSellerCode, mutateSearchParams],
   );
 
+  const handleRetryAi = React.useCallback(
+    async (orderUid: string) => {
+      await dispatch(
+        retryOrderMassUploadAi({
+          orderUID: orderUid,
+          aiClient: retryAiClient,
+        }),
+      ).unwrap();
+      await onRefresh();
+    },
+    [dispatch, onRefresh, retryAiClient],
+  );
+
   const pagination = getListPaginationState({
     paging,
     urlPage,
@@ -114,14 +136,31 @@ export default function OrdersPage() {
     <>
       <div className="app-card mb-3 p-2">
         <div className="d-flex flex-column gap-2">
-          <SearchBar
-            placeholder="Αναζήτηση (ID, συνταγή, όνομα, ΑΜΚΑ…)"
-            value={q}
-            onChange={setQ}
-            debounceMs={500}
-            debouncedCompareTo={urlSearch}
-            onDebouncedChange={applySearchToUrl}
-          />
+          <div className="d-flex align-items-center gap-2">
+            <SearchBar
+              className="flex-grow-1"
+              placeholder="Αναζήτηση (ID, συνταγή, όνομα, ΑΜΚΑ…)"
+              value={q}
+              onChange={setQ}
+              debounceMs={500}
+              debouncedCompareTo={urlSearch}
+              onDebouncedChange={applySearchToUrl}
+            />
+            <button
+              type="button"
+              className="btn btn-outline-secondary d-none d-md-inline-flex align-items-center justify-content-center flex-shrink-0"
+              onClick={() => void onRefresh()}
+              disabled={listLoading || refreshing}
+              aria-label="Ανανέωση παραγγελιών"
+              title="Ανανέωση"
+              style={{ width: 40, height: 40, borderRadius: 12 }}
+            >
+              <i
+                className={`bi bi-arrow-clockwise ${refreshing ? "spin" : ""}`}
+                aria-hidden
+              />
+            </button>
+          </div>
           <OrderSellerScopeToggle
             allAccounts={showAllAccounts}
             disabled={!loggedSellerCode || (listLoading && orders.length === 0)}
@@ -140,6 +179,7 @@ export default function OrdersPage() {
                 key={o.id}
                 order={o}
                 showSellerName={showAllAccounts}
+                onRetryAi={handleRetryAi}
                 onDelete={() => {}}
               />
             ))}

@@ -212,6 +212,21 @@ export const deleteOrderAsync = createAsyncThunk<
   return { ...data, orderId, orderUID };
 });
 
+export const retryOrderMassUploadAi = createAsyncThunk<
+  unknown,
+  { orderUID: string; aiClient: string }
+>("orders/retryOrderMassUploadAi", async ({ orderUID, aiClient }) => {
+  const params = new URLSearchParams({
+    order_uid: orderUID,
+    aiclient: aiClient,
+  });
+  const res = await fetch(`/api/order-mass-upload-retry?${params.toString()}`, {
+    method: "POST",
+    cache: "no-store",
+  });
+  return parseProxyJson<unknown>(res, "Failed to retry AI analysis");
+});
+
 export const submitDraftAsync = createAsyncThunk<
   PostOrderSuccess,
   void,
