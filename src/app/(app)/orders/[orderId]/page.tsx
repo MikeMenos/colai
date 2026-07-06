@@ -54,7 +54,7 @@ export default function OrderStartPage() {
   };
 
   return (
-    <div className="d-flex flex-column gap-3">
+    <div className="d-flex flex-column gap-2">
       <div>
         <h1 className="h5 fw-semibold mb-1">Επιλογή πλατφόρμας</h1>
         <p className="text-secondary small mb-0">
@@ -85,9 +85,16 @@ export default function OrderStartPage() {
         <PlatformCard
           title="ΕΟΠΥΥ"
           type="eopyy"
-          description="Ανέβασε παραπεμπτικό/γνωμάτευση"
+          description="Ανέβασε παραγγελία"
           icon="bi-cloud-upload"
           onClick={(x) => handleContinue(x)}
+        />
+        <PlatformCard
+          title="ΕΟΠΥΥ μαζικό"
+          type="eopyy-bulk"
+          description="Ανέβασε πολλές παραγγελίες ταυτόχρονα"
+          icon="bi-files"
+          onClick={() => router.push("/orders/0/eopyy-bulk/new")}
         />
         <PlatformCard
           title="Λιανικής"

@@ -122,7 +122,7 @@ export function PowerBiGroupsPage() {
   }, [loadGroups]);
 
   return (
-    <div className="d-flex flex-column gap-3">
+    <div className="d-flex flex-column gap-2">
       <ReportHeader
         title="Groups"
         subtitle="Workspaces διαθέσιμα στο Power BI tenant"

@@ -31,10 +31,12 @@ function useIsDesktop() {
 export default function OrderCard({
   order,
   onDelete,
+  onRetryAi,
   showSellerName = false,
 }: {
   order: Order;
   onDelete?: (id: number) => void;
+  onRetryAi?: (orderUid: string) => Promise<void>;
   showSellerName?: boolean;
 }) {
   const router = useRouter();
@@ -45,13 +47,19 @@ export default function OrderCard({
 
   const isDesktop = useIsDesktop();
   const canDelete = order.statusId === 0 && userInfo?.isSeller;
-  const canSwipeDelete = canDelete && !isDesktop;
+  const aiBatchStatus = order.aiBatchStatus?.trim().toLowerCase() ?? "";
+  const aiQueued = aiBatchStatus === "queued";
+  const aiFailed = aiBatchStatus === "failed";
+  const isAiLocked = aiQueued || aiFailed;
+  const canSwipeDelete = canDelete && !isDesktop && !isAiLocked;
 
   const [x, setX] = React.useState(0);
   const [dragging, setDragging] = React.useState(false);
 
   const [showConfirm, setShowConfirm] = React.useState(false);
   const [deleting, setDeleting] = React.useState(false);
+  const [retryingAi, setRetryingAi] = React.useState(false);
+  const [retryAiError, setRetryAiError] = React.useState<string | null>(null);
 
   const [open, setOpen] = React.useState(false);
 
@@ -178,6 +186,26 @@ export default function OrderCard({
     }
   }
 
+  async function handleRetryAi(e: React.MouseEvent<HTMLButtonElement>) {
+    e.preventDefault();
+    e.stopPropagation();
+    if (!onRetryAi || !order.uid || retryingAi) return;
+
+    try {
+      setRetryingAi(true);
+      setRetryAiError(null);
+      await onRetryAi(order.uid);
+    } catch (error) {
+      setRetryAiError(
+        error instanceof Error
+          ? error.message
+          : "Η επανάληψη της ανάλυσης απέτυχε.",
+      );
+    } finally {
+      setRetryingAi(false);
+    }
+  }
+
   function closeModal() {
     if (deleting) return;
 
@@ -257,6 +285,160 @@ export default function OrderCard({
       : "1px solid transparent",
   };
 
+  const aiQueuedBadgeStyle: React.CSSProperties = {
+    background: "rgba(var(--bs-secondary-rgb), .16)",
+    color: "var(--bs-secondary-color)",
+    border: "1px solid rgba(var(--bs-secondary-rgb), .28)",
+  };
+
+  const aiFailedBadgeStyle: React.CSSProperties = {
+    background: "rgba(var(--bs-danger-rgb), .12)",
+    color: "var(--bs-danger)",
+    border: "1px solid rgba(var(--bs-danger-rgb), .24)",
+  };
+
+  const aiBatchBadge = aiQueued ? (
+    <span style={{ ...chipStyle, ...aiQueuedBadgeStyle }}>
+      <i className="bi bi-robot" />
+      <span className="fw-semibold">Ανάλυση από ΑΙ</span>
+    </span>
+  ) : aiFailed ? (
+    <span style={{ ...chipStyle, ...aiFailedBadgeStyle }}>
+      <i className="bi bi-exclamation-triangle" />
+      <span className="fw-semibold">Αποτυχία του ΑΙ</span>
+    </span>
+  ) : null;
+
+  const headerContent = (
+    <>
+      <div style={{ minWidth: 0 }}>
+        <div className="d-flex align-items-center flex-wrap gap-2">
+          <span style={{ ...chipStyle, ...softPrimaryStyle }}>
+            <i className="bi bi-hash" />
+            <span className="fw-semibold">{order.id}</span>
+          </span>
+
+          {typeText ? <span style={chipStyle}>{typeText}</span> : null}
+          {groupText ? <span style={chipStyle}>{groupText}</span> : null}
+          {dateInText ? (
+            <span
+              style={{ ...chipStyle, ...timestampChipStyle }}
+              title={`Καταχώρηση: ${dateInText}`}
+              aria-label={`Καταχώρηση: ${dateInText}`}
+            >
+              <i className="bi bi-clock-history" />
+              <span className="fw-semibold">{dateInText}</span>
+            </span>
+          ) : null}
+          {aiFailed ? aiBatchBadge : null}
+        </div>
+
+        <div
+          className="mt-2"
+          style={{
+            color: "var(--bs-body-color)",
+            fontWeight: 650,
+            fontSize: 15,
+            overflow: "hidden",
+            textOverflow: "ellipsis",
+            whiteSpace: "nowrap",
+          }}
+          title={order.customer_name}
+        >
+          {order.customer_name ?? ""}
+        </div>
+
+        <div
+          className="text-secondary"
+          style={{
+            fontSize: 13,
+            marginTop: 2,
+            overflow: "hidden",
+            textOverflow: "ellipsis",
+            whiteSpace: "nowrap",
+          }}
+          title={doctorName}
+        >
+          {order.has_suggested_doctor == 2
+            ? `${order.doctorSuggested_name ?? ""}`
+            : `${order.doctor_name ?? ""}`}
+        </div>
+
+        {retryAiError ? (
+          <div className="small text-danger mt-2">{retryAiError}</div>
+        ) : null}
+      </div>
+
+      <div className="text-end" style={{ flexShrink: 0 }}>
+        {aiQueued ? aiBatchBadge : <StatusBadge status={order.statusId} />}
+
+        {!aiQueued ? (
+          <>
+            <div
+              className="fw-semibold mt-2"
+              style={{
+                fontSize: 15,
+                letterSpacing: 0.2,
+              }}
+            >
+              {formatCurrencyGR(order.kostos)}€
+            </div>
+
+            <span
+              className="mt-2"
+              style={{
+                ...chipStyle,
+                background: "rgba(var(--bs-secondary-rgb), .08)",
+              }}
+            >
+              <i className="bi bi-box-seam" />
+              <span className="small">Υλικά: {order.countYlika}</span>
+            </span>
+          </>
+        ) : null}
+
+        {aiFailed ? (
+          <button
+            type="button"
+            className="btn btn-sm btn-outline-danger d-inline-flex align-items-center justify-content-center gap-1 mt-2"
+            onClick={handleRetryAi}
+            disabled={retryingAi || !onRetryAi}
+            style={{ borderRadius: 999, fontWeight: 600 }}
+          >
+            {retryingAi ? (
+              <span
+                className="spinner-border spinner-border-sm"
+                aria-hidden
+              />
+            ) : (
+              <i className="bi bi-arrow-clockwise" aria-hidden />
+            )}
+            Επανάληψη
+          </button>
+        ) : null}
+
+        {!isAiLocked ? (
+          <div
+            className="d-inline-flex align-items-center justify-content-center text-secondary mt-2"
+            style={{
+              width: 28,
+              height: 28,
+              borderRadius: 999,
+              background: "rgba(var(--bs-secondary-rgb), .08)",
+              border: "1px solid var(--bs-border-color-translucent)",
+            }}
+            aria-hidden="true"
+          >
+            <i
+              className={`bi ${open ? "bi-chevron-up" : "bi-chevron-down"}`}
+              style={{ fontSize: 14 }}
+            />
+          </div>
+        ) : null}
+      </div>
+    </>
+  );
+
   return (
     <>
       <div
@@ -310,240 +492,162 @@ export default function OrderCard({
             zIndex: 1,
           }}
         >
-          <details
-            className="app-card"
-            style={cardStyle}
-            onToggle={(e) =>
-              setOpen((e.currentTarget as HTMLDetailsElement).open)
-            }
-          >
-            <summary
-              className="d-flex align-items-start justify-content-between gap-3"
-              style={{
-                ...headerStyle,
-                listStyle: "none",
-                cursor: "pointer",
-                WebkitTapHighlightColor: "transparent",
-              }}
-              onClickCapture={blockClickIfSwiping}
-              onPointerUpCapture={blockClickIfSwiping}
-            >
-              <div style={{ minWidth: 0 }}>
-                <div className="d-flex align-items-center flex-wrap gap-2">
-                  <span style={{ ...chipStyle, ...softPrimaryStyle }}>
-                    <i className="bi bi-hash" />
-                    <span className="fw-semibold">{order.id}</span>
-                  </span>
-
-                  {typeText ? <span style={chipStyle}>{typeText}</span> : null}
-                  {groupText ? (
-                    <span style={chipStyle}>{groupText}</span>
-                  ) : null}
-                  {dateInText ? (
-                    <span
-                      style={{ ...chipStyle, ...timestampChipStyle }}
-                      title={`Καταχώρηση: ${dateInText}`}
-                      aria-label={`Καταχώρηση: ${dateInText}`}
-                    >
-                      <i className="bi bi-clock-history" />
-                      <span className="fw-semibold">{dateInText}</span>
-                    </span>
-                  ) : null}
-                </div>
-
-                <div
-                  className="mt-2"
-                  style={{
-                    color: "var(--bs-body-color)",
-                    fontWeight: 650,
-                    fontSize: 15,
-                    overflow: "hidden",
-                    textOverflow: "ellipsis",
-                    whiteSpace: "nowrap",
-                  }}
-                  title={order.customer_name}
-                >
-                  {order.customer_name ?? ""}
-                </div>
-
-                <div
-                  className="text-secondary"
-                  style={{
-                    fontSize: 13,
-                    marginTop: 2,
-                    overflow: "hidden",
-                    textOverflow: "ellipsis",
-                    whiteSpace: "nowrap",
-                  }}
-                  title={doctorName}
-                >
-                  {order.has_suggested_doctor == 2
-                    ? `${order.doctorSuggested_name ?? ""}`
-                    : `${order.doctor_name ?? ""}`}
-                </div>
-              </div>
-
-              <div className="text-end" style={{ flexShrink: 0 }}>
-                <StatusBadge status={order.statusId} />
-
-                <div
-                  className="fw-semibold mt-2"
-                  style={{
-                    fontSize: 15,
-                    letterSpacing: 0.2,
-                  }}
-                >
-                  {formatCurrencyGR(order.kostos)}€
-                </div>
-
-                <span
-                  className="mt-2"
-                  style={{
-                    ...chipStyle,
-                    background: "rgba(var(--bs-secondary-rgb), .08)",
-                  }}
-                >
-                  <i className="bi bi-box-seam" />
-                  <span className="small">Υλικά: {order.countYlika}</span>
-                </span>
-
-                <div
-                  className="d-inline-flex align-items-center justify-content-center text-secondary mt-2"
-                  style={{
-                    width: 28,
-                    height: 28,
-                    borderRadius: 999,
-                    background: "rgba(var(--bs-secondary-rgb), .08)",
-                    border: "1px solid var(--bs-border-color-translucent)",
-                  }}
-                  aria-hidden="true"
-                >
-                  <i
-                    className={`bi ${open ? "bi-chevron-up" : "bi-chevron-down"}`}
-                    style={{ fontSize: 14 }}
-                  />
-                </div>
-              </div>
-            </summary>
-
-            <div style={{ padding: "14px 14px 14px" }}>
-              <div className="row g-3">
-                <div className="col-4">
-                  <div className="small text-secondary">Ημ/νία Συνταγής</div>
-                  <div className="fw-medium">
-                    {formatUIDate(order.dateOfSyntagi)}
-                  </div>
-                </div>
-                <div className="col-4">
-                  <div className="small text-secondary">Αξία συνταγής</div>
-                  <div className="fw-medium">
-                    {formatCurrencyGR(order.kostos)} €
-                  </div>
-                </div>
-                <div className="col-4">
-                  <div className="small text-secondary">Συμμετοχή</div>
-                  <div className="fw-medium">
-                    {formatCurrencyGR(order.posoSymmetoxis)} €
-                  </div>
-                </div>
-                <div className="col-4">
-                  <div className="small text-secondary">ΑΜΚΑ Πελάτη</div>
-                  <div className="fw-medium" style={{ letterSpacing: 0.3 }}>
-                    {order.customer_amka}
-                  </div>
-                </div>
-                <div className="col-4">
-                  <div className="small text-secondary">Έκπτωση</div>
-                  <div className="fw-medium">
-                    {formatCurrencyGR(order.calculatedDiscPercent)} %
-                  </div>
-                </div>
-                <div className="col-4">
-                  <div className="small text-secondary">Πληρωτέο</div>
-                  <div className="fw-medium">
-                    {formatCurrencyGR(order.posoDiscounted)} €
-                  </div>
-                </div>
-
-                <div className="col-12">
-                  <div className="small text-secondary">{doctorLabel}</div>
-                  <div className="fw-medium">{doctorName}</div>
-                  <div className="text-secondary small">AMKA: {doctorAmka}</div>
-                </div>
-                {showSellerName && sellerName ? (
-                  <div className="col-12">
-                    <div className="d-flex align-items-center gap-2 text-secondary small">
-                      <i className="bi bi-person-badge" aria-hidden />
-                      <span>Πωλητής</span>
-                    </div>
-                    <div className="fw-medium">{sellerName}</div>
-                  </div>
-                ) : null}
-              </div>
-
+          {isAiLocked ? (
+            <div className="app-card" style={cardStyle}>
               <div
+                className="d-flex align-items-start justify-content-between gap-3"
                 style={{
-                  height: 1,
-                  background: "var(--bs-border-color-translucent)",
-                  margin: "14px 0",
+                  ...headerStyle,
+                  borderBottom: "1px solid transparent",
                 }}
-              />
-
-              <div className="d-flex gap-2">
-                {order.statusId === 0 ? (
-                  <button
-                    type="button"
-                    className="btn btn-outline-primary flex-fill"
-                    onClick={() =>
-                      router.push(
-                        `/orders/${order.id}/${order.type}/edit?uid=${order.uid}`,
-                      )
-                    }
-                    style={{
-                      borderRadius: 14,
-                      padding: "10px 12px",
-                      fontWeight: 600,
-                      background: "rgba(var(--bs-primary-rgb), .1)",
-                      borderColor: "rgba(var(--bs-primary-rgb), .35)",
-                    }}
-                  >
-                    <i className="bi bi-pencil-fill me-2" />
-                    Επεξεργασία
-                  </button>
-                ) : null}
-
-                <Link
-                  href={`/orders/${order.id}/${order.type}/view?uid=${order.uid}`}
-                  className="btn btn-primary flex-fill"
-                  style={{
-                    borderRadius: 14,
-                    padding: "10px 12px",
-                    fontWeight: 700,
-                    boxShadow: "0 10px 18px rgba(var(--bs-primary-rgb), .22)",
-                  }}
-                >
-                  <i className="bi bi-eye me-2" />
-                  Προβολή
-                </Link>
-
-                {canDelete && isDesktop ? (
-                  <button
-                    type="button"
-                    className="btn btn-outline-danger flex-fill"
-                    onClick={onClickDelete}
-                    style={{
-                      borderRadius: 14,
-                      padding: "10px 12px",
-                      fontWeight: 600,
-                    }}
-                  >
-                    <i className="bi bi-trash3 me-2" />
-                    Διαγραφή
-                  </button>
-                ) : null}
+              >
+                {headerContent}
               </div>
             </div>
-          </details>
+          ) : (
+            <details
+              className="app-card"
+              style={cardStyle}
+              onToggle={(e) =>
+                setOpen((e.currentTarget as HTMLDetailsElement).open)
+              }
+            >
+              <summary
+                className="d-flex align-items-start justify-content-between gap-3"
+                style={{
+                  ...headerStyle,
+                  listStyle: "none",
+                  cursor: "pointer",
+                  WebkitTapHighlightColor: "transparent",
+                }}
+                onClickCapture={blockClickIfSwiping}
+                onPointerUpCapture={blockClickIfSwiping}
+              >
+                {headerContent}
+              </summary>
+
+              <div style={{ padding: "14px 14px 14px" }}>
+                <div className="row g-3">
+                  <div className="col-4">
+                    <div className="small text-secondary">Ημ/νία Συνταγής</div>
+                    <div className="fw-medium">
+                      {formatUIDate(order.dateOfSyntagi)}
+                    </div>
+                  </div>
+                  <div className="col-4">
+                    <div className="small text-secondary">Αξία συνταγής</div>
+                    <div className="fw-medium">
+                      {formatCurrencyGR(order.kostos)} €
+                    </div>
+                  </div>
+                  <div className="col-4">
+                    <div className="small text-secondary">Συμμετοχή</div>
+                    <div className="fw-medium">
+                      {formatCurrencyGR(order.posoSymmetoxis)} €
+                    </div>
+                  </div>
+                  <div className="col-4">
+                    <div className="small text-secondary">ΑΜΚΑ Πελάτη</div>
+                    <div className="fw-medium" style={{ letterSpacing: 0.3 }}>
+                      {order.customer_amka}
+                    </div>
+                  </div>
+                  <div className="col-4">
+                    <div className="small text-secondary">Έκπτωση</div>
+                    <div className="fw-medium">
+                      {formatCurrencyGR(order.calculatedDiscPercent)} %
+                    </div>
+                  </div>
+                  <div className="col-4">
+                    <div className="small text-secondary">Πληρωτέο</div>
+                    <div className="fw-medium">
+                      {formatCurrencyGR(order.posoDiscounted)} €
+                    </div>
+                  </div>
+
+                  <div className="col-12">
+                    <div className="small text-secondary">{doctorLabel}</div>
+                    <div className="fw-medium">{doctorName}</div>
+                    <div className="text-secondary small">
+                      AMKA: {doctorAmka}
+                    </div>
+                  </div>
+                  {showSellerName && sellerName ? (
+                    <div className="col-12">
+                      <div className="d-flex align-items-center gap-2 text-secondary small">
+                        <i className="bi bi-person-badge" aria-hidden />
+                        <span>Πωλητής</span>
+                      </div>
+                      <div className="fw-medium">{sellerName}</div>
+                    </div>
+                  ) : null}
+                </div>
+
+                <div
+                  style={{
+                    height: 1,
+                    background: "var(--bs-border-color-translucent)",
+                    margin: "14px 0",
+                  }}
+                />
+
+                <div className="d-flex gap-2">
+                  {order.statusId === 0 ? (
+                    <button
+                      type="button"
+                      className="btn btn-outline-primary flex-fill"
+                      onClick={() =>
+                        router.push(
+                          `/orders/${order.id}/${order.type}/edit?uid=${order.uid}`,
+                        )
+                      }
+                      style={{
+                        borderRadius: 14,
+                        padding: "10px 12px",
+                        fontWeight: 600,
+                        background: "rgba(var(--bs-primary-rgb), .1)",
+                        borderColor: "rgba(var(--bs-primary-rgb), .35)",
+                      }}
+                    >
+                      <i className="bi bi-pencil-fill me-2" />
+                      Επεξεργασία
+                    </button>
+                  ) : null}
+
+                  <Link
+                    href={`/orders/${order.id}/${order.type}/view?uid=${order.uid}`}
+                    className="btn btn-primary flex-fill"
+                    style={{
+                      borderRadius: 14,
+                      padding: "10px 12px",
+                      fontWeight: 700,
+                      boxShadow:
+                        "0 10px 18px rgba(var(--bs-primary-rgb), .22)",
+                    }}
+                  >
+                    <i className="bi bi-eye me-2" />
+                    Προβολή
+                  </Link>
+
+                  {canDelete && isDesktop ? (
+                    <button
+                      type="button"
+                      className="btn btn-outline-danger flex-fill"
+                      onClick={onClickDelete}
+                      style={{
+                        borderRadius: 14,
+                        padding: "10px 12px",
+                        fontWeight: 600,
+                      }}
+                    >
+                      <i className="bi bi-trash3 me-2" />
+                      Διαγραφή
+                    </button>
+                  ) : null}
+                </div>
+              </div>
+            </details>
+          )}
         </div>
       </div>
 

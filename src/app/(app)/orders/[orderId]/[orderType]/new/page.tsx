@@ -8,10 +8,12 @@ import { useAppDispatch } from "@/store/hooks";
 import { setDraftProperty } from "@/store/orders/ordersSlice";
 
 import OrderEoppyWizard from "@/features/orders/wizard/eopyy/OrderEoppyWizard";
+import OrderEoppyBulkWizard from "@/features/orders/wizard/eopyy/bulk/OrderEoppyBulkWizard";
 import OrderRetailWizard from "@/features/orders/wizard/retail/OrderRetailWizard";
 
 const WIZARDS: Record<string, React.ComponentType> = {
   eopyy: OrderEoppyWizard,
+  "eopyy-bulk": OrderEoppyBulkWizard,
   retail: OrderRetailWizard,
 };
 

@@ -7,7 +7,11 @@ import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import LeaveOrderWizardConfirmModal from "@/features/orders/components/LeaveOrderWizardConfirmModal";
 import BottomToast from "@/components/ui/BottomToast";
 import { hasOrderWizardDraftContent } from "@/lib/orderWizardDraftContent";
-import { isOrderWizardPath } from "@/lib/orderWizardRoute";
+import {
+  isOrderEoppyBulkPath,
+  shouldGuardOrderWizardLeave,
+} from "@/lib/orderWizardRoute";
+import { getBulkLeaveGuard } from "@/features/orders/wizard/eopyy/bulk/bulkLeaveGuard";
 import {
   fetchOrders,
   setDraftProperty,
@@ -19,6 +23,7 @@ type Item = {
   icon: string;
   label: string;
   badge?: number;
+  badgeVariant?: "danger" | "warning";
 };
 
 function isActive(pathname: string, href: string): boolean {
@@ -40,12 +45,20 @@ export default function BottomNav() {
     [draft],
   );
   const [pendingHref, setPendingHref] = React.useState<string | null>(null);
+  const [leaveModalMode, setLeaveModalMode] = React.useState<
+    "wizard" | "bulk"
+  >("wizard");
   const [tempSaveToast, setTempSaveToast] = React.useState<string | null>(null);
-  const guardWizardLeave = isOrderWizardPath(pathname);
+  const guardWizardLeave = shouldGuardOrderWizardLeave(pathname);
+  const onBulkPage = isOrderEoppyBulkPath(pathname);
 
   const items: Item[] = [
     { href: "/", icon: "bi-house", label: "Αρχική" },
-    { href: "/orders", icon: "bi-list-check", label: "Παραγγελίες" },
+    {
+      href: "/orders",
+      icon: "bi-list-check",
+      label: "Παραγγελίες",
+    },
     { href: "/diadikasia-wc", icon: "bi-calendar-check", label: "WC" },
     { href: "/salesWC", icon: "bi-receipt", label: "Πωλήσεις" },
     {
@@ -60,13 +73,30 @@ export default function BottomNav() {
     event: React.MouseEvent<HTMLAnchorElement>,
     href: string,
   ) {
-    if (!guardWizardLeave || pathname === href) return;
+    if (pathname === href) return;
+
+    if (onBulkPage) {
+      const guard = getBulkLeaveGuard();
+      if (guard?.hasContent()) {
+        event.preventDefault();
+        setLeaveModalMode("bulk");
+        setPendingHref(href);
+        return;
+      }
+      return;
+    }
+
+    if (!guardWizardLeave) return;
     if (!hasDraftContent) return;
     event.preventDefault();
+    setLeaveModalMode("wizard");
     setPendingHref(href);
   }
 
   function confirmLeave() {
+    if (leaveModalMode === "bulk") {
+      getBulkLeaveGuard()?.abortAll();
+    }
     if (pendingHref) router.push(pendingHref);
     setPendingHref(null);
   }
@@ -112,7 +142,7 @@ export default function BottomNav() {
                   <i className={`nav-icon bi ${it.icon}`} />
                   {it.badge ? (
                     <span
-                      className="position-absolute translate-middle badge rounded-pill bg-danger start-100 top-0"
+                      className={`position-absolute translate-middle badge rounded-pill bg-${it.badgeVariant ?? "danger"} start-100 top-0`}
                       style={{ fontSize: "0.65rem" }}
                     >
                       {it.badge}
@@ -133,6 +163,17 @@ export default function BottomNav() {
         onTempSave={() => void confirmTempSave()}
         tempSaveLoading={submitState.loading}
         tempSaveError={submitState.error}
+        showTempSave={leaveModalMode === "wizard"}
+        title={
+          leaveModalMode === "bulk"
+            ? "Αποχώρηση από μαζική καταχώρηση"
+            : undefined
+        }
+        message={
+          leaveModalMode === "bulk"
+            ? "Είστε σίγουροι ότι θέλετε να αποχωρήσετε; Τα ανεβασμένα αρχεία θα χαθούν και οι τρέχουσες διεργασίες AI/αποθήκευσης θα ακυρωθούν."
+            : undefined
+        }
       />
 
       <BottomToast

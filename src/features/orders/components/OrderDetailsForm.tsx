@@ -19,7 +19,7 @@ export default function OrderDetailsForm({
   const disabled = mode === "view";
 
   return (
-    <div className="d-flex flex-column gap-3">
+    <div className="d-flex flex-column gap-2">
       <div className="app-card px-3 py-2">
         <div className="d-flex justify-content-between align-items-start">
           <div>

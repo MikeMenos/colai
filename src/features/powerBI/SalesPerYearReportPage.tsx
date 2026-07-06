@@ -513,7 +513,7 @@ export function SalesPerYearReportPage({
       : "Ετήσια εικόνα πωλήσεων";
 
   return (
-    <div className="d-flex flex-column gap-3">
+    <div className="d-flex flex-column gap-2">
       <ReportHeader
         title="Πωλήσεις ανά έτος"
         subtitle={sellerLabel}
