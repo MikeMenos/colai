@@ -45,6 +45,7 @@ export type ValidateEoppyOrderInput = {
   lastOrderInfoDateIn?: string;
   hasFiles: boolean;
   hasConsentFormFiles: boolean;
+  showSynainesiPanel: boolean;
 };
 
 export type RunEoppyAiParams = {

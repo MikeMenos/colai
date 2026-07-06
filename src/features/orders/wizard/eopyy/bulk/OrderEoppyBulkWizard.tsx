@@ -1,5 +1,6 @@
 "use client";
 
+import type { UploadSide, SectionStatus, MassUploadSection, MassUploadPayload, LocalFilePickerButtonProps, PageUploadBoxProps } from "./OrderEoppyBulkWizard.types";
 import React from "react";
 import { Capacitor } from "@capacitor/core";
 import { Modal } from "react-bootstrap";
@@ -10,29 +11,6 @@ import { registerBulkLeaveGuard } from "./bulkLeaveGuard";
 import { resolveActingSeller } from "@/lib/sellerAccess";
 import { fetchOrders } from "@/store/orders/ordersSlice";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
-
-type UploadSide = "front" | "back";
-type SectionStatus = "draft" | "submitting" | "success" | "error";
-
-type MassUploadSection = {
-  id: string;
-  frontFile: File | null;
-  backFile: File | null;
-  status: SectionStatus;
-  message: string | null;
-};
-
-type MassUploadPayload = {
-  catid: 4;
-  typeid: "eopyy";
-  sellercode: string;
-  orders: {
-    files: {
-      base64file: string;
-      base64filename: string;
-    }[];
-  }[];
-};
 
 const MAX_BULK_SECTIONS = 10;
 const ACCEPTED_FILES = "application/pdf,image/*";
@@ -109,16 +87,7 @@ function shouldUseUploadSourcePicker(): boolean {
   if (platform === "android") return true;
   if (platform === "web" && /Android/i.test(navigator.userAgent)) return true;
   return false;
-}
-
-type LocalFilePickerButtonProps = {
-  id: string;
-  disabled: boolean;
-  ariaLabel: string;
-  onFileChange: (file: File) => void;
-};
-
-function LocalFilePickerButton({
+}function LocalFilePickerButton({
   id,
   disabled,
   ariaLabel,
@@ -243,18 +212,7 @@ function LocalFilePickerButton({
       ) : null}
     </>
   );
-}
-
-type PageUploadBoxProps = {
-  id: string;
-  title: string;
-  file: File | null;
-  disabled: boolean;
-  onFileChange: (file: File) => void;
-  onFileRemove: () => void;
-};
-
-function PageUploadBox({
+}function PageUploadBox({
   id,
   title,
   file,

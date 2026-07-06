@@ -1,5 +1,6 @@
 "use client";
 
+import type { MapAction } from "./WCDiadikasiaGroupedList.types";
 import React from "react";
 import { Modal } from "react-bootstrap";
 import type { SearchCustomerTelsData, wcCalendar } from "@/types/wc";
@@ -40,22 +41,7 @@ function getDeliveryInfo(row: wcCalendar) {
   const query = [address, postal, city].filter(Boolean).join(" ");
 
   return { location, query };
-}
-type MapAction =
-  | {
-      label: string;
-      href: string;
-      icon: string;
-      copyValue?: never;
-    }
-  | {
-      label: string;
-      href: null;
-      icon: string;
-      copyValue: string;
-    };
-
-function mapLinks(query: string, location: string): MapAction[] {
+}function mapLinks(query: string, location: string): MapAction[] {
   const encodedQuery = encodeURIComponent(query);
 
   return [

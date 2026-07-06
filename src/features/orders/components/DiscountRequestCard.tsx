@@ -1,5 +1,6 @@
 "use client";
 
+import type { SheetMode } from "./DiscountRequestCard.types";
 import React from "react";
 import { DiscountRequest } from "@/types/discoutRequest";
 import { DiscountRequestStatusBadge } from "@/components/ui/DiscountRequestStatusBadge";
@@ -8,8 +9,6 @@ import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { formatCurrencyGR } from "@/lib/utils/number";
 import { Modal, Button } from "react-bootstrap";
 import { reviewDiscountRequest } from "@/store/discountRequests/discountRequestsSlice";
-
-type SheetMode = "approve" | "deny" | "amount" | null;
 
 export default function DiscountRequestCard({
   request,

@@ -9,6 +9,8 @@ import AppLoader from "@/components/ui/AppLoader";
 import {
   applyCustomerFromSearch,
   applyLastCustomerWebOrderFromSearch,
+  applySearchConsentFlag,
+  type CustomerSearchOrderType,
   searchCustomersByQuery,
 } from "./customerSearchActions";
 
@@ -17,11 +19,13 @@ export type { CustomerSearchResult };
 export default function CustomerLookupModal({
   show,
   onClose,
+  orderType,
   resetWizardOnDifferentAmka = false,
   baselineCustomerAmkaRef,
 }: {
   show: boolean;
   onClose: () => void;
+  orderType: CustomerSearchOrderType;
   resetWizardOnDifferentAmka?: boolean;
   baselineCustomerAmkaRef?: React.RefObject<string | null>;
 }) {
@@ -57,7 +61,8 @@ export default function CustomerLookupModal({
     setError(null);
     setHasSearched(true);
     try {
-      const outcome = await searchCustomersByQuery(query);
+      const outcome = await searchCustomersByQuery(query, orderType);
+      applySearchConsentFlag(dispatch, outcome.showConsentForm);
       setResults(outcome.results);
       setLastCustomerWebOrder(outcome.lastCustomerWebOrder);
       setError(outcome.error);

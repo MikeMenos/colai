@@ -250,6 +250,7 @@ export default function OrderCustomerArea({
 
         <CustomerLookupModal
           show={showLookup}
+          orderType="eopyy"
           onClose={() => {
             setShowLookup(false);
             if (!amkaEditedByUser) {

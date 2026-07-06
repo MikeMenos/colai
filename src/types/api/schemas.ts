@@ -463,6 +463,7 @@ export type SearchCustomers_Response = {
   isSuccess: boolean;
   message?: Nullable<string>;
   errorMessage?: Nullable<string>;
+  showConsentForm?: Nullable<number | string | boolean>;
   listCustomers?: Nullable<COLAI_T_CUSTOMER_PERSONAL_INFO[]>;
   mode?: Nullable<string>;
   searchTerm?: Nullable<string>;
@@ -816,6 +817,7 @@ export type ReadEoppyDocumentAIResp = {
   statusCode?: Nullable<number>;
   message?: Nullable<string>;
   detailedMessage?: Nullable<string>;
+  showConsentForm?: Nullable<number | string | boolean>;
   data?: Nullable<ReadEoppyDoc_Response>;
 };
 

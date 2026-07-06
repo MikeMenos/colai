@@ -1,21 +1,7 @@
 "use client";
 
-import React from "react";
-
-type Props = {
-  placeholder?: string;
-  value: string;
-  onChange: (next: string) => void;
-  onSubmit?: () => void;
-  onClear?: () => void;
-  autoFocus?: boolean;
-  className?: string;
-  debounceMs?: number;
-  onDebouncedChange?: (next: string) => void;
-  debouncedCompareTo?: string;
-};
-
-export function SearchBar({
+import type { Props } from "./SearchBar.types";
+import React from "react";export function SearchBar({
   placeholder = "Αναζήτηση…",
   value,
   onChange,

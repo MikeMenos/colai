@@ -1,9 +1,5 @@
-import React from 'react'
-
-type ErrorCtx = {
-    errors: Record<string, string | boolean>;
-    clearError?: (field: string) => void;
-};
+import type { ErrorCtx } from "./FormErrorContect.types";
+import React from "react";
 
 const FormErrorsContext = React.createContext<ErrorCtx>({ errors: {} });
 

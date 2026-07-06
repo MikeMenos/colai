@@ -1,5 +1,6 @@
 "use client";
 
+import type { UseCustomerAmkaSearchResult, CustomerAmkaSearchPanelProps } from "./CustomerAmkaSearchPanel.types";
 import React from "react";
 import AppLoader from "@/components/ui/AppLoader";
 import { formatLastCustomerWebOrderRow } from "@/lib/customerUtils";
@@ -11,21 +12,9 @@ import {
   applyCompletelyNewCustomerFromAmka,
   applyCustomerFromSearch,
   applyLastCustomerWebOrderFromSearch,
+  applySearchConsentFlag,
   searchCustomersByQuery,
 } from "../modals/customerSearchActions";
-
-export type UseCustomerAmkaSearchResult = {
-  loading: boolean;
-  applying: boolean;
-  error: string | null;
-  results: CustomerSearchResult[];
-  lastCustomerWebOrder: Record<string, unknown> | null;
-  hasSearched: boolean;
-  amkaIsValid: boolean;
-  handleSelectCustomer: (c: CustomerSearchResult) => Promise<void>;
-  handleSelectLastWebOrder: (lwo: Record<string, unknown>) => Promise<void>;
-  handleContinueAsNew: () => void;
-};
 
 function useDismissOnClickOutside(
   anchorRef: React.RefObject<HTMLElement | null>,
@@ -93,8 +82,9 @@ export function useCustomerAmkaSearch(
       setError(null);
       setHasSearched(false);
       try {
-        const outcome = await searchCustomersByQuery(normalizedAmka);
+        const outcome = await searchCustomersByQuery(normalizedAmka, "eopyy");
         if (cancelled) return;
+        applySearchConsentFlag(dispatch, outcome.showConsentForm);
         setResults(outcome.results);
         setLastCustomerWebOrder(outcome.lastCustomerWebOrder);
         setError(outcome.error);
@@ -107,7 +97,7 @@ export function useCustomerAmkaSearch(
     return () => {
       cancelled = true;
     };
-  }, [enabled, amkaIsValid, normalizedAmka]);
+  }, [dispatch, enabled, amkaIsValid, normalizedAmka]);
 
   const finish = React.useCallback(() => {
     if (completeGate) {
@@ -299,20 +289,7 @@ function AmkaSearchDropdownContent({
       ) : null}
     </>
   );
-}
-
-export type CustomerAmkaSearchPanelProps = {
-  amka: string;
-  completeGate?: boolean;
-  onResolved?: () => void;
-  onDismiss?: () => void;
-  open?: boolean;
-  anchorRef?: React.RefObject<HTMLElement | null>;
-  resetWizardOnDifferentAmka?: boolean;
-  baselineCustomerAmkaRef?: React.RefObject<string | null>;
-};
-
-export function CustomerAmkaSearchPanel({
+}export function CustomerAmkaSearchPanel({
   amka,
   completeGate = false,
   onResolved,

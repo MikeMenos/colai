@@ -1,5 +1,6 @@
 "use client";
 
+import type { DoctorLookupModal } from "./DoctorLookupModal.types";
 import React from "react";
 import { Modal } from "react-bootstrap";
 import { useAppDispatch } from "@/store/hooks";
@@ -11,8 +12,6 @@ import type {
 } from "@/types/api/responses";
 import type { Order } from "@/types/orders";
 import { parseProxyJson } from "@/lib/api/client";
-
-export type DoctorLookupModal = DoctorSearchResult;
 
 function buildDoctorPatch(
   c: DoctorLookupModal,

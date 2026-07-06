@@ -18,6 +18,7 @@ import {
   setLastOrderInfoCustomerErpGID,
   setLastOrderInfoDateIn,
   setLastWebOrderFromLoadInfo,
+  setShowConsentForm,
 } from "@/store/orders/ordersSlice";
 import type { AppDispatch } from "@/store/store";
 import { store } from "@/store/store";
@@ -41,6 +42,7 @@ export type ApplyCustomerFromSearchOptions = {
   baselineCustomerAmka?: string | null;
   resetWizardOnDifferentAmka?: boolean;
 };
+export type CustomerSearchOrderType = "eopyy" | "retail";
 
 function maybeResetWizardForDifferentAmka(
   dispatch: AppDispatch,
@@ -63,8 +65,20 @@ function maybeResetWizardForDifferentAmka(
 export type CustomerSearchOutcome = {
   results: CustomerSearchResult[];
   lastCustomerWebOrder: Record<string, unknown> | null;
+  showConsentForm: boolean | null;
   error: string | null;
 };
+
+export function normalizeShowConsentForm(value: unknown): boolean | null {
+  if (value === 1 || value === true) return true;
+  if (value === 0 || value === false) return false;
+
+  const text = String(value ?? "").trim().toLowerCase();
+  if (text === "1" || text === "true") return true;
+  if (text === "0" || text === "false") return false;
+
+  return null;
+}
 
 function isNonEmptyRecord(v: unknown): v is Record<string, unknown> {
   return (
@@ -90,20 +104,28 @@ function getCustomerSearchErrorMessage(
 
 export async function searchCustomersByQuery(
   query: string,
+  orderType: CustomerSearchOrderType,
 ): Promise<CustomerSearchOutcome> {
   const trimmed = query.trim();
   if (!trimmed) {
-    return { results: [], lastCustomerWebOrder: null, error: null };
+    return {
+      results: [],
+      lastCustomerWebOrder: null,
+      showConsentForm: null,
+      error: null,
+    };
   }
 
   try {
-    const res = await fetch(
-      `/api/customers?q=${encodeURIComponent(trimmed)}&_ts=${Date.now()}`,
-      {
-        cache: "no-store",
-        headers: { "Cache-Control": "no-cache", Pragma: "no-cache" },
-      },
-    );
+    const params = new URLSearchParams({
+      q: trimmed,
+      orderType,
+      _ts: String(Date.now()),
+    });
+    const res = await fetch(`/api/customers?${params.toString()}`, {
+      cache: "no-store",
+      headers: { "Cache-Control": "no-cache", Pragma: "no-cache" },
+    });
     const data = await parseProxyJson<SearchCustomersSuccess>(
       res,
       "Search failed",
@@ -111,7 +133,12 @@ export async function searchCustomersByQuery(
 
     const searchError = getCustomerSearchErrorMessage(data);
     if (searchError) {
-      return { results: [], lastCustomerWebOrder: null, error: searchError };
+      return {
+        results: [],
+        lastCustomerWebOrder: null,
+        showConsentForm: normalizeShowConsentForm(data.showConsentForm),
+        error: searchError,
+      };
     }
 
     const listCustomers = data.listCustomers ?? [];
@@ -123,13 +150,26 @@ export async function searchCustomersByQuery(
       results: listCustomers,
       lastCustomerWebOrder:
         listCustomers.length === 0 && webOrder ? webOrder : null,
+      showConsentForm: normalizeShowConsentForm(data.showConsentForm),
       error: null,
     };
   } catch (e: unknown) {
     const message =
       e instanceof Error ? e.message : "Η αναζήτηση απέτυχε.";
-    return { results: [], lastCustomerWebOrder: null, error: message };
+    return {
+      results: [],
+      lastCustomerWebOrder: null,
+      showConsentForm: null,
+      error: message,
+    };
   }
+}
+
+export function applySearchConsentFlag(
+  dispatch: AppDispatch,
+  showConsentForm: boolean | null,
+): void {
+  dispatch(setShowConsentForm(showConsentForm === true));
 }
 
 export async function applyCustomerFromSearch(

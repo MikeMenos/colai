@@ -1,5 +1,6 @@
 "use client";
 
+import type { DiscountRequestsTab } from "./page.types";
 import React from "react";
 import { useSearchParams } from "next/navigation";
 
@@ -16,8 +17,6 @@ import {
 } from "@/lib/api/discountListQuery";
 import { getListPaginationState } from "@/lib/pagination/listPagination";
 import { useUrlListNavigation } from "@/hooks/useUrlListNavigation";
-
-type DiscountRequestsTab = "pending" | "reviewed";
 
 function isPendingDiscountRequest(isDiscountApproved: number) {
   return isDiscountApproved == -1;

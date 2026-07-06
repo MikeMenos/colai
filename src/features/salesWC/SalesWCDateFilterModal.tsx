@@ -1,19 +1,8 @@
 "use client";
 
+import type { SalesWCDateFilterModalProps } from "./SalesWCDateFilterModal.types";
 import { formatElGRDateShort } from "@/lib/utils/date";
 import { Button, Modal } from "react-bootstrap";
-
-type SalesWCDateFilterModalProps = {
-  show: boolean;
-  onHide: () => void;
-  dateFrom: string;
-  dateTo: string;
-  maxSelectableDate: string;
-  onDateFromChange: (value: string) => void;
-  onDateToChange: (value: string) => void;
-  onApplyCurrentMonth: () => void;
-  onApplyPreviousMonth: () => void;
-};
 
 export default function SalesWCDateFilterModal({
   show,

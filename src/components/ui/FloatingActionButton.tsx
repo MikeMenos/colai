@@ -1,13 +1,5 @@
-import Link from "next/link";
-
-type FloatingActionButtonProps = {
-  href: string;
-  ariaLabel: string;
-  iconClassName?: string;
-  inline?: boolean;
-};
-
-/**
+import type { FloatingActionButtonProps } from "./FloatingActionButton.types";
+import Link from "next/link";/**
  * Mobile-style floating action button.
  * Positioned via the `.app-fab` class (inside the phone canvas).
  */

@@ -1,14 +1,7 @@
+import type { SellerReportsPageProps, SellerReportTile } from "./SellerReportsPage.types";
 import Link from "next/link";
 
 import type { ReportTile } from "@/lib/bi-reports/biReports";
-
-type SellerReportsPageProps = {
-  subtitle?: string;
-};
-
-type SellerReportTile = Omit<ReportTile, "href"> & {
-  slug: string;
-};
 
 const sellerReportTiles: SellerReportTile[] = [
   {

@@ -1,20 +1,7 @@
 "use client";
 
-import React from "react";
-
-type Props = {
-    onRefresh: () => Promise<any> | void;
-    isRefreshing?: boolean;
-    threshold?: number; // px
-    maxPull?: number; // px
-    scrollSelector?: string; // default ".app-content"
-    children: React.ReactNode;
-    useSelfScroll?: boolean;
-    style?: React.CSSProperties;
-    className?: string;
-};
-
-function resolveScrollElement(
+import type { Props } from "./PullToRefresh.types";
+import React from "react";function resolveScrollElement(
     useSelfScroll: boolean,
     container: HTMLDivElement | null,
     scrollSelector: string,

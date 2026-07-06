@@ -75,7 +75,12 @@ export default function OrderWizardEditPage() {
   if (editState.error) return <div className="alert alert-danger">{editState.error}</div>;
 
   if (orderType === "eopyy") {
-    return <OrderEoppyWizard initialStepKey="customer" />;
+    return (
+      <OrderEoppyWizard
+        initialStepKey="customer"
+        useOnlyBackendConsentVisibility
+      />
+    );
   }
 
   if (orderType === "retail") {

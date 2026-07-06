@@ -1,5 +1,6 @@
 "use client";
 
+import type { OrderEoppyWizardProps } from "./OrderEoppyWizard.types";
 import React from "react";
 import { StepIndicator } from "@/components/ui/StepIndicator";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
@@ -8,7 +9,6 @@ import {
   submitDraftAsync,
   clearDraftSubmitError,
 } from "@/store/orders/ordersSlice";
-import { shouldShowSynainesiStep } from "@/lib/customerUtils";
 import { isConsentScoreTooLow } from "@/lib/consentUpload";
 import {
   getAiRunErrorMessage,
@@ -54,12 +54,9 @@ import {
 } from "./wizard/sortWizardIssues";
 import type { StepOrderEntry } from "./componentProps";
 
-type OrderEoppyWizardProps = {
-  initialStepKey?: StepKey;
-};
-
 export default function OrderEoppyWizard({
   initialStepKey,
+  useOnlyBackendConsentVisibility = false,
 }: OrderEoppyWizardProps = {}) {
   const dispatch = useAppDispatch();
   const [step, setStep] = React.useState(0);
@@ -106,9 +103,12 @@ export default function OrderEoppyWizard({
   const lastOrderInfoDateIn = useAppSelector(
     (s) => s.orders.draft.lastOrderInfoDateIn,
   );
-  const showSynainesiPanel = shouldShowSynainesiStep({
-    customerIsCompletelyNew,
-  });
+  const isNewCustomerBadgeShown =
+    customerIsCompletelyNew === true ||
+    !String(draftOrder.customer_ErpGID ?? "").trim();
+  const showSynainesiPanel =
+    useAppSelector((s) => s.orders.draft.showConsentForm) === true ||
+    (!useOnlyBackendConsentVisibility && isNewCustomerBadgeShown);
   const synaineseisResults = useAppSelector(
     (s) => s.orders.draft.synaineseisResults,
   );
@@ -192,6 +192,7 @@ export default function OrderEoppyWizard({
         lastOrderInfoDateIn,
         hasFiles,
         hasConsentFormFiles,
+        showSynainesiPanel,
       }),
     [
       customerIsCompletelyNew,
@@ -199,6 +200,7 @@ export default function OrderEoppyWizard({
       hasConsentFormFiles,
       hasFiles,
       lastOrderInfoDateIn,
+      showSynainesiPanel,
     ],
   );
   const runAi = React.useCallback(

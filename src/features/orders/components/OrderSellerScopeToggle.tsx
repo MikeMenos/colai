@@ -1,14 +1,7 @@
 "use client";
 
-import React from "react";
-
-type Props = {
-  allAccounts: boolean;
-  disabled?: boolean;
-  onChange: (next: boolean) => void;
-};
-
-export default function OrderSellerScopeToggle({
+import type { Props } from "./OrderSellerScopeToggle.types";
+import React from "react";export default function OrderSellerScopeToggle({
   allAccounts,
   disabled = false,
   onChange,

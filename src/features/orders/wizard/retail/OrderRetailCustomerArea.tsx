@@ -138,6 +138,7 @@ export default function OrderRetailCustomerArea() {
 
         <CustomerLookupModal
           show={showLookup}
+          orderType="retail"
           onClose={() => setShowLookup(false)}
         />
 
