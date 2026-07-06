@@ -201,7 +201,10 @@ export default function OrderEoppyWizard() {
       setAiMessage(null);
 
       const controller = new AbortController();
-      const t = window.setTimeout(() => controller.abort(), EOPPY_AI_TIMEOUT_MS);
+      const t = window.setTimeout(
+        () => controller.abort(),
+        EOPPY_AI_TIMEOUT_MS,
+      );
 
       try {
         await runEoppyAi({
@@ -263,7 +266,6 @@ export default function OrderEoppyWizard() {
     goToStepByKey,
     stepOrder: stepOrderRef.current,
   });
-
   const effectiveSteps = stepDefs.filter((s) => s.show !== false);
   effectiveStepsRef.current = effectiveSteps;
   stepOrderRef.current = buildStepOrderMap(effectiveSteps);

@@ -15,6 +15,7 @@ import type {
   GetOrdersSuccess,
   GetOrderViewSuccess,
   PostOrderSuccess,
+  SearchCustomersSuccess,
 } from "@/types/api/responses";
 import type { PagingResults } from "@/types/api/common";
 import { parseProxyJson } from "@/lib/api/client";
@@ -45,6 +46,11 @@ import {
 } from "@/lib/sellerAccess";
 
 type OrderDraftType = "eopyy" | "non_eoppy";
+type EditCustomerStatus = "existing" | "pros_ebs";
+type EditDraftPayload = GetOrderEditSuccess & {
+  editCustomerStatus?: EditCustomerStatus;
+  editLastCustomerWebOrder?: Record<string, unknown> | null;
+};
 
 export interface DraftState {
   editState: { loading: boolean; error: string | null };
@@ -227,6 +233,54 @@ export const retryOrderMassUploadAi = createAsyncThunk<
   return parseProxyJson<unknown>(res, "Failed to retry AI analysis");
 });
 
+async function resolveEditCustomerStatusFromCustomerAmka(
+  payload: GetOrderEditSuccess,
+): Promise<EditDraftPayload> {
+  const order = payload.data?.order as Order | undefined;
+  const customerAmka = order?.customer_amka?.trim();
+  if (!order || !customerAmka) return payload;
+  if (Number(order.statusId) !== 0) return payload;
+
+  try {
+    const res = await fetch(
+      `/api/customers?q=${encodeURIComponent(customerAmka)}&_ts=${Date.now()}`,
+      {
+        cache: "no-store",
+        headers: { "Cache-Control": "no-cache", Pragma: "no-cache" },
+      },
+    );
+    const data = await parseProxyJson<SearchCustomersSuccess>(
+      res,
+      "Search failed",
+    );
+    const lastCustomerWebOrder =
+      data.lastCustomerWebOrder &&
+      typeof data.lastCustomerWebOrder === "object" &&
+      !Array.isArray(data.lastCustomerWebOrder) &&
+      Object.keys(data.lastCustomerWebOrder).length > 0
+        ? (data.lastCustomerWebOrder as Record<string, unknown>)
+        : null;
+    const personGid = String(
+      order.person_ErpGID ?? lastCustomerWebOrder?.person_ErpGID ?? "",
+    ).trim();
+    const editCustomerStatus: EditCustomerStatus | undefined = personGid
+      ? "existing"
+      : lastCustomerWebOrder
+        ? "pros_ebs"
+        : undefined;
+
+    if (!editCustomerStatus) return payload;
+
+    return {
+      ...payload,
+      editCustomerStatus,
+      editLastCustomerWebOrder: lastCustomerWebOrder,
+    };
+  } catch {
+    return payload;
+  }
+}
+
 export const submitDraftAsync = createAsyncThunk<
   PostOrderSuccess,
   void,
@@ -291,7 +345,7 @@ export const submitDraftAsync = createAsyncThunk<
 });
 
 export const editDraftAsync = createAsyncThunk<
-  GetOrderEditSuccess,
+  EditDraftPayload,
   { typeid: string; catid: number; uid?: string },
   { state: RootState }
 >("orders/editDraftAsync", async ({ typeid, catid, uid }, { getState }) => {
@@ -318,7 +372,11 @@ export const editDraftAsync = createAsyncThunk<
     },
   });
 
-  return parseProxyJson<GetOrderEditSuccess>(res, "Failed to submit order");
+  const data = await parseProxyJson<GetOrderEditSuccess>(
+    res,
+    "Failed to submit order",
+  );
+  return resolveEditCustomerStatusFromCustomerAmka(data);
 });
 
 export type LoadCustomerAddressesArgs = {
@@ -970,6 +1028,20 @@ const ordersSlice = createSlice({
           customerErpGID && String(customerErpGID).trim()
             ? customerErpGID
             : undefined;
+        const editCustomerStatus = action.payload.editCustomerStatus;
+        if (editCustomerStatus === "pros_ebs") {
+          state.draft.customerIsCompletelyNew = false;
+          state.draft.customerSelectedFromList = false;
+          state.draft.customerProsEbs = true;
+          state.draft.lastWebOrderFromLoadInfo =
+            action.payload.editLastCustomerWebOrder ?? null;
+        } else if (editCustomerStatus === "existing") {
+          state.draft.customerIsCompletelyNew = false;
+          state.draft.customerSelectedFromList = true;
+          state.draft.customerProsEbs = false;
+          state.draft.lastWebOrderFromLoadInfo =
+            action.payload.editLastCustomerWebOrder ?? null;
+        }
         if (Array.isArray(action.payload.data?.ai_ylika)) {
           state.draft.ai_ylika = action.payload.data
             .ai_ylika as unknown as AIMaterials[];
@@ -982,7 +1054,7 @@ const ordersSlice = createSlice({
           const customerGid = String(
             state.draft.order.customer_ErpGID ?? order?.customer_ErpGID ?? "",
           ).trim();
-          if (customerGid) {
+          if (customerGid && !editCustomerStatus) {
             state.draft.customerIsCompletelyNew = false;
             state.draft.customerSelectedFromList = true;
             state.draft.customerProsEbs = false;
