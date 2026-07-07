@@ -1,10 +1,10 @@
 "use client";
 
+import type { SellerActingSelectorProps } from "./SellerActingSelector.types";
 import React from "react";
 
-import SearchableSelect, {
-  type SearchableSelectOption,
-} from "@/components/ui/SearchableSelect";
+import SearchableSelect from "@/components/ui/SearchableSelect";
+import type { SearchableSelectOption } from "@/components/ui/SearchableSelect.types";
 import {
   getAccessibleSellers,
   getOwnSellerCode,
@@ -14,12 +14,6 @@ import {
 import { setActingSellerCode } from "@/features/auth/authSlice";
 import { setDraftProperty } from "@/store/orders/ordersSlice";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
-
-type SellerActingSelectorProps = {
-  className?: string;
-  error?: string | boolean | null;
-  clearError?: (field: string) => void;
-};
 
 export default function SellerActingSelector({
   className = "",

@@ -1,11 +1,14 @@
 "use client";
 
 import React from "react";
-import { useParams } from "next/navigation";
+import { useParams, useSearchParams } from "next/navigation";
 
 import NotFoundView from "@/components/system/NotFoundView";
 import { useAppDispatch } from "@/store/hooks";
-import { setDraftProperty } from "@/store/orders/ordersSlice";
+import {
+  setDraftProperty,
+  setShowConsentForm,
+} from "@/store/orders/ordersSlice";
 
 import OrderEoppyWizard from "@/features/orders/wizard/eopyy/OrderEoppyWizard";
 import OrderEoppyBulkWizard from "@/features/orders/wizard/eopyy/bulk/OrderEoppyBulkWizard";
@@ -20,11 +23,16 @@ const WIZARDS: Record<string, React.ComponentType> = {
 export default function OrderWizardNewPage() {
   const dispatch = useAppDispatch();
   const params = useParams<{ orderType: string }>();
+  const searchParams = useSearchParams();
   const orderType = params.orderType;
+  const uid = searchParams.get("uid")?.trim();
 
   React.useEffect(() => {
     dispatch(setDraftProperty({ key: "type", value: orderType }));
-  }, [dispatch, orderType]);
+    if (orderType === "eopyy" && uid) {
+      dispatch(setShowConsentForm(true));
+    }
+  }, [dispatch, orderType, uid]);
 
   const Wizard = WIZARDS[orderType];
   if (!Wizard) return <NotFoundView />;

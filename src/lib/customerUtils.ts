@@ -17,12 +17,6 @@ export function isCompletelyNewCustomer(
   return draft.customerIsCompletelyNew === true;
 }
 
-export function shouldShowSynainesiStep(
-  draft: Pick<DraftState, "customerIsCompletelyNew">,
-): boolean {
-  return isCompletelyNewCustomer(draft);
-}
-
 export function isCustomerProsEbs(
   draft: Pick<DraftState, "customerProsEbs">,
 ): boolean {

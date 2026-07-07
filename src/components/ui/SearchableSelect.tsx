@@ -1,30 +1,8 @@
 "use client";
 
+import type { SearchableSelectOption, SearchableSelectProps } from "./SearchableSelect.types";
 import React from "react";
 import { normalizeSearchText } from "@/lib/utils/string";
-
-export type SearchableSelectOption = {
-  value: string;
-  label: string;
-  description?: string;
-  searchText?: string;
-};
-
-type SearchableSelectProps = {
-  options: SearchableSelectOption[];
-  value: string;
-  onChange: (value: string) => void;
-  ariaLabel?: string;
-  placeholder?: string;
-  searchPlaceholder?: string;
-  emptyMessage?: string;
-  size?: "sm" | "lg";
-  className?: string;
-  name?: string;
-  isInvalid?: boolean;
-  allowClear?: boolean;
-  emptyLabel?: string;
-};
 
 function getOptionSearchText(option: SearchableSelectOption): string {
   return normalizeSearchText(

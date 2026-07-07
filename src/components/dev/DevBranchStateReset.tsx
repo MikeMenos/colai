@@ -1,5 +1,6 @@
 "use client";
 
+import type { RuntimeStateResponse } from "./DevBranchStateReset.types";
 import React from "react";
 import { USER_SESSION_STORAGE_KEYS } from "@/lib/clearUserSession";
 
@@ -8,13 +9,7 @@ const LEGACY_SESSION_STORAGE_KEYS = [
   ...USER_SESSION_STORAGE_KEYS,
   "dashboard",
   "orderDraft",
-] as const;
-
-type RuntimeStateResponse = {
-  branchName?: string;
-};
-
-async function clearServiceWorkerState(): Promise<void> {
+] as const;async function clearServiceWorkerState(): Promise<void> {
   if (!("serviceWorker" in navigator)) return;
 
   try {

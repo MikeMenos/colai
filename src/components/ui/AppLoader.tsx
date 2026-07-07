@@ -1,19 +1,7 @@
 "use client";
 
-import React from "react";
-
-type LoaderProps = {
-  /** Optional label under the loader */
-  label?: string;
-  /** Size in px (default 44) */
-  size?: number;
-  /** If true, renders on a subtle card surface */
-  card?: boolean;
-  /** Full-screen overlay (for blocking operations) */
-  overlay?: boolean;
-};
-
-export default function AppLoader({
+import type { LoaderProps } from "./AppLoader.types";
+import React from "react";export default function AppLoader({
   label = "Loading…",
   size = 44,
   card = true,

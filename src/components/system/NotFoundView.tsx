@@ -1,13 +1,5 @@
-import Link from "next/link";
-
-type Props = {
-  title?: string;
-  description?: string;
-  actionHref?: string;
-  actionLabel?: string;
-};
-
-export default function NotFoundView({
+import type { Props } from "./NotFoundView.types";
+import Link from "next/link";export default function NotFoundView({
   title = "Δεν βρέθηκε",
   description = "Η σελίδα που ζητήσατε δεν υπάρχει ή δεν είναι διαθέσιμη.",
   actionHref = "/",

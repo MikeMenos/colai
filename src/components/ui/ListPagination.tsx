@@ -1,5 +1,6 @@
 "use client";
 
+import type { ListPaginationFab, ListPaginationProps } from "./ListPagination.types";
 import React from "react";
 import { createPortal } from "react-dom";
 
@@ -8,21 +9,6 @@ import {
   formatListPageInfo,
   type ListPaginationState,
 } from "@/lib/pagination/listPagination";
-
-type ListPaginationFab = {
-  href: string;
-  ariaLabel: string;
-};
-
-type ListPaginationProps = Pick<
-  ListPaginationState,
-  "currentPage" | "canGoPrev" | "canGoNext" | "showPagination"
-> & {
-  disabled?: boolean;
-  onPageChange: (page: number) => void;
-  pageInfo?: ListPaginationState;
-  fab?: ListPaginationFab;
-};
 
 export default function ListPagination({
   currentPage,

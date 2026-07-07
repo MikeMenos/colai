@@ -1,8 +1,7 @@
 "use client";
 
+import type { Inset, CollapsibleAppTileSummary, CollapsibleAppTileProps } from "./CollapsibleAppTile.types";
 import React from "react";
-
-type Inset = "default" | "compact";
 
 const summaryPadding: Record<Inset, string> = {
     default: "14px 14px 12px",
@@ -12,18 +11,6 @@ const summaryPadding: Record<Inset, string> = {
 const contentPadding: Record<Inset, string> = {
     default: "14px 14px 14px",
     compact: "10px 12px 12px",
-};
-
-export type CollapsibleAppTileSummary = React.ReactNode | ((open: boolean) => React.ReactNode);
-
-type CollapsibleAppTileProps = {
-    summary: CollapsibleAppTileSummary;
-    children: React.ReactNode;
-    className?: string;
-    contentClassName?: string;
-    inset?: Inset;
-    open?: boolean;
-    onOpenChange?: (open: boolean) => void;
 };
 
 /**

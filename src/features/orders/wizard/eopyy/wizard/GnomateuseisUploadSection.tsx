@@ -1,5 +1,6 @@
 "use client";
 
+import type { GnomateuseisUploadSectionProps } from "./GnomateuseisUploadSection.types";
 import React from "react";
 import FileUploadButton from "../FileUploadButton";
 import type { OrderFile } from "@/types/orders";
@@ -11,20 +12,6 @@ import {
   UploadedFileRow,
   formatUploadingSizeMb,
 } from "./fileUploadUi";
-
-export type GnomateuseisUploadSectionProps = {
-  title: string;
-  emptyHint: string;
-  orderUid: string;
-  files: OrderFile[];
-  documentCategory: "recipe" | "recipe_aux";
-  position: number;
-  disabled?: boolean;
-  onFileAdded: (file: OrderFile) => void;
-  upload: FileUploadState;
-  maxFiles?: number;
-  footer?: React.ReactNode;
-};
 
 export default function GnomateuseisUploadSection({
   title,

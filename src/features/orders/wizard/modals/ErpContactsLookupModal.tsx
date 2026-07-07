@@ -1,5 +1,6 @@
 "use client";
 
+import type { ErpContactAddress } from "./ErpContactsLookupModal.types";
 import React from "react";
 import { Modal } from "react-bootstrap";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
@@ -9,14 +10,6 @@ import { hasText, trimmedString } from "@/lib/utils/string";
 import type { AddressDto, ErpContact } from "@/types/api";
 import type { SearchErpContactsApiResponse } from "@/types/api/responses";
 import { parseJson } from "@/lib/api/client";
-
-export type ErpContactAddress = AddressDto & {
-  address_ErpGID: string;
-  address: string;
-  city: string;
-  tk: string;
-};
-
 export type { ErpContact };
 
 export default function ErpContactsLookupModal({

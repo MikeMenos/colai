@@ -7,6 +7,7 @@ export const dynamic = "force-dynamic";
 export async function GET(req: Request) {
     const url = new URL(req.url);
     const search = (url.searchParams.get("q") ?? "").trim();
+    const orderType = (url.searchParams.get("orderType") ?? "").trim();
 
     if (search.length < 2) {
         return NextResponse.json({ ok: true, listCustomers: [] }, {
@@ -24,7 +25,11 @@ export async function GET(req: Request) {
         return NextResponse.json({ ok: false, message: "Missing AMSA_API_BASE_URL" }, { status: 500 });
     }
 
-    const backendUrl = `${baseUrl}/api/search-customers?search=${search}`;
+    const backendParams = new URLSearchParams({ search });
+    if (orderType === "eopyy" || orderType === "retail") {
+        backendParams.set("orderType", orderType);
+    }
+    const backendUrl = `${baseUrl}/api/search-customers?${backendParams.toString()}`;
 
     const res = await fetch(backendUrl, {
         method: "GET",

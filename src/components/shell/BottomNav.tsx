@@ -1,5 +1,6 @@
 "use client";
 
+import type { Item } from "./BottomNav.types";
 import React from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
@@ -17,14 +18,6 @@ import {
   setDraftProperty,
   submitDraftAsync,
 } from "@/store/orders/ordersSlice";
-
-type Item = {
-  href: string;
-  icon: string;
-  label: string;
-  badge?: number;
-  badgeVariant?: "danger" | "warning";
-};
 
 function isActive(pathname: string, href: string): boolean {
   if (href === "/") return pathname === "/";

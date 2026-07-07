@@ -10,6 +10,7 @@ import {
   setLastOrderInfoCustomerErpGID,
   setLastOrderInfoDateIn,
   setLastWebOrderFromLoadInfo,
+  setShowConsentForm,
 } from "@/store/orders/ordersSlice";
 import type { AppDispatch } from "@/store/store";
 import type { Order } from "@/types/orders";
@@ -158,6 +159,7 @@ export function resetDraftForDifferentCustomerSelection(
   dispatch(setCustomerSelectedFromList(undefined));
   dispatch(setCustomerIsCompletelyNew(true));
   dispatch(setLastWebOrderFromLoadInfo(undefined));
+  dispatch(setShowConsentForm(undefined));
   dispatch(setDraftYlika([]));
   dispatch(setAIMaterials([]));
 

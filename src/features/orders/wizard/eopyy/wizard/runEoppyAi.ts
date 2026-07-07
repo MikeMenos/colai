@@ -6,6 +6,18 @@ import type { Order } from "@/types/orders";
 import type { AiClient } from "@/lib/utils/ai";
 import type { RunEoppyAiParams } from "./types";
 import { applyRunAiResponse } from "./applyRunAiResponse";
+import { setShowConsentForm } from "@/store/orders/ordersSlice";
+
+function normalizeShowConsentForm(value: unknown): boolean | null {
+  if (value === 1 || value === true) return true;
+  if (value === 0 || value === false) return false;
+
+  const text = String(value ?? "").trim().toLowerCase();
+  if (text === "1" || text === "true") return true;
+  if (text === "0" || text === "false") return false;
+
+  return null;
+}
 
 export function buildEoppyRunAiPayload(
   order: Pick<Order, "uid" | "group_EOPPY_id">,
@@ -54,6 +66,9 @@ export async function runEoppyAi({
         "Το αίτημα ΑΙ δεν ήταν επιτυχές. Εισάγετε τα στοιχεία χειροκίνητα ή προσπαθήστε αργότερα.",
     );
   }
+
+  const showConsentForm = normalizeShowConsentForm(response.showConsentForm);
+  dispatch(setShowConsentForm(showConsentForm === true));
 
   await applyRunAiResponse(dispatch, data);
 }

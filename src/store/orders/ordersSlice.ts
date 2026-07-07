@@ -50,7 +50,16 @@ type EditCustomerStatus = "existing" | "pros_ebs";
 type EditDraftPayload = GetOrderEditSuccess & {
   editCustomerStatus?: EditCustomerStatus;
   editLastCustomerWebOrder?: Record<string, unknown> | null;
+  editShowConsentForm?: boolean;
 };
+
+function normalizeShowConsentForm(value: unknown): boolean {
+  if (value === 1 || value === true) return true;
+  if (value === 0 || value === false) return false;
+
+  const text = String(value ?? "").trim().toLowerCase();
+  return text === "1" || text === "true";
+}
 
 export interface DraftState {
   editState: { loading: boolean; error: string | null };
@@ -78,6 +87,8 @@ export interface DraftState {
   lastWebOrderFromLoadInfo?: Record<string, unknown> | null;
   /** Step 2 AMKA gate completed (manual flow without AI). */
   customerAmkaGateCompleted?: boolean;
+  /** Backend-driven Συναίνεση step visibility for EOPYY flows. */
+  showConsentForm?: boolean;
 }
 
 export interface SelectedOrderState {
@@ -235,20 +246,24 @@ export const retryOrderMassUploadAi = createAsyncThunk<
 
 async function resolveEditCustomerStatusFromCustomerAmka(
   payload: GetOrderEditSuccess,
+  orderType: string,
 ): Promise<EditDraftPayload> {
   const order = payload.data?.order as Order | undefined;
   const customerAmka = order?.customer_amka?.trim();
   if (!order || !customerAmka) return payload;
-  if (Number(order.statusId) !== 0) return payload;
 
   try {
-    const res = await fetch(
-      `/api/customers?q=${encodeURIComponent(customerAmka)}&_ts=${Date.now()}`,
-      {
-        cache: "no-store",
-        headers: { "Cache-Control": "no-cache", Pragma: "no-cache" },
-      },
-    );
+    const params = new URLSearchParams({
+      q: customerAmka,
+      _ts: String(Date.now()),
+    });
+    if (orderType === "eopyy" || orderType === "retail") {
+      params.set("orderType", orderType);
+    }
+    const res = await fetch(`/api/customers?${params.toString()}`, {
+      cache: "no-store",
+      headers: { "Cache-Control": "no-cache", Pragma: "no-cache" },
+    });
     const data = await parseProxyJson<SearchCustomersSuccess>(
       res,
       "Search failed",
@@ -260,6 +275,13 @@ async function resolveEditCustomerStatusFromCustomerAmka(
       Object.keys(data.lastCustomerWebOrder).length > 0
         ? (data.lastCustomerWebOrder as Record<string, unknown>)
         : null;
+    const editShowConsentForm = normalizeShowConsentForm(
+      data.showConsentForm,
+    );
+    if (Number(order.statusId) !== 0) {
+      return { ...payload, editShowConsentForm };
+    }
+
     const personGid = String(
       order.person_ErpGID ?? lastCustomerWebOrder?.person_ErpGID ?? "",
     ).trim();
@@ -269,12 +291,13 @@ async function resolveEditCustomerStatusFromCustomerAmka(
         ? "pros_ebs"
         : undefined;
 
-    if (!editCustomerStatus) return payload;
+    if (!editCustomerStatus) return { ...payload, editShowConsentForm };
 
     return {
       ...payload,
       editCustomerStatus,
       editLastCustomerWebOrder: lastCustomerWebOrder,
+      editShowConsentForm,
     };
   } catch {
     return payload;
@@ -376,7 +399,7 @@ export const editDraftAsync = createAsyncThunk<
     res,
     "Failed to submit order",
   );
-  return resolveEditCustomerStatusFromCustomerAmka(data);
+  return resolveEditCustomerStatusFromCustomerAmka(data, typeid);
 });
 
 export type LoadCustomerAddressesArgs = {
@@ -500,6 +523,8 @@ function loadStateFromLocalStorage(): OrdersState | null {
         customerAmkaGateCompleted:
           parsed?.customerAmkaGateCompleted ??
           initialStateBase.draft.customerAmkaGateCompleted,
+        showConsentForm:
+          parsed?.showConsentForm ?? initialStateBase.draft.showConsentForm,
       },
     };
   } catch {
@@ -527,6 +552,7 @@ function persistStateToLocalStorage(state: OrdersState) {
     customerIsCompletelyNew: state.draft.customerIsCompletelyNew,
     lastWebOrderFromLoadInfo: state.draft.lastWebOrderFromLoadInfo,
     customerAmkaGateCompleted: state.draft.customerAmkaGateCompleted,
+    showConsentForm: state.draft.showConsentForm,
   };
 
   try {
@@ -586,6 +612,7 @@ const ordersSlice = createSlice({
       state.draft.customerIsCompletelyNew = true;
       state.draft.lastWebOrderFromLoadInfo = undefined;
       state.draft.customerAmkaGateCompleted = undefined;
+      state.draft.showConsentForm = undefined;
       persistStateToLocalStorage(state);
     },
     clearDraftAddressesList(state) {
@@ -730,6 +757,10 @@ const ordersSlice = createSlice({
       action: PayloadAction<boolean | undefined>,
     ) {
       state.draft.customerAmkaGateCompleted = action.payload;
+      persistStateToLocalStorage(state);
+    },
+    setShowConsentForm(state, action: PayloadAction<boolean | undefined>) {
+      state.draft.showConsentForm = action.payload;
       persistStateToLocalStorage(state);
     },
     addDraftYliko(state, action: PayloadAction<OrderYlika>) {
@@ -1011,6 +1042,7 @@ const ordersSlice = createSlice({
         state.draft.preselected_person_GID = undefined;
         state.draft.ylika = (action.payload.data.items ?? []) as OrderYlika[];
         state.draft.files = (action.payload.data.files ?? []) as OrderFile[];
+        state.draft.showConsentForm = action.payload.editShowConsentForm === true;
         state.draft.list_DiscountReasons = (action.payload.data
           .list_DiscountReasons ?? []) as OrdeListOfSelections[];
         state.draft.list_KatigoriesParoxis = (action.payload.data
@@ -1196,6 +1228,7 @@ export const {
   setCustomerIsCompletelyNew,
   setLastWebOrderFromLoadInfo,
   setCustomerAmkaGateCompleted,
+  setShowConsentForm,
   resetEntireDraft,
   resetOrdersListCache,
   clearDraftAddressesList,

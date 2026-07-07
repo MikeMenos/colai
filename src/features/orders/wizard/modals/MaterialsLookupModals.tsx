@@ -1,5 +1,6 @@
 "use client";
 
+import type { MaterialsLookupModal } from "./MaterialsLookupModals.types";
 import React from "react";
 import { Modal } from "react-bootstrap";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
@@ -10,8 +11,6 @@ import type {
   SearchProductsSuccess,
 } from "@/types/api/responses";
 import { parseProxyJson } from "@/lib/api/client";
-
-export type MaterialsLookupModal = ProductSearchResult;
 
 export default function MaterialsLookupModal({
     show,

@@ -1,18 +1,7 @@
 "use client";
 
+import type { LeaveOrderWizardConfirmModalProps } from "./LeaveOrderWizardConfirmModal.types";
 import { Alert, Button, Modal } from "react-bootstrap";
-
-type LeaveOrderWizardConfirmModalProps = {
-  show: boolean;
-  onCancel: () => void;
-  onConfirm: () => void;
-  onTempSave?: () => void;
-  tempSaveLoading?: boolean;
-  tempSaveError?: string | null;
-  showTempSave?: boolean;
-  title?: string;
-  message?: string;
-};
 
 export default function LeaveOrderWizardConfirmModal({
   show,

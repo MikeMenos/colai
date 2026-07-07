@@ -1,4 +1,3 @@
-import { shouldShowSynainesiStep } from "@/lib/customerUtils";
 import { isBlank } from "@/lib/utils/string";
 import type { Order } from "@/types/orders";
 import { getDraftAmkaWizardIssues } from "./amkaValidation";
@@ -18,6 +17,7 @@ export function validateEoppyOrder({
   lastOrderInfoDateIn,
   hasFiles,
   hasConsentFormFiles,
+  showSynainesiPanel,
 }: ValidateEoppyOrderInput): WizardIssue[] {
   const issues: WizardIssue[] = [];
   const add = (
@@ -132,9 +132,7 @@ export function validateEoppyOrder({
       );
     }
 
-    const validateSynainesiPanel = shouldShowSynainesiStep({
-      customerIsCompletelyNew,
-    });
+    const validateSynainesiPanel = showSynainesiPanel;
     if (
       !validateSynainesiPanel &&
       (draftOrder.has_other_recipient != 1 ||

@@ -1,5 +1,6 @@
 "use client";
 
+import type { SortMode, SellerOrderDetailsState } from "./page.types";
 import Image from "next/image";
 import React from "react";
 import { Alert } from "react-bootstrap";
@@ -50,14 +51,6 @@ import type {
   SellerSalesWC,
   SellerTeamatesWC,
 } from "@/types/api";
-
-type SortMode = "date" | "newrep";
-
-type SellerOrderDetailsState = {
-  loading: boolean;
-  error: string | null;
-  records: SellerSalesWC[] | null;
-};
 
 function getColaiMarkerKind(value: unknown): "manual" | "app" | null {
   const text = String(value ?? "").trim();

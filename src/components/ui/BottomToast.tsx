@@ -1,14 +1,7 @@
 "use client";
 
-import React from "react";
-
-type BottomToastProps = {
-  message: string | null;
-  durationMs?: number;
-  onDismiss?: () => void;
-};
-
-export default function BottomToast({
+import type { BottomToastProps } from "./BottomToast.types";
+import React from "react";export default function BottomToast({
   message,
   durationMs = 3000,
   onDismiss,

@@ -1,5 +1,6 @@
 "use client";
 
+import type { WcEndpointSummary, MetricCardProps } from "./HomeStats.types";
 import { FloatingActionButton } from "@/components/ui/FloatingActionButton";
 import AppLoader from "@/components/ui/AppLoader";
 import OrderSellerScopeToggle from "@/features/orders/components/OrderSellerScopeToggle";
@@ -21,12 +22,6 @@ import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import React from "react";
 import { Alert } from "react-bootstrap";
-
-type WcEndpointSummary = {
-  newCount: number;
-  repeatCount: number;
-  turnover: number;
-};
 
 const emptyWcSummary: WcEndpointSummary = {
   newCount: 0,
@@ -58,18 +53,7 @@ function wcSummaryToChartData(summary: WcEndpointSummary): WcStoixoiMina {
     amount_paragg_new: amountNew,
     amount_paragg_repeat: summary.turnover - amountNew,
   };
-}
-
-type MetricCardProps = {
-  title: string;
-  value: string;
-  delta?: string | null;
-  deltaDirection?: "up" | "down" | "neutral";
-  icon: string;
-  href?: string;
-};
-
-function MetricCard({
+}function MetricCard({
   title,
   value,
   delta,

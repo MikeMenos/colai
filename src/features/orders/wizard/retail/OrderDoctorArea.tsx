@@ -1,3 +1,4 @@
+import type { SuggestedDoctorSnapshot, OrderDoctorAreaProps } from "./OrderDoctorArea.types";
 import OrderField from "@/components/ui/OrderField";
 import FormErrorsContext from "@/components/ui/FormErrorContect";
 import {
@@ -26,20 +27,7 @@ const SUGGESTED_DOCTOR_KEYS = [
   "doctorSuggested_domi",
   "doctorSuggested_tel",
   "doctorSuggested_ErpGID",
-] as const;
-
-type SuggestedDoctorSnapshot = {
-  has_suggested_doctor: number;
-  hasOtherSystinonIatroBool: boolean;
-  doctorSuggested_amka: string;
-  doctorSuggested_name: string;
-  doctorSuggested_afm: string;
-  doctorSuggested_domi: string;
-  doctorSuggested_tel: string;
-  doctorSuggested_ErpGID: string;
-};
-
-function captureSuggestedDoctorSnapshot(
+] as const;function captureSuggestedDoctorSnapshot(
   order: Order,
 ): SuggestedDoctorSnapshot | null {
   if (order.has_suggested_doctor != 2) return null;
@@ -84,14 +72,7 @@ function clearOtherSuggestedDoctorFields(dispatch: AppDispatch) {
   dispatch(
     setDraftProperty({ key: "otherDoctorSuggested_ErpGID", value: null }),
   );
-}
-
-type OrderDoctorAreaProps = {
-  errors?: Record<string, string | boolean>;
-  clearError?: (field: string) => void;
-};
-
-export default function OrderDoctorArea({
+}export default function OrderDoctorArea({
   errors,
   clearError,
 }: OrderDoctorAreaProps) {
