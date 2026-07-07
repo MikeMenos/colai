@@ -37,6 +37,12 @@ export default function OrderRetailCustomerArea() {
   const listAddressesPersons = useAppSelector(
     (s) => s.orders.draft.list_AddressesPersons,
   );
+  const listCustomerActivities = useAppSelector(
+    (s) => s.orders.draft.list_CustomerActivities,
+  );
+  const customerSelectedFromList = useAppSelector(
+    (s) => s.orders.draft.customerSelectedFromList,
+  );
 
   const selectedPersonAddresses = React.useMemo(() => {
     const row = listAddressesPersons.find(
@@ -74,6 +80,52 @@ export default function OrderRetailCustomerArea() {
     setShowLookup(true);
   };
 
+  const customerPriceBadge =
+    customerSelectedFromList === true
+      ? [data.activitY_DESC, data.prE_LOADED_PRICE]
+          .map((value) => String(value ?? "").trim())
+          .filter(Boolean)
+          .join(" - ")
+      : "";
+  const showCustomerActivitySelect =
+    customerSelectedFromList !== true && listCustomerActivities.length > 0;
+
+  const applyCustomerActivityCode = (activityCode: string) => {
+    const selected = listCustomerActivities.find(
+      (activity) => activity.activitY_CODE === activityCode,
+    );
+
+    dispatch(
+      setDraftProperty({ key: "customer_ActivityCode", value: activityCode }),
+    );
+    if (!selected) return;
+
+    dispatch(
+      setDraftProperty({
+        key: "activitY_DESC",
+        value: selected.activitY_DESC ?? "",
+      }),
+    );
+    dispatch(
+      setDraftProperty({
+        key: "prE_LOADED_PRICE",
+        value: selected.prE_LOADED_PRICE ?? "ΛΙΑΝΙΚΗ",
+      }),
+    );
+    dispatch(
+      setDraftProperty({
+        key: "ischangeable",
+        value: selected.ischangeable ?? selected.ischangable ?? 1,
+      }),
+    );
+    dispatch(
+      setDraftProperty({
+        key: "definitioN_PRICE",
+        value: selected.definitioN_PRICE ?? "",
+      }),
+    );
+  };
+
   React.useEffect(() => {
     if (!data.shipMethodId)
       dispatch(setDraftProperty({ key: "shipMethodId", value: 5 }));
@@ -102,389 +154,439 @@ export default function OrderRetailCustomerArea() {
 
   return (
     <div className="app-card px-3 py-2">
-        <div className="border-bottom mb-1 pb-2">
-          <div className="d-flex align-items-center justify-content-between mb-3 flex-wrap gap-3">
-            <label className="form-label fw-semibold mb-0 flex-shrink-0">
-              Ασθενής
-            </label>
-            <WizardStepBarcodeHint barcode={data.barcode} />
-          </div>
-          <div className="input-group flex-grow-1" style={{ minWidth: 0 }}>
-            <input
-              type="text"
-              readOnly
-              className="form-control"
-              placeholder="Αναζήτηση..."
-              onClick={handleSearchClick}
-              onKeyDown={(e) => {
-                if (e.key === "Enter" || e.key === " ") {
-                  e.preventDefault();
-                  handleSearchClick();
-                }
-              }}
-              aria-label="Αναζήτηση ασθενή"
-              style={{ cursor: "pointer" }}
-            />
-            <button
-              type="button"
-              className="btn btn-primary"
-              onClick={handleSearchClick}
-              aria-label="Αναζήτηση"
-            >
-              <i className="bi bi-search" />
-            </button>
-          </div>
+      <div className="border-bottom mb-1 pb-2">
+        <div className="d-flex align-items-center justify-content-between mb-3 flex-wrap gap-3">
+          <label className="form-label fw-semibold mb-0 flex-shrink-0">
+            Ασθενής
+          </label>
+          <WizardStepBarcodeHint barcode={data.barcode} />
         </div>
-
-        <CustomerLookupModal
-          show={showLookup}
-          orderType="retail"
-          onClose={() => setShowLookup(false)}
-        />
-
-        <Field label="Ονοματεπώνυμο">
+        <div className="input-group flex-grow-1" style={{ minWidth: 0 }}>
           <input
+            type="text"
+            readOnly
             className="form-control"
-            name="customer_name"
-            value={data.customer_name ?? ""}
-            onChange={(e) =>
-              dispatch(
-                setDraftProperty({
-                  key: "customer_name",
-                  value: e.target.value,
-                }),
-              )
-            }
+            placeholder="Αναζήτηση..."
+            onClick={handleSearchClick}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" || e.key === " ") {
+                e.preventDefault();
+                handleSearchClick();
+              }
+            }}
+            aria-label="Αναζήτηση ασθενή"
+            style={{ cursor: "pointer" }}
           />
-        </Field>
-
-        <div className="row g-2">
-          <div className="col-6">
-            <Field label="ΑΜΚΑ">
-              <input
-                className="form-control"
-                name="customer_amka"
-                inputMode="numeric"
-                value={data.customer_amka ?? ""}
-                onChange={(e) =>
-                  dispatch(
-                    setDraftProperty({
-                      key: "customer_amka",
-                      value: e.target.value,
-                    }),
-                  )
-                }
-              />
-            </Field>
-          </div>
-          <div className="col-6">
-            <Field label="Ημ/νία γέννησης" hint="π.χ. 31/12/1990">
-              <input
-                className="form-control"
-                name="customer_dob"
-                inputMode="numeric"
-                value={data.customer_dob ?? ""}
-                onChange={(e) => handleDateInput(e.target.value)}
-              />
-            </Field>
-          </div>
-        </div>
-
-        <div className="row g-2">
-          <div className="col-6">
-            <Field label="Τηλέφωνο">
-              <input
-                className="form-control"
-                name="customer_tel"
-                inputMode="tel"
-                value={data.customer_tel ?? ""}
-                onChange={(e) =>
-                  dispatch(
-                    setDraftProperty({
-                      key: "customer_tel",
-                      value: e.target.value,
-                    }),
-                  )
-                }
-              />
-            </Field>
-          </div>
-          <div className="col-6">
-            <Field label="Email">
-              <input
-                className="form-control"
-                name="customer_email"
-                inputMode="email"
-                value={data.customer_email ?? ""}
-                onChange={(e) =>
-                  dispatch(
-                    setDraftProperty({
-                      key: "customer_email",
-                      value: e.target.value,
-                    }),
-                  )
-                }
-              />
-            </Field>
-          </div>
-        </div>
-
-        <Field label="Διεύθυνση">
-          <input
-            className="form-control"
-            name="customer_address"
-            value={data.customer_address ?? ""}
-            onChange={(e) =>
-              dispatch(
-                setDraftProperty({
-                  key: "customer_address",
-                  value: e.target.value,
-                }),
-              )
-            }
-          />
-        </Field>
-
-        <div className="row g-2">
-          <div className="col-6">
-            <Field label="Πόλη">
-              <input
-                className="form-control"
-                name="customer_city"
-                value={data.customer_city ?? ""}
-                onChange={(e) =>
-                  dispatch(
-                    setDraftProperty({
-                      key: "customer_city",
-                      value: e.target.value,
-                    }),
-                  )
-                }
-              />
-            </Field>
-          </div>
-          <div className="col-6">
-            <Field label="ΤΚ">
-              <input
-                className="form-control"
-                name="customer_tk"
-                inputMode="numeric"
-                value={data.customer_tk ?? ""}
-                onChange={(e) =>
-                  dispatch(
-                    setDraftProperty({
-                      key: "customer_tk",
-                      value: e.target.value,
-                    }),
-                  )
-                }
-              />
-            </Field>
-          </div>
-        </div>
-
-        <OrderField label="Σχόλια παραγγελίας">
-          <textarea
-            className="form-control"
-            name="sellerComments"
-            rows={2}
-            value={data.sellerComments ?? ""}
-            onChange={(e) =>
-              dispatch(
-                setDraftProperty({
-                  key: "sellerComments",
-                  value: e.target.value,
-                }),
-              )
-            }
-          />
-        </OrderField>
-
-        <hr className="app-divider my-2" />
-
-        <Field label="Αποστολή">
-          <FormSelect
-            name="shipMethodId"
-            value={data.shipMethodId ?? ""}
-            onChange={(e) =>
-              dispatch(
-                setDraftProperty({
-                  key: "shipMethodId",
-                  value: e.target.value,
-                }),
-              )
-            }
+          <button
+            type="button"
+            className="btn btn-primary"
+            onClick={handleSearchClick}
+            aria-label="Αναζήτηση"
           >
-            {listTropoiApostolis.map((x) => (
-              <option key={x.value} value={x.value}>
-                {x.text}
-              </option>
-            ))}
+            <i className="bi bi-search" />
+          </button>
+        </div>
+      </div>
+
+      <CustomerLookupModal
+        show={showLookup}
+        orderType="retail"
+        onClose={() => setShowLookup(false)}
+      />
+
+      <Field
+        label={
+          <span className="d-flex align-items-center flex-wrap gap-2">
+            <span>Ονοματεπώνυμο</span>
+            {customerPriceBadge ? (
+              <span className="badge rounded-pill bg-info-subtle text-info-emphasis">
+                {customerPriceBadge}
+              </span>
+            ) : null}
+          </span>
+        }
+      >
+        <input
+          className="form-control"
+          name="customer_name"
+          value={data.customer_name ?? ""}
+          onChange={(e) =>
+            dispatch(
+              setDraftProperty({
+                key: "customer_name",
+                value: e.target.value,
+              }),
+            )
+          }
+        />
+      </Field>
+
+      {showCustomerActivitySelect ? (
+        <Field label="Δραστηριότητα / Τιμοκατάλογος">
+          <FormSelect
+            name="customer_ActivityCode"
+            value={data.customer_ActivityCode ?? ""}
+            onChange={(e) => applyCustomerActivityCode(e.target.value)}
+          >
+            <option value="">Επιλέξτε...</option>
+            {listCustomerActivities.map((activity) => {
+              const code = activity.activitY_CODE ?? "";
+              const label = [activity.activitY_DESC, activity.prE_LOADED_PRICE]
+                .map((value) => String(value ?? "").trim())
+                .filter(Boolean)
+                .join(" - ");
+              return (
+                <option key={code || label} value={code}>
+                  {label || code || "—"}
+                </option>
+              );
+            })}
           </FormSelect>
         </Field>
+      ) : null}
 
-        <div className="form-check form-switch switch-lg mb-2">
-          <input
-            className="form-check-input"
-            name="deliverySunday"
-            type="checkbox"
-            checked={data.deliverySunday == 1}
-            onChange={(e) =>
-              dispatch(
-                setDraftProperty({
-                  key: "deliverySunday",
-                  value: e.target.checked ? 1 : 0,
-                }),
-              )
-            }
-            id="deliverySunday"
-          />
-          <label className="form-check-label" htmlFor="deliverySunday">
-            Παράδοση Σάββατο
-          </label>
-        </div>
-
-        <div className="form-check form-switch switch-lg mb-2">
-          <input
-            className="form-check-input"
-            name="deliveryMorning"
-            type="checkbox"
-            checked={data.deliveryMorning == 1}
-            onChange={(e) =>
-              dispatch(
-                setDraftProperty({
-                  key: "deliveryMorning",
-                  value: e.target.checked ? 1 : 0,
-                }),
-              )
-            }
-            id="deliveryMorning"
-          />
-          <label className="form-check-label" htmlFor="deliveryMorning">
-            Πρωινή παράδοση
-          </label>
-        </div>
-
-        {!data.shipToOtherAddressBool && listAddressesPersons.length > 0 && (
-          <Field label="Θα παραδοθεί σε">
-            <FormSelect
-              name="person_ErpGID"
-              value={data.person_ErpGID ?? ""}
-              onChange={(e) => {
+      <div className="row g-2">
+        <div className="col-6">
+          <Field label="ΑΜΚΑ">
+            <input
+              className="form-control"
+              name="customer_amka"
+              inputMode="numeric"
+              value={data.customer_amka ?? ""}
+              onChange={(e) =>
                 dispatch(
                   setDraftProperty({
-                    key: "person_ErpGID",
+                    key: "customer_amka",
                     value: e.target.value,
                   }),
-                );
-                if (data.shipTo_other_address != 1) {
-                  dispatch(
-                    setDraftProperty({
-                      key: "address_ErpGID",
-                      value:
-                        listAddressesPersons.find(
-                          (p) => p.person_ErpGID == e.target.value,
-                        )?.addresses?.[0]?.address_ErpGID ?? null,
-                    }),
-                  );
-                }
-              }}
-            >
-              {listAddressesPersons.map((x) => (
-                <option
-                  key={x.person_ErpGID ?? ""}
-                  value={x.person_ErpGID ?? ""}
-                >
-                  {x.personName}
-                </option>
-              ))}
-            </FormSelect>
+                )
+              }
+            />
           </Field>
-        )}
+        </div>
+        <div className="col-6">
+          <Field label="Ημ/νία γέννησης" hint="π.χ. 31/12/1990">
+            <input
+              className="form-control"
+              name="customer_dob"
+              inputMode="numeric"
+              value={data.customer_dob ?? ""}
+              onChange={(e) => handleDateInput(e.target.value)}
+            />
+          </Field>
+        </div>
+      </div>
 
-        {!data.shipToOtherAddressBool &&
-          data.shipTo_other_address != 1 &&
-          listAddressesPersons.length > 0 &&
-          data.person_ErpGID &&
-          data.person_ErpGID != "" &&
-          selectedPersonAddresses.length > 0 && (
-            <Field label="Αποθηκευμένη διεύθυνση">
-              <FormSelect
-                name="address_ErpGID"
-                value={data.address_ErpGID ?? ""}
-                onChange={(e) =>
-                  dispatch(
-                    setDraftProperty({
-                      key: "address_ErpGID",
-                      value: e.target.value,
-                    }),
-                  )
-                }
-              >
-                {selectedPersonAddresses.map((a) => (
-                  <option
-                    key={a.address_ErpGID}
-                    value={a.address_ErpGID ?? ""}
-                  >{`${a.address}, ${a.city}, ${a.tk}`}</option>
-                ))}
-              </FormSelect>
-            </Field>
-          )}
+      <div className="row g-2">
+        <div className="col-6">
+          <Field label="Τηλέφωνο">
+            <input
+              className="form-control"
+              name="customer_tel"
+              inputMode="tel"
+              value={data.customer_tel ?? ""}
+              onChange={(e) =>
+                dispatch(
+                  setDraftProperty({
+                    key: "customer_tel",
+                    value: e.target.value,
+                  }),
+                )
+              }
+            />
+          </Field>
+        </div>
+        <div className="col-6">
+          <Field label="Email">
+            <input
+              className="form-control"
+              name="customer_email"
+              inputMode="email"
+              value={data.customer_email ?? ""}
+              onChange={(e) =>
+                dispatch(
+                  setDraftProperty({
+                    key: "customer_email",
+                    value: e.target.value,
+                  }),
+                )
+              }
+            />
+          </Field>
+        </div>
+      </div>
 
-        <div className="form-check form-switch switch-lg mb-2">
-          <input
-            className="form-check-input"
-            name="shipTo_other_address"
-            type="checkbox"
-            checked={data.shipTo_other_address == 1}
+      <Field label="Διεύθυνση">
+        <input
+          className="form-control"
+          name="customer_address"
+          value={data.customer_address ?? ""}
+          onChange={(e) =>
+            dispatch(
+              setDraftProperty({
+                key: "customer_address",
+                value: e.target.value,
+              }),
+            )
+          }
+        />
+      </Field>
+
+      <div className="row g-2">
+        <div className="col-6">
+          <Field label="Πόλη">
+            <input
+              className="form-control"
+              name="customer_city"
+              value={data.customer_city ?? ""}
+              onChange={(e) =>
+                dispatch(
+                  setDraftProperty({
+                    key: "customer_city",
+                    value: e.target.value,
+                  }),
+                )
+              }
+            />
+          </Field>
+        </div>
+        <div className="col-6">
+          <Field label="ΤΚ">
+            <input
+              className="form-control"
+              name="customer_tk"
+              inputMode="numeric"
+              value={data.customer_tk ?? ""}
+              onChange={(e) =>
+                dispatch(
+                  setDraftProperty({
+                    key: "customer_tk",
+                    value: e.target.value,
+                  }),
+                )
+              }
+            />
+          </Field>
+        </div>
+      </div>
+
+      <OrderField label="Σχόλια για το τμήμα παραγγελιών">
+        <textarea
+          className="form-control"
+          name="sellerComments"
+          rows={2}
+          value={data.sellerComments ?? ""}
+          onChange={(e) =>
+            dispatch(
+              setDraftProperty({
+                key: "sellerComments",
+                value: e.target.value,
+              }),
+            )
+          }
+        />
+      </OrderField>
+
+      <hr className="app-divider my-2" />
+
+      <Field label="Αποστολή">
+        <FormSelect
+          name="shipMethodId"
+          value={data.shipMethodId ?? ""}
+          onChange={(e) =>
+            dispatch(
+              setDraftProperty({
+                key: "shipMethodId",
+                value: e.target.value,
+              }),
+            )
+          }
+        >
+          {listTropoiApostolis.map((x) => (
+            <option key={x.value} value={x.value}>
+              {x.text}
+            </option>
+          ))}
+        </FormSelect>
+      </Field>
+
+      <div className="form-check form-switch switch-lg mb-2">
+        <input
+          className="form-check-input"
+          name="deliverySunday"
+          type="checkbox"
+          checked={data.deliverySunday == 1}
+          onChange={(e) =>
+            dispatch(
+              setDraftProperty({
+                key: "deliverySunday",
+                value: e.target.checked ? 1 : 0,
+              }),
+            )
+          }
+          id="deliverySunday"
+        />
+        <label className="form-check-label" htmlFor="deliverySunday">
+          Παράδοση Σάββατο
+        </label>
+      </div>
+
+      <div className="form-check form-switch switch-lg mb-2">
+        <input
+          className="form-check-input"
+          name="deliveryMorning"
+          type="checkbox"
+          checked={data.deliveryMorning == 1}
+          onChange={(e) =>
+            dispatch(
+              setDraftProperty({
+                key: "deliveryMorning",
+                value: e.target.checked ? 1 : 0,
+              }),
+            )
+          }
+          id="deliveryMorning"
+        />
+        <label className="form-check-label" htmlFor="deliveryMorning">
+          Πρωινή παράδοση
+        </label>
+      </div>
+
+      {!data.shipToOtherAddressBool && listAddressesPersons.length > 0 && (
+        <Field label="Θα παραδοθεί σε">
+          <FormSelect
+            name="person_ErpGID"
+            value={data.person_ErpGID ?? ""}
             onChange={(e) => {
               dispatch(
                 setDraftProperty({
-                  key: "shipTo_other_address",
-                  value: e.target.checked ? 1 : 0,
+                  key: "person_ErpGID",
+                  value: e.target.value,
                 }),
               );
-              dispatch(
-                setDraftProperty({
-                  key: "shipToOtherAddressBool",
-                  value: e.target.checked,
-                }),
-              );
-              if (e.target.checked) {
-                dispatch(
-                  setDraftProperty({ key: "address_ErpGID", value: null }),
-                );
-              } else if (data.person_ErpGID && data.person_ErpGID != "") {
+              if (data.shipTo_other_address != 1) {
                 dispatch(
                   setDraftProperty({
                     key: "address_ErpGID",
                     value:
                       listAddressesPersons.find(
-                        (x) => x.person_ErpGID == data.person_ErpGID,
+                        (p) => p.person_ErpGID == e.target.value,
                       )?.addresses?.[0]?.address_ErpGID ?? null,
                   }),
                 );
               }
             }}
-            id="shipTo_other_address"
-          />
-          <label className="form-check-label" htmlFor="shipTo_other_address">
-            Παράδοση σε νέα διεύθυνση
-          </label>
-        </div>
+          >
+            {listAddressesPersons.map((x) => (
+              <option key={x.person_ErpGID ?? ""} value={x.person_ErpGID ?? ""}>
+                {x.personName}
+              </option>
+            ))}
+          </FormSelect>
+        </Field>
+      )}
 
-        {data.shipTo_other_address == 1 && (
-          <>
-            <div className="mt-3">
-              <Field label="Διεύθυνση παράδοσης">
+      {!data.shipToOtherAddressBool &&
+        data.shipTo_other_address != 1 &&
+        listAddressesPersons.length > 0 &&
+        data.person_ErpGID &&
+        data.person_ErpGID != "" &&
+        selectedPersonAddresses.length > 0 && (
+          <Field label="Αποθηκευμένη διεύθυνση">
+            <FormSelect
+              name="address_ErpGID"
+              value={data.address_ErpGID ?? ""}
+              onChange={(e) =>
+                dispatch(
+                  setDraftProperty({
+                    key: "address_ErpGID",
+                    value: e.target.value,
+                  }),
+                )
+              }
+            >
+              {selectedPersonAddresses.map((a) => (
+                <option
+                  key={a.address_ErpGID}
+                  value={a.address_ErpGID ?? ""}
+                >{`${a.address}, ${a.city}, ${a.tk}`}</option>
+              ))}
+            </FormSelect>
+          </Field>
+        )}
+
+      <div className="form-check form-switch switch-lg mb-2">
+        <input
+          className="form-check-input"
+          name="shipTo_other_address"
+          type="checkbox"
+          checked={data.shipTo_other_address == 1}
+          onChange={(e) => {
+            dispatch(
+              setDraftProperty({
+                key: "shipTo_other_address",
+                value: e.target.checked ? 1 : 0,
+              }),
+            );
+            dispatch(
+              setDraftProperty({
+                key: "shipToOtherAddressBool",
+                value: e.target.checked,
+              }),
+            );
+            if (e.target.checked) {
+              dispatch(
+                setDraftProperty({ key: "address_ErpGID", value: null }),
+              );
+            } else if (data.person_ErpGID && data.person_ErpGID != "") {
+              dispatch(
+                setDraftProperty({
+                  key: "address_ErpGID",
+                  value:
+                    listAddressesPersons.find(
+                      (x) => x.person_ErpGID == data.person_ErpGID,
+                    )?.addresses?.[0]?.address_ErpGID ?? null,
+                }),
+              );
+            }
+          }}
+          id="shipTo_other_address"
+        />
+        <label className="form-check-label" htmlFor="shipTo_other_address">
+          Παράδοση σε νέα διεύθυνση
+        </label>
+      </div>
+
+      {data.shipTo_other_address == 1 && (
+        <>
+          <div className="mt-3">
+            <Field label="Διεύθυνση παράδοσης">
+              <input
+                className="form-control"
+                name="customer_other_address"
+                value={data.customer_other_address ?? ""}
+                onChange={(e) =>
+                  dispatch(
+                    setDraftProperty({
+                      key: "customer_other_address",
+                      value: e.target.value,
+                    }),
+                  )
+                }
+              />
+            </Field>
+          </div>
+          <div className="row g-2">
+            <div className="col-6">
+              <Field label="Πόλη ">
                 <input
                   className="form-control"
-                  name="customer_other_address"
-                  value={data.customer_other_address ?? ""}
+                  name="customer_other_city"
+                  value={data.customer_other_city ?? ""}
                   onChange={(e) =>
                     dispatch(
                       setDraftProperty({
-                        key: "customer_other_address",
+                        key: "customer_other_city",
                         value: e.target.value,
                       }),
                     )
@@ -492,45 +594,27 @@ export default function OrderRetailCustomerArea() {
                 />
               </Field>
             </div>
-            <div className="row g-2">
-              <div className="col-6">
-                <Field label="Πόλη ">
-                  <input
-                    className="form-control"
-                    name="customer_other_city"
-                    value={data.customer_other_city ?? ""}
-                    onChange={(e) =>
-                      dispatch(
-                        setDraftProperty({
-                          key: "customer_other_city",
-                          value: e.target.value,
-                        }),
-                      )
-                    }
-                  />
-                </Field>
-              </div>
-              <div className="col-6">
-                <Field label="ΤΚ">
-                  <input
-                    className="form-control"
-                    name="customer_other_tk"
-                    inputMode="numeric"
-                    value={data.customer_other_tk ?? ""}
-                    onChange={(e) =>
-                      dispatch(
-                        setDraftProperty({
-                          key: "customer_other_tk",
-                          value: e.target.value,
-                        }),
-                      )
-                    }
-                  />
-                </Field>
-              </div>
+            <div className="col-6">
+              <Field label="ΤΚ">
+                <input
+                  className="form-control"
+                  name="customer_other_tk"
+                  inputMode="numeric"
+                  value={data.customer_other_tk ?? ""}
+                  onChange={(e) =>
+                    dispatch(
+                      setDraftProperty({
+                        key: "customer_other_tk",
+                        value: e.target.value,
+                      }),
+                    )
+                  }
+                />
+              </Field>
             </div>
-          </>
-        )}
+          </div>
+        </>
+      )}
     </div>
   );
 }

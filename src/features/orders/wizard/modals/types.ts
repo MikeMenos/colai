@@ -1,3 +1,12 @@
+export type SubmitOrderConfirmReviewField =
+  | "otp"
+  | "recipientName"
+  | "recipientAddress"
+  | "amka"
+  | "dateOfSyntagi"
+  | "barcode"
+  | "suggestedDoctorName";
+
 export type SubmitOrderConfirmModalProps = {
   show: boolean;
   loading?: boolean;
@@ -13,6 +22,7 @@ export type SubmitOrderConfirmModalProps = {
   orderAsSeller?: string | null;
   isPaid?: boolean;
   showPaymentMethodInfo?: boolean;
+  reviewFields?: SubmitOrderConfirmReviewField[];
   onClose: () => void;
   onConfirm: () => void;
 };

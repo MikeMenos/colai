@@ -2,7 +2,29 @@
 
 import React from "react";
 import { Alert, Button, Modal } from "react-bootstrap";
-import type { SubmitOrderConfirmModalProps } from "./types";
+import type {
+  SubmitOrderConfirmModalProps,
+  SubmitOrderConfirmReviewField,
+} from "./types";
+
+const DEFAULT_REVIEW_FIELDS: SubmitOrderConfirmReviewField[] = [
+  "otp",
+  "recipientName",
+  "recipientAddress",
+  "amka",
+  "dateOfSyntagi",
+  "barcode",
+];
+
+const REVIEW_FIELD_LABELS: Record<SubmitOrderConfirmReviewField, string> = {
+  otp: "OTP",
+  recipientName: "Παραλήπτης",
+  recipientAddress: "Διεύθ. παραλήπτη",
+  amka: "ΑΜΚΑ παραλήπτη",
+  dateOfSyntagi: "Ημ/νία συνταγής",
+  barcode: "Barcode",
+  suggestedDoctorName: "Συστήνων ιατρός",
+};
 
 function SummaryRow({
   label,
@@ -107,9 +129,24 @@ export default function SubmitOrderConfirmModal({
   orderAsSeller,
   isPaid = false,
   showPaymentMethodInfo = false,
+  reviewFields = DEFAULT_REVIEW_FIELDS,
   onClose,
   onConfirm,
 }: SubmitOrderConfirmModalProps) {
+  const reviewValues: Record<SubmitOrderConfirmReviewField, string | null | undefined> = {
+    otp,
+    recipientName,
+    recipientAddress,
+    amka,
+    dateOfSyntagi,
+    barcode,
+    suggestedDoctorName,
+  };
+  const visibleReviewFields =
+    customerIsCompletelyNew && !reviewFields.includes("suggestedDoctorName")
+      ? [...reviewFields, "suggestedDoctorName" as const]
+      : reviewFields;
+
   return (
     <Modal
       show={show}
@@ -160,15 +197,13 @@ export default function SubmitOrderConfirmModal({
             isPaid={isPaid}
             showPaymentMethodInfo={showPaymentMethodInfo}
           />
-          <SummaryRow label="OTP" value={otp} />
-          <SummaryRow label="Παραλήπτης" value={recipientName} />
-          <SummaryRow label="Διεύθ. παραλήπτη" value={recipientAddress} />
-          <SummaryRow label="ΑΜΚΑ παραλήπτη" value={amka} />
-          <SummaryRow label="Ημ/νία συνταγής" value={dateOfSyntagi} />
-          <SummaryRow label="Barcode" value={barcode} />
-          {customerIsCompletelyNew ? (
-            <SummaryRow label="Συστήνων ιατρός" value={suggestedDoctorName} />
-          ) : null}
+          {visibleReviewFields.map((field) => (
+            <SummaryRow
+              key={field}
+              label={REVIEW_FIELD_LABELS[field]}
+              value={reviewValues[field]}
+            />
+          ))}
         </div>
 
         {error ? (

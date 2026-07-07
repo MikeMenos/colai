@@ -12,7 +12,10 @@ import { isConsentScoreTooLow } from "@/lib/consentUpload";
 import { getActingSellerDisplayLabel } from "@/lib/sellerAccess";
 import SynenaiseisArea from "@/features/orders/wizard/eopyy/SynenaiseisArea";
 import SubmitOrderConfirmModal from "@/features/orders/wizard/modals/SubmitOrderConfirmModal";
-import { getSubmitConfirmRecipientAddress, getSubmitConfirmRecipientName } from "@/features/orders/wizard/eopyy/wizard/submitConfirmAmka";
+import {
+  getSubmitConfirmRecipientAddress,
+  getSubmitConfirmRecipientName,
+} from "@/features/orders/wizard/eopyy/wizard/submitConfirmAmka";
 import OrderRetailCustomerArea from "./OrderRetailCustomerArea";
 import OrderDoctorArea from "./OrderDoctorArea";
 import MaterialsArea from "./MaterialsArea";
@@ -80,7 +83,7 @@ export default function OrderRetailWizard() {
   function goPrev() {
     setStep((s) => Math.max(s - 1, 0));
   }
-
+  console.log(draftOrder);
   async function confirmSave() {
     try {
       const result = await dispatch(submitDraftAsync()).unwrap();
@@ -135,8 +138,7 @@ export default function OrderRetailWizard() {
     setShowSubmitConfirm(true);
   }
 
-  const nextDisabled =
-    currentLabel === "Συναίνεση" && consentBlocksProgress;
+  const nextDisabled = currentLabel === "Συναίνεση" && consentBlocksProgress;
 
   const saveDisabled = submitState.loading || consentBlocksProgress;
 
@@ -217,7 +219,7 @@ export default function OrderRetailWizard() {
         amka={draftOrder.customer_amka}
         recipientName={submitConfirmRecipientName}
         recipientAddress={submitConfirmRecipientAddress}
-        barcode={draftOrder.barcode}
+        reviewFields={["recipientName", "recipientAddress", "amka"]}
         orderAsSeller={submitConfirmOrderAsSeller}
         isPaid={draftOrder.isPaid == 1}
         showPaymentMethodInfo

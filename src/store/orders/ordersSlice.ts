@@ -3,9 +3,11 @@ import type {
   AIMaterials,
   OrdeListOfSelections,
   Order,
+  OrderCustomerActivityPriceOption,
   OrderFile,
   OrderListOfAddressPersons,
   OrderYlika,
+  RetailPreloadedPriceList,
   SaleOrder_CheckItem,
 } from "@/types/orders";
 import type {
@@ -47,6 +49,7 @@ import {
 
 type OrderDraftType = "eopyy" | "non_eoppy";
 type EditCustomerStatus = "existing" | "pros_ebs";
+type OrderYlikoPriceField = "erp_EoppyPrice" | "erp_TypetPrice" | "erp_Price";
 type EditDraftPayload = GetOrderEditSuccess & {
   editCustomerStatus?: EditCustomerStatus;
   editLastCustomerWebOrder?: Record<string, unknown> | null;
@@ -61,6 +64,81 @@ function normalizeShowConsentForm(value: unknown): boolean {
   return text === "1" || text === "true";
 }
 
+function normalizeRetailPreloadedPrice(
+  value: unknown,
+): RetailPreloadedPriceList {
+  return value === "ΕΟΠΥΥ" || value === "ΤΥΠΕΤ" || value === "ΛΙΑΝΙΚΗ"
+    ? value
+    : "ΛΙΑΝΙΚΗ";
+}
+
+function getDraftOrderYlikoPriceField(order: Order): OrderYlikoPriceField {
+  if (order.type === "eopyy") return "erp_EoppyPrice";
+
+  switch (normalizeRetailPreloadedPrice(order.prE_LOADED_PRICE)) {
+    case "ΕΟΠΥΥ":
+      return "erp_EoppyPrice";
+    case "ΤΥΠΕΤ":
+      return "erp_TypetPrice";
+    case "ΛΙΑΝΙΚΗ":
+    default:
+      return "erp_Price";
+  }
+}
+
+function recalculateDraftYlikaTotals(draft: DraftState): void {
+  const priceField = getDraftOrderYlikoPriceField(draft.order);
+
+  draft.order.kostos = draft.ylika.reduce(
+    (acc, x) => acc + Number(x.qty) * Number(x[priceField] || 0),
+    0,
+  );
+  draft.order.kostos_EOPPY = draft.ylika.reduce(
+    (acc, x) => acc + Number(x.qty) * Number(x.erp_EoppyPrice || 0),
+    0,
+  );
+  draft.order.kostos_TYPET = draft.ylika.reduce(
+    (acc, x) => acc + Number(x.qty) * Number(x.erp_TypetPrice || 0),
+    0,
+  );
+  draft.order.kostos_RETAIL = draft.ylika.reduce(
+    (acc, x) => acc + Number(x.qty) * Number(x.erp_Price || 0),
+    0,
+  );
+  draft.order.posoSymmetoxis = calcPosoSymmetoxisForOrder(draft.order);
+}
+
+function getEditCustomerActivityOptions(
+  data: GetOrderEditSuccess["data"] | undefined,
+): OrderCustomerActivityPriceOption[] {
+  if (!data) return [];
+  const record = data as Record<string, unknown>;
+  const candidates = [
+    data.customerActivityOptions,
+    data.customerActivities,
+    data.list_CustomerActivities,
+    data.listCustomerActivities,
+    record.activities,
+    record.listActivities,
+  ];
+
+  const list =
+    candidates.find(Array.isArray) ??
+    Object.values(record).find(
+      (value) =>
+        Array.isArray(value) &&
+        value.some(
+          (row) =>
+            row !== null &&
+            typeof row === "object" &&
+            "activitY_CODE" in row,
+        ),
+    );
+  return Array.isArray(list)
+    ? (list as OrderCustomerActivityPriceOption[])
+    : [];
+}
+
 export interface DraftState {
   editState: { loading: boolean; error: string | null };
   submitState: { loading: boolean; error: string | null };
@@ -73,6 +151,7 @@ export interface DraftState {
   list_KatigoriesParoxis: OrdeListOfSelections[];
   list_TroposApostolis: OrdeListOfSelections[];
   list_AddressesPersons: OrderListOfAddressPersons[];
+  list_CustomerActivities: OrderCustomerActivityPriceOption[];
   preselected_address_GID?: string;
   preselected_person_GID?: string;
   ai_ylika: AIMaterials[];
@@ -412,30 +491,57 @@ export type LoadCustomerAddressesArgs = {
   preferredAddressErpGID?: string | null;
 };
 
+const inFlightCustomerAddressLoads = new Map<
+  string,
+  Promise<GetCustomerAddressesSuccess>
+>();
+
+function getCustomerAddressLoadKey({
+  customer_ErpGID,
+  customer_name,
+  customer_address,
+  customer_amka,
+}: LoadCustomerAddressesArgs): string {
+  return [
+    customer_ErpGID ?? "",
+    customer_amka ?? "",
+    customer_name ?? "",
+    customer_address ?? "",
+  ].join("|");
+}
+
 export const loadCustomerAddressesAsync = createAsyncThunk<
   GetCustomerAddressesSuccess,
   LoadCustomerAddressesArgs
 >(
   "orders/loadCustomerAddressesAsync",
-  async ({
-    customer_ErpGID,
-    customer_name,
-    customer_address,
-    customer_amka,
-  }) => {
-    const res = await fetch(
+  async (args) => {
+    const { customer_ErpGID, customer_name, customer_address, customer_amka } =
+      args;
+    const loadKey = getCustomerAddressLoadKey(args);
+    const inFlight = inFlightCustomerAddressLoads.get(loadKey);
+    if (inFlight) return inFlight;
+
+    const loadPromise = fetch(
       `/api/customers/${customer_ErpGID}/addresses?customerAMKA=${customer_amka ?? ""}&customerName=${customer_name ?? ""}&customerAddress=${customer_address ?? ""}&_ts=${Date.now()}`,
       {
         method: "GET",
         cache: "no-store",
         headers: { "Cache-Control": "no-cache", Pragma: "no-cache" },
       },
+    ).then((res) =>
+      parseProxyJson<GetCustomerAddressesSuccess>(
+        res,
+        "Failed to load addresses",
+      ),
+    );
+    inFlightCustomerAddressLoads.set(loadKey, loadPromise);
+    loadPromise.then(
+      () => inFlightCustomerAddressLoads.delete(loadKey),
+      () => inFlightCustomerAddressLoads.delete(loadKey),
     );
 
-    return parseProxyJson<GetCustomerAddressesSuccess>(
-      res,
-      "Failed to load addresses",
-    );
+    return loadPromise;
   },
 );
 
@@ -456,6 +562,7 @@ const initialStateBase: OrdersState = {
     list_SygeniaParalipti: [] as OrdeListOfSelections[],
     list_TroposApostolis: [] as OrdeListOfSelections[],
     list_AddressesPersons: [] as OrderListOfAddressPersons[],
+    list_CustomerActivities: [] as OrderCustomerActivityPriceOption[],
     ai_ylika: [] as AIMaterials[],
     synaineseisResults: null,
   },
@@ -501,6 +608,9 @@ function loadStateFromLocalStorage(): OrdersState | null {
         list_TroposApostolis: (parsed?.list_TroposApostolis ??
           initialStateBase.draft
             .list_TroposApostolis) as OrdeListOfSelections[],
+        list_CustomerActivities: (parsed?.list_CustomerActivities ??
+          initialStateBase.draft
+            .list_CustomerActivities) as OrderCustomerActivityPriceOption[],
         ai_ylika: (parsed?.ai_ylika ??
           initialStateBase.draft.ai_ylika) as AIMaterials[],
         lastOrderInfoCustomerErpGID:
@@ -544,6 +654,7 @@ function persistStateToLocalStorage(state: OrdersState) {
     list_LogosParalipti: state.draft.list_LogosParalipti,
     list_SygeniaParalipti: state.draft.list_SygeniaParalipti,
     list_TroposApostolis: state.draft.list_TroposApostolis,
+    list_CustomerActivities: state.draft.list_CustomerActivities,
     ai_ylika: state.draft.ai_ylika,
     lastOrderInfoCustomerErpGID: state.draft.lastOrderInfoCustomerErpGID,
     lastOrderInfoDateIn: state.draft.lastOrderInfoDateIn,
@@ -601,6 +712,8 @@ const ordersSlice = createSlice({
       state.draft.list_SygeniaParalipti = [] as OrdeListOfSelections[];
       state.draft.list_TroposApostolis = [] as OrdeListOfSelections[];
       state.draft.list_AddressesPersons = [] as OrderListOfAddressPersons[];
+      state.draft.list_CustomerActivities =
+        [] as OrderCustomerActivityPriceOption[];
       state.draft.preselected_address_GID = undefined;
       state.draft.preselected_person_GID = undefined;
       state.draft.ai_ylika = [] as AIMaterials[];
@@ -646,6 +759,13 @@ const ordersSlice = createSlice({
         );
       }
 
+      if (action.payload.key === "prE_LOADED_PRICE") {
+        state.draft.order.prE_LOADED_PRICE = normalizeRetailPreloadedPrice(
+          action.payload.value,
+        );
+        recalculateDraftYlikaTotals(state.draft);
+      }
+
       persistStateToLocalStorage(state);
     },
     patchDraftOrder(state, action: PayloadAction<Partial<Order>>) {
@@ -672,6 +792,13 @@ const ordersSlice = createSlice({
         );
       }
 
+      if ("prE_LOADED_PRICE" in action.payload) {
+        state.draft.order.prE_LOADED_PRICE = normalizeRetailPreloadedPrice(
+          action.payload.prE_LOADED_PRICE,
+        );
+        recalculateDraftYlikaTotals(state.draft);
+      }
+
       persistStateToLocalStorage(state);
     },
     setAIMaterials(state, action: PayloadAction<AIMaterials[]>) {
@@ -680,30 +807,7 @@ const ordersSlice = createSlice({
     },
     setDraftYlika(state, action: PayloadAction<OrderYlika[]>) {
       state.draft.ylika = action.payload;
-      state.draft.order.kostos = state.draft.ylika.reduce(
-        (acc, x) =>
-          acc +
-          (Number(x.qty) *
-            Number(
-              x[
-                state.draft.order.type == "eopyy"
-                  ? "erp_EoppyPrice"
-                  : "erp_Price"
-              ],
-            ) || 0),
-        0,
-      );
-      state.draft.order.kostos_EOPPY = state.draft.ylika.reduce(
-        (acc, x) => acc + Number(x.qty) * Number(x.erp_EoppyPrice || 0),
-        0,
-      );
-      state.draft.order.kostos_RETAIL = state.draft.ylika.reduce(
-        (acc, x) => acc + Number(x.qty) * Number(x.erp_Price || 0),
-        0,
-      );
-      state.draft.order.posoSymmetoxis = calcPosoSymmetoxisForOrder(
-        state.draft.order,
-      );
+      recalculateDraftYlikaTotals(state.draft);
       persistStateToLocalStorage(state);
     },
     setDraftFiles(state, action: PayloadAction<OrderFile[]>) {
@@ -765,31 +869,7 @@ const ordersSlice = createSlice({
     },
     addDraftYliko(state, action: PayloadAction<OrderYlika>) {
       state.draft.ylika.push(action.payload);
-      state.draft.order.kostos = state.draft.ylika.reduce(
-        (acc, x) =>
-          acc +
-          (Number(x.qty) *
-            Number(
-              x[
-                state.draft.order.type == "eopyy"
-                  ? "erp_EoppyPrice"
-                  : "erp_Price"
-              ],
-            ) || 0),
-        0,
-      );
-      state.draft.order.kostos_EOPPY = state.draft.ylika.reduce(
-        (acc, x) => acc + Number(x.qty) * Number(x.erp_EoppyPrice || 0),
-        0,
-      );
-      state.draft.order.kostos_RETAIL = state.draft.ylika.reduce(
-        (acc, x) => acc + Number(x.qty) * Number(x.erp_Price || 0),
-        0,
-      );
-
-      state.draft.order.posoSymmetoxis = calcPosoSymmetoxisForOrder(
-        state.draft.order,
-      );
+      recalculateDraftYlikaTotals(state.draft);
       persistStateToLocalStorage(state);
     },
     updateDraftYlikoQuantity: (
@@ -801,61 +881,13 @@ const ordersSlice = createSlice({
         state.draft.ylika[index].qty = quantity;
       }
 
-      state.draft.order.kostos = state.draft.ylika.reduce(
-        (acc, x) =>
-          acc +
-          (Number(x.qty) *
-            Number(
-              x[
-                state.draft.order.type == "eopyy"
-                  ? "erp_EoppyPrice"
-                  : "erp_Price"
-              ],
-            ) || 0),
-        0,
-      );
-      state.draft.order.kostos_EOPPY = state.draft.ylika.reduce(
-        (acc, x) => acc + Number(x.qty) * Number(x.erp_EoppyPrice || 0),
-        0,
-      );
-      state.draft.order.kostos_RETAIL = state.draft.ylika.reduce(
-        (acc, x) => acc + Number(x.qty) * Number(x.erp_Price || 0),
-        0,
-      );
-
-      state.draft.order.posoSymmetoxis = calcPosoSymmetoxisForOrder(
-        state.draft.order,
-      );
+      recalculateDraftYlikaTotals(state.draft);
 
       persistStateToLocalStorage(state);
     },
     removeDraftYliko: (state, action: PayloadAction<number>) => {
       state.draft.ylika.splice(action.payload, 1);
-      state.draft.order.kostos = state.draft.ylika.reduce(
-        (acc, x) =>
-          acc +
-          (Number(x.qty) *
-            Number(
-              x[
-                state.draft.order.type == "eopyy"
-                  ? "erp_EoppyPrice"
-                  : "erp_Price"
-              ],
-            ) || 0),
-        0,
-      );
-      state.draft.order.kostos_EOPPY = state.draft.ylika.reduce(
-        (acc, x) => acc + Number(x.qty) * Number(x.erp_EoppyPrice || 0),
-        0,
-      );
-      state.draft.order.kostos_RETAIL = state.draft.ylika.reduce(
-        (acc, x) => acc + Number(x.qty) * Number(x.erp_Price || 0),
-        0,
-      );
-
-      state.draft.order.posoSymmetoxis = calcPosoSymmetoxisForOrder(
-        state.draft.order,
-      );
+      recalculateDraftYlikaTotals(state.draft);
 
       persistStateToLocalStorage(state);
     },
@@ -1041,6 +1073,7 @@ const ordersSlice = createSlice({
         state.draft.preselected_address_GID = undefined;
         state.draft.preselected_person_GID = undefined;
         state.draft.ylika = (action.payload.data.items ?? []) as OrderYlika[];
+        recalculateDraftYlikaTotals(state.draft);
         state.draft.files = (action.payload.data.files ?? []) as OrderFile[];
         state.draft.showConsentForm = action.payload.editShowConsentForm === true;
         state.draft.list_DiscountReasons = (action.payload.data
@@ -1053,6 +1086,36 @@ const ordersSlice = createSlice({
           .list_SygeniaParalipti ?? []) as OrdeListOfSelections[];
         state.draft.list_TroposApostolis = (action.payload.data
           .list_TroposApostolis ?? []) as OrdeListOfSelections[];
+        state.draft.list_CustomerActivities = getEditCustomerActivityOptions(
+          action.payload.data,
+        );
+        if (state.draft.list_CustomerActivities.length > 0) {
+          const savedActivityCode = String(
+            state.draft.order.customer_ActivityCode ?? "",
+          ).trim();
+          const selectedActivity = savedActivityCode
+            ? state.draft.list_CustomerActivities.find(
+                (activity) => activity.activitY_CODE === savedActivityCode,
+              )
+            : undefined;
+
+          if (selectedActivity) {
+            state.draft.order.activitY_DESC =
+              selectedActivity.activitY_DESC ?? state.draft.order.activitY_DESC;
+            state.draft.order.ischangeable =
+              selectedActivity.ischangeable ??
+              selectedActivity.ischangable ??
+              state.draft.order.ischangeable;
+            state.draft.order.definitioN_PRICE =
+              selectedActivity.definitioN_PRICE ??
+              state.draft.order.definitioN_PRICE;
+            if (selectedActivity.prE_LOADED_PRICE) {
+              state.draft.order.prE_LOADED_PRICE =
+                normalizeRetailPreloadedPrice(selectedActivity.prE_LOADED_PRICE);
+              recalculateDraftYlikaTotals(state.draft);
+            }
+          }
+        }
         state.draft.synaineseisResults = null;
         state.draft.submitState = { loading: false, error: null };
         const customerErpGID = order?.customer_ErpGID;

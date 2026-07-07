@@ -32,6 +32,7 @@ export default function AIMaterialSelectorModal({
             erpName: c.erp_name || "",
             erp_Price: c.erp_price || 0,
             erp_EoppyPrice: c.erp_eoppyprice || 0,
+            erp_TypetPrice: c.erp_typetprice || 0,
             qty: parseFloat(qty),
             eoppy_CleanName: aiMaterials.clean_name,
             eoppy_Code: aiMaterials.kodikos_ylikou,

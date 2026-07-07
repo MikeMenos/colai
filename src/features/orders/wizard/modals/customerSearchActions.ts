@@ -33,6 +33,7 @@ import type {
   LoadLastCustomerOrderInfoSuccess,
   SearchCustomersSuccess,
 } from "@/types/api/responses";
+import type { RetailPreloadedPriceList } from "@/types/orders";
 import {
   resetDraftForDifferentCustomerSelection,
   shouldResetWizardForCustomerAmkaChange,
@@ -69,6 +70,11 @@ export type CustomerSearchOutcome = {
   error: string | null;
 };
 
+const inFlightCustomerSearches = new Map<
+  string,
+  Promise<CustomerSearchOutcome>
+>();
+
 export function normalizeShowConsentForm(value: unknown): boolean | null {
   if (value === 1 || value === true) return true;
   if (value === 0 || value === false) return false;
@@ -102,6 +108,16 @@ function getCustomerSearchErrorMessage(
   return "Η αναζήτηση απέτυχε.";
 }
 
+function normalizePreloadedPrice(value: unknown): RetailPreloadedPriceList {
+  return value === "ΕΟΠΥΥ" || value === "ΤΥΠΕΤ" || value === "ΛΙΑΝΙΚΗ"
+    ? value
+    : "ΛΙΑΝΙΚΗ";
+}
+
+function normalizeChangeableFlag(value: unknown): 0 | 1 {
+  return value === 0 || value === "0" ? 0 : 1;
+}
+
 export async function searchCustomersByQuery(
   query: string,
   orderType: CustomerSearchOrderType,
@@ -116,53 +132,66 @@ export async function searchCustomersByQuery(
     };
   }
 
-  try {
-    const params = new URLSearchParams({
-      q: trimmed,
-      orderType,
-      _ts: String(Date.now()),
-    });
-    const res = await fetch(`/api/customers?${params.toString()}`, {
-      cache: "no-store",
-      headers: { "Cache-Control": "no-cache", Pragma: "no-cache" },
-    });
-    const data = await parseProxyJson<SearchCustomersSuccess>(
-      res,
-      "Search failed",
-    );
+  const searchKey = `${orderType}:${trimmed.toLocaleLowerCase("el-GR")}`;
+  const inFlight = inFlightCustomerSearches.get(searchKey);
+  if (inFlight) return inFlight;
 
-    const searchError = getCustomerSearchErrorMessage(data);
-    if (searchError) {
+  const searchPromise = (async (): Promise<CustomerSearchOutcome> => {
+    try {
+      const params = new URLSearchParams({
+        q: trimmed,
+        orderType,
+        _ts: String(Date.now()),
+      });
+      const res = await fetch(`/api/customers?${params.toString()}`, {
+        cache: "no-store",
+        headers: { "Cache-Control": "no-cache", Pragma: "no-cache" },
+      });
+      const data = await parseProxyJson<SearchCustomersSuccess>(
+        res,
+        "Search failed",
+      );
+
+      const searchError = getCustomerSearchErrorMessage(data);
+      if (searchError) {
+        return {
+          results: [],
+          lastCustomerWebOrder: null,
+          showConsentForm: normalizeShowConsentForm(data.showConsentForm),
+          error: searchError,
+        };
+      }
+
+      const listCustomers = data.listCustomers ?? [];
+      const webOrder = isNonEmptyRecord(data.lastCustomerWebOrder)
+        ? data.lastCustomerWebOrder
+        : null;
+
+      return {
+        results: listCustomers,
+        lastCustomerWebOrder:
+          listCustomers.length === 0 && webOrder ? webOrder : null,
+        showConsentForm: normalizeShowConsentForm(data.showConsentForm),
+        error: null,
+      };
+    } catch (e: unknown) {
+      const message = e instanceof Error ? e.message : "Η αναζήτηση απέτυχε.";
       return {
         results: [],
         lastCustomerWebOrder: null,
-        showConsentForm: normalizeShowConsentForm(data.showConsentForm),
-        error: searchError,
+        showConsentForm: null,
+        error: message,
       };
     }
+  })();
 
-    const listCustomers = data.listCustomers ?? [];
-    const webOrder = isNonEmptyRecord(data.lastCustomerWebOrder)
-      ? data.lastCustomerWebOrder
-      : null;
+  inFlightCustomerSearches.set(searchKey, searchPromise);
+  searchPromise.then(
+    () => inFlightCustomerSearches.delete(searchKey),
+    () => inFlightCustomerSearches.delete(searchKey),
+  );
 
-    return {
-      results: listCustomers,
-      lastCustomerWebOrder:
-        listCustomers.length === 0 && webOrder ? webOrder : null,
-      showConsentForm: normalizeShowConsentForm(data.showConsentForm),
-      error: null,
-    };
-  } catch (e: unknown) {
-    const message =
-      e instanceof Error ? e.message : "Η αναζήτηση απέτυχε.";
-    return {
-      results: [],
-      lastCustomerWebOrder: null,
-      showConsentForm: null,
-      error: message,
-    };
-  }
+  return searchPromise;
 }
 
 export function applySearchConsentFlag(
@@ -284,6 +313,30 @@ export async function applyCustomerFromSearch(
   dispatch(setDraftProperty({ key: "customer_email", value: "" }));
   dispatch(
     setDraftProperty({ key: "customer_passport", value: c.taytothta }),
+  );
+  dispatch(
+    setDraftProperty({
+      key: "prE_LOADED_PRICE",
+      value: normalizePreloadedPrice(c.prE_LOADED_PRICE),
+    }),
+  );
+  dispatch(
+    setDraftProperty({
+      key: "ischangeable",
+      value: normalizeChangeableFlag(c.ischangeable ?? c.ischangable),
+    }),
+  );
+  dispatch(
+    setDraftProperty({
+      key: "activitY_DESC",
+      value: c.activitY_DESC ?? "",
+    }),
+  );
+  dispatch(
+    setDraftProperty({
+      key: "definitioN_PRICE",
+      value: c.definitioN_PRICE ?? "",
+    }),
   );
 
   try {

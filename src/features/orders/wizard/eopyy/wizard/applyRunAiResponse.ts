@@ -582,6 +582,7 @@ export async function applyRunAiResponse(
       erpName: m.erp_products[0].erp_name || "",
       erp_Price: m.erp_products[0].erp_price || 0,
       erp_EoppyPrice: m.erp_products[0].erp_eoppyprice || 0,
+      erp_TypetPrice: m.erp_products[0].erp_typetprice || 0,
       qty: parseFloat(String(m.synoliki_posotita_eidous ?? 0)),
       eoppy_CleanName: m.clean_name,
       eoppy_Code: m.kodikos_ylikou,
