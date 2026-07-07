@@ -80,7 +80,7 @@ export default function CompletionArea({
               <Field label="Αξία Υλικών">
                 <input
                   className="form-control"
-                  value={formatCurrencyGR(data.kostos)}
+                  value={formatCurrencyGR(data.kostos_RETAIL)}
                   disabled
                 />
               </Field>

@@ -101,8 +101,10 @@ export default function OrderStartPage() {
         <PlatformCard
           title="Λιανικής"
           type="retail"
-          description="Συμπλήρωσε στοιχεία"
-          icon="bi-ui-checks"
+          description="Υπό κατασκευή λόγω αναβάθμισης. Παρακαλώ για τις παραγγελίες όπως στείλατε email."
+          icon="bi-tools"
+          disabled
+          badge="Υπό κατασκευή"
           onClick={(x) => handleContinue(x)}
         />
       </div>
