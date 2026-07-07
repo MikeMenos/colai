@@ -13,10 +13,7 @@ import Image from "next/image";
 import type { GnomateuseisAreaProps } from "./componentProps";
 import GnomateuseisUploadSection from "./wizard/GnomateuseisUploadSection";
 import { useDualFileUploadState } from "./wizard/useFileUploadState";
-import {
-  getAiClientsByPriority,
-  type AiClient,
-} from "@/lib/utils/ai";
+import { getAiClientsByPriority, type AiClient } from "@/lib/utils/ai";
 
 const AI_CLIENT_CONFIG: Record<
   AiClient,
@@ -66,6 +63,9 @@ export default function GnomateuseisArea({
 
   const draftFiles = useAppSelector((s) => s.orders?.draft?.files) ?? [];
   const draftOrderUid = useAppSelector((s) => s.orders?.draft?.order?.uid);
+  const lastPageContainsMaterialsGnomateusi = useAppSelector(
+    (s) => s.orders?.draft?.order?.lastPageContainsMaterialsGnomateusi === true,
+  );
   const files = isLocalMode ? (localFiles ?? []) : draftFiles;
   const orderUid = orderUidProp ?? draftOrderUid ?? "";
 
@@ -80,6 +80,27 @@ export default function GnomateuseisArea({
   const recipeFiles = files.filter((f) => f?.documentCategory === "recipe");
   const recipeFileCount = recipeFiles.length;
   const hasFiles = recipeFileCount > 0;
+  const hasTwoRecipeFiles = recipeFileCount >= 2;
+
+  React.useEffect(() => {
+    if (
+      !isLocalMode &&
+      !hasTwoRecipeFiles &&
+      lastPageContainsMaterialsGnomateusi
+    ) {
+      dispatch(
+        setDraftProperty({
+          key: "lastPageContainsMaterialsGnomateusi",
+          value: false,
+        }),
+      );
+    }
+  }, [
+    dispatch,
+    hasTwoRecipeFiles,
+    isLocalMode,
+    lastPageContainsMaterialsGnomateusi,
+  ]);
 
   function handleFileAdded(file: OrderFile) {
     if (isLocalMode) {
@@ -140,6 +161,33 @@ export default function GnomateuseisArea({
         footer={aiStatusPanel}
       />
 
+      {!isLocalMode && hasTwoRecipeFiles ? (
+        <div className="app-card-soft mb-2 px-3 py-2">
+          <div className="form-check form-switch switch-lg mb-0">
+            <input
+              className="form-check-input"
+              type="checkbox"
+              checked={lastPageContainsMaterialsGnomateusi}
+              onChange={(e) =>
+                dispatch(
+                  setDraftProperty({
+                    key: "lastPageContainsMaterialsGnomateusi",
+                    value: e.target.checked,
+                  }),
+                )
+              }
+              id="lastPageContainsMaterialsGnomateusi"
+            />
+            <label
+              className="form-check-label"
+              htmlFor="lastPageContainsMaterialsGnomateusi"
+            >
+              Η τελευταία σελίδα περιέχει υλικά
+            </label>
+          </div>
+        </div>
+      ) : null}
+
       <GnomateuseisUploadSection
         title="Άλλα αρχεία (δεν αφορούν γνωμάτευση)"
         emptyHint="Πάτα + για να ανεβάσεις επιπλέον αρχεία που δεν αφορούν γνωμάτευση."
@@ -163,9 +211,7 @@ export default function GnomateuseisArea({
                 {index > 0 ? <AiClientSeparator /> : null}
                 <RunAiButton
                   label={config.label}
-                  running={
-                    aiStatus === "running" && aiRunningClient === client
-                  }
+                  running={aiStatus === "running" && aiRunningClient === client}
                   failed={aiDisabledClients.includes(client)}
                   disabled={
                     !hasFiles ||

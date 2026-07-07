@@ -12,13 +12,15 @@ export async function POST(req: NextRequest) {
     const order_uid = String(body?.order_uid ?? "");
     const catid = String(body?.catid ?? "");
     const aiclient = String(body?.aiclient ?? "");
+    const skip_last_page = Boolean(body?.skip_last_page);
     if (!order_uid) return NextResponse.json({ ok: false, message: "Missing order_uid" }, { status: 400 });
     if (!catid) return NextResponse.json({ ok: false, message: "Missing catid" }, { status: 400 });
     // NOTE: adjust payload keys to match Swagger if needed
     const payload = {
         order_uid,
         catid,
-        aiclient
+        aiclient,
+        skip_last_page,
     };
 
     const r = await fetch(`${process.env.AMSA_API_BASE_URL}/api/order-runai`, {

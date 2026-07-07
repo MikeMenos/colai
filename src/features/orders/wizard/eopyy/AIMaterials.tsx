@@ -166,7 +166,10 @@ export default function AIMaterials() {
                         value={y.synoliki_posotita_eidous}
                         mono
                       />
-                      <Row label="Σχόλια παραγγελίας" value={y.sxolia} />
+                      <Row
+                        label="Σχόλια για το τμήμα παραγγελιών"
+                        value={y.sxolia}
+                      />
                     </div>
                   </div>
                 </div>

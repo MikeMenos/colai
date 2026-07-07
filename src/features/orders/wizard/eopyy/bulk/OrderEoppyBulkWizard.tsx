@@ -1,6 +1,13 @@
 "use client";
 
-import type { UploadSide, SectionStatus, MassUploadSection, MassUploadPayload, LocalFilePickerButtonProps, PageUploadBoxProps } from "./OrderEoppyBulkWizard.types";
+import type {
+  UploadSide,
+  SectionStatus,
+  MassUploadSection,
+  MassUploadPayload,
+  LocalFilePickerButtonProps,
+  PageUploadBoxProps,
+} from "./OrderEoppyBulkWizard.types";
 import React from "react";
 import { Capacitor } from "@capacitor/core";
 import { Modal } from "react-bootstrap";
@@ -9,8 +16,7 @@ import LeaveOrderWizardConfirmModal from "@/features/orders/components/LeaveOrde
 import SellerActingSelector from "@/features/orders/components/SellerActingSelector";
 import { registerBulkLeaveGuard } from "./bulkLeaveGuard";
 import { resolveActingSeller } from "@/lib/sellerAccess";
-import { fetchOrders } from "@/store/orders/ordersSlice";
-import { useAppDispatch, useAppSelector } from "@/store/hooks";
+import { useAppSelector } from "@/store/hooks";
 
 const MAX_BULK_SECTIONS = 10;
 const ACCEPTED_FILES = "application/pdf,image/*";
@@ -59,6 +65,7 @@ async function buildMassUploadPayload(
             base64filename: file.name,
           })),
         ),
+        skip_last_page: false,
       },
     ],
   };
@@ -69,7 +76,7 @@ function getStatusBadge(status: SectionStatus) {
     return { label: "Αποστολή...", className: "text-bg-primary" };
   }
   if (status === "success") {
-    return { label: "Προσωρινά αποθηκευμένη", className: "text-bg-success" };
+    return { label: "Προσωρινά αποθηκευμένη", className: "text-bg-warning" };
   }
   if (status === "error") {
     return { label: "Σφάλμα", className: "text-bg-danger" };
@@ -87,7 +94,8 @@ function shouldUseUploadSourcePicker(): boolean {
   if (platform === "android") return true;
   if (platform === "web" && /Android/i.test(navigator.userAgent)) return true;
   return false;
-}function LocalFilePickerButton({
+}
+function LocalFilePickerButton({
   id,
   disabled,
   ariaLabel,
@@ -212,7 +220,8 @@ function shouldUseUploadSourcePicker(): boolean {
       ) : null}
     </>
   );
-}function PageUploadBox({
+}
+function PageUploadBox({
   id,
   title,
   file,
@@ -262,7 +271,6 @@ function shouldUseUploadSourcePicker(): boolean {
 
 export default function OrderEoppyBulkWizard() {
   const router = useRouter();
-  const dispatch = useAppDispatch();
   const userInfos = useAppSelector((s) => s.auth.userInfos);
   const actingSellerCode = useAppSelector((s) => s.auth.actingSellerCode);
   const selectedSeller = React.useMemo(
@@ -306,6 +314,7 @@ export default function OrderEoppyBulkWizard() {
   }
 
   async function submitSection(sectionId: string, files: File[]) {
+    const section = sections.find((item) => item.id === sectionId);
     const sellercode = selectedSeller?.sellerCode?.trim() ?? "";
     if (!sellercode) {
       updateSection(sectionId, {
@@ -330,7 +339,10 @@ export default function OrderEoppyBulkWizard() {
       if (!res.ok || data?.ok === false) {
         throw new Error(data?.message || "Η αποστολή απέτυχε.");
       }
-      void dispatch(fetchOrders({ force: true }));
+      updateSection(sectionId, {
+        status: "success",
+        message: null,
+      });
     } catch (error) {
       updateSection(sectionId, {
         status: "error",
@@ -485,6 +497,7 @@ export default function OrderEoppyBulkWizard() {
                       onFileRemove={() => handleFileRemove(section.id, "back")}
                     />
                   ) : null}
+
                 </div>
 
                 {section.message ? (

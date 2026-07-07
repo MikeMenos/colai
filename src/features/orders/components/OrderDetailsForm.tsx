@@ -117,7 +117,7 @@ export default function OrderDetailsForm({
       </div>
 
       <div className="app-card px-3 py-2">
-        <div className="fw-semibold mb-2">Σχόλια παραγγελίας</div>
+        <div className="fw-semibold mb-2">Σχόλια για το τμήμα παραγγελιών</div>
         <textarea
           className="form-control"
           rows={2}

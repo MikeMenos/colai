@@ -4,12 +4,9 @@ import type { MaterialsLookupModal } from "./MaterialsLookupModals.types";
 import React from "react";
 import { Modal } from "react-bootstrap";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
-import { addDraftYliko, setDraftProperty } from "@/store/orders/ordersSlice";
+import { addDraftYliko } from "@/store/orders/ordersSlice";
 import AppLoader from "@/components/ui/AppLoader";
-import type {
-  ProductSearchResult,
-  SearchProductsSuccess,
-} from "@/types/api/responses";
+import type { SearchProductsSuccess } from "@/types/api/responses";
 import { parseProxyJson } from "@/lib/api/client";
 
 export default function MaterialsLookupModal({
@@ -69,6 +66,7 @@ export default function MaterialsLookupModal({
             erpName: c.erp_name || "",
             erp_Price: c.erp_price || 0,
             erp_EoppyPrice: c.erp_eoppyprice || 0,
+            erp_TypetPrice: c.erp_typetprice || 0,
             qty: 1,
             fuzzyMatched: c.fuzzy_matched ?? undefined,
             aiMatchedBy: c.matched_by ?? undefined,

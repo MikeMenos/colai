@@ -4,8 +4,11 @@ import type {
   APLAT_Sales_OrderItem,
   AddressAndPersonDto,
   AddressDto,
+  CustomerActivityPriceOption,
   SaleOrder_CheckItem,
 } from "./api/schemas";
+
+export type RetailPreloadedPriceList = "ΕΟΠΥΥ" | "ΤΥΠΕΤ" | "ΛΙΑΝΙΚΗ";
 
 /** Order wizard draft — text fields use empty string instead of API null. */
 export type Order = {
@@ -36,6 +39,7 @@ export type Order = {
   customer_tel_otp: string;
   amka_origin: string;
   customer_ErpGID: string;
+  customer_ActivityCode?: Nullable<string>;
   /** Person ERP id from run-ai jsonDoc.person_erpid (null = pending EBS link). */
   person_erpid?: Nullable<string>;
   person_ErpGID: Nullable<string>;
@@ -96,6 +100,7 @@ export type Order = {
   kostos: number;
   kostos_EOPPY: number;
   kostos_RETAIL: number;
+  kostos_TYPET?: number;
   posoSymmetoxis: number;
   posoDiscounted: Nullable<number>;
   calculatedDiscPercent: number;
@@ -141,12 +146,17 @@ export type Order = {
   deliverySunday: number;
   deliveryMorning: number;
   appliedPriceList: string;
+  prE_LOADED_PRICE?: Nullable<RetailPreloadedPriceList>;
+  ischangeable?: Nullable<0 | 1>;
+  activitY_DESC?: Nullable<string>;
+  definitioN_PRICE?: Nullable<string>;
   shipToOtherAddressBool: boolean;
   hasOtherSystinonIatroBool: boolean;
   isTempSave: number;
   aiCalculated: boolean;
   aiBatchStatus?: string | null;
   hasAnoia: boolean;
+  lastPageContainsMaterialsGnomateusi?: Nullable<boolean>;
   shouldUpdateRecipientInfos?: number;
   updateRecipient_amka?: string;
   updateRecipient_afm?: string;
@@ -161,6 +171,8 @@ export type Order = {
   posoPlafon?: number | null;
 };
 
+export type OrderCustomerActivityPriceOption = CustomerActivityPriceOption;
+
 /** Line item — based on swagger `APLAT_Sales_OrderItem` with required UI numeric fields. */
 export type OrderYlika = Partial<APLAT_Sales_OrderItem> & {
   id: number;
@@ -168,6 +180,7 @@ export type OrderYlika = Partial<APLAT_Sales_OrderItem> & {
   qty: number;
   erp_Price: number;
   erp_EoppyPrice: number;
+  erp_TypetPrice: number;
 };
 
 /** Uploaded file — based on swagger `APLAT_Sales_FileItem` plus client-only fields. */
@@ -201,6 +214,7 @@ export type AIMaterials = {
 export type AIMaterialsErpProducts = {
   erp_code: string;
   erp_eoppyprice: number;
+  erp_typetprice?: number;
   erp_gid: string;
   erp_name: string;
   erp_price: number;

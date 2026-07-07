@@ -7,6 +7,8 @@ import OrderField from "@/components/ui/OrderField";
 import React from "react";
 import { Alert, FormSelect } from "react-bootstrap";
 
+type AppliedPriceList = "retail" | "eopyy" | "typet";
+
 function Field({
   label,
   children,
@@ -25,6 +27,12 @@ function Field({
   );
 }
 
+function getDefaultAppliedPriceList(value: unknown): AppliedPriceList {
+  if (value === "ΕΟΠΥΥ") return "eopyy";
+  if (value === "ΤΥΠΕΤ") return "typet";
+  return "retail";
+}
+
 export default function CompletionArea({
   errors = {},
   clearError,
@@ -36,6 +44,34 @@ export default function CompletionArea({
   const ylika = useAppSelector((s) => s.orders.draft.ylika);
   const dispatch = useAppDispatch();
   const submitState = useAppSelector((s) => s.orders.draft.submitState);
+  const discountChangeAllowed = Number(data.ischangeable) !== 0;
+
+  const calculatePriceListTotal = React.useCallback(
+    (priceList: AppliedPriceList) =>
+      ylika.reduce((acc, x) => {
+        const price =
+          priceList === "eopyy"
+            ? x.erp_EoppyPrice
+            : priceList === "typet"
+              ? x.erp_TypetPrice
+              : x.erp_Price;
+        return acc + ((Number(price) || 0) * Number(x.qty) || 0);
+      }, 0),
+    [ylika],
+  );
+
+  const applyDiscountPriceList = React.useCallback(
+    (priceList: AppliedPriceList) => {
+      dispatch(setDraftProperty({ key: "appliedPriceList", value: priceList }));
+      dispatch(
+        setDraftProperty({
+          key: "posoDiscounted",
+          value: formatCurrencyGR(calculatePriceListTotal(priceList)),
+        }),
+      );
+    },
+    [calculatePriceListTotal, dispatch],
+  );
 
   React.useEffect(() => {
     if (!data.shipMethodId)
@@ -44,6 +80,26 @@ export default function CompletionArea({
       dispatch(setDraftProperty({ key: "isTempSave", value: 0 }));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  React.useEffect(() => {
+    if (discountChangeAllowed) return;
+
+    if (data.payFullOrDiscount != 1) {
+      dispatch(setDraftProperty({ key: "payFullOrDiscount", value: 1 }));
+    }
+    if (data.appliedPriceList != null) {
+      dispatch(setDraftProperty({ key: "appliedPriceList", value: null }));
+    }
+    if (data.posoDiscounted != null) {
+      dispatch(setDraftProperty({ key: "posoDiscounted", value: null }));
+    }
+  }, [
+    data.appliedPriceList,
+    data.payFullOrDiscount,
+    data.posoDiscounted,
+    discountChangeAllowed,
+    dispatch,
+  ]);
 
   return (
     <FormErrorsContext.Provider value={{ errors, clearError }}>
@@ -80,7 +136,7 @@ export default function CompletionArea({
               <Field label="Αξία Υλικών">
                 <input
                   className="form-control"
-                  value={formatCurrencyGR(data.kostos_RETAIL)}
+                  value={formatCurrencyGR(data.kostos)}
                   disabled
                 />
               </Field>
@@ -94,6 +150,7 @@ export default function CompletionArea({
               className="form-check-input"
               type="checkbox"
               checked={data.payFullOrDiscount == 1}
+              disabled={!discountChangeAllowed}
               onChange={(e) => {
                 dispatch(
                   setDraftProperty({
@@ -109,23 +166,8 @@ export default function CompletionArea({
                     setDraftProperty({ key: "posoDiscounted", value: null }),
                   );
                 } else {
-                  dispatch(
-                    setDraftProperty({
-                      key: "appliedPriceList",
-                      value: "eopyy",
-                    }),
-                  );
-                  const pricesEOPPY = ylika.reduce(
-                    (acc, x) =>
-                      acc +
-                      ((Number(x.erp_EoppyPrice) || 0) * Number(x.qty) || 0),
-                    0,
-                  );
-                  dispatch(
-                    setDraftProperty({
-                      key: "posoDiscounted",
-                      value: formatCurrencyGR(pricesEOPPY),
-                    }),
+                  applyDiscountPriceList(
+                    getDefaultAppliedPriceList(data.prE_LOADED_PRICE),
                   );
                 }
               }}
@@ -141,6 +183,7 @@ export default function CompletionArea({
               className="form-check-input"
               type="checkbox"
               checked={data.payFullOrDiscount == 2}
+              disabled={!discountChangeAllowed}
               onChange={(e) => {
                 dispatch(
                   setDraftProperty({
@@ -149,23 +192,8 @@ export default function CompletionArea({
                   }),
                 );
                 if (e.target.checked) {
-                  dispatch(
-                    setDraftProperty({
-                      key: "appliedPriceList",
-                      value: "eopyy",
-                    }),
-                  );
-                  const pricesEOPPY = ylika.reduce(
-                    (acc, x) =>
-                      acc +
-                      ((Number(x.erp_EoppyPrice) || 0) * Number(x.qty) || 0),
-                    0,
-                  );
-                  dispatch(
-                    setDraftProperty({
-                      key: "posoDiscounted",
-                      value: formatCurrencyGR(pricesEOPPY),
-                    }),
+                  applyDiscountPriceList(
+                    getDefaultAppliedPriceList(data.prE_LOADED_PRICE),
                   );
                 } else {
                   dispatch(
@@ -191,44 +219,14 @@ export default function CompletionArea({
                     name="appliedPriceList"
                     value={data.appliedPriceList}
                     onChange={(e) => {
-                      dispatch(
-                        setDraftProperty({
-                          key: "appliedPriceList",
-                          value: e.target.value,
-                        }),
+                      applyDiscountPriceList(
+                        e.target.value as AppliedPriceList,
                       );
-                      if (e.target.value == "eopyy") {
-                        const pricesEOPPY = ylika.reduce(
-                          (acc, x) =>
-                            acc +
-                            ((Number(x.erp_EoppyPrice) || 0) * Number(x.qty) ||
-                              0),
-                          0,
-                        );
-                        dispatch(
-                          setDraftProperty({
-                            key: "posoDiscounted",
-                            value: formatCurrencyGR(pricesEOPPY),
-                          }),
-                        );
-                      } else {
-                        const pricesRETAIL = ylika.reduce(
-                          (acc, x) =>
-                            acc +
-                            ((Number(x.erp_Price) || 0) * Number(x.qty) || 0),
-                          0,
-                        );
-                        dispatch(
-                          setDraftProperty({
-                            key: "posoDiscounted",
-                            value: formatCurrencyGR(pricesRETAIL),
-                          }),
-                        );
-                      }
                     }}
                   >
                     <option value="retail">Λιανική</option>
-                    <option value="eopyy">ΕΟΠΠΥ</option>
+                    <option value="eopyy">ΕΟΠΥΥ</option>
+                    <option value="typet">ΤΥΠΕΤ</option>
                   </FormSelect>
                 </Field>
               </div>
@@ -296,7 +294,7 @@ export default function CompletionArea({
         </div>
 
         <div className="app-card px-3 py-2">
-          <OrderField label="Σχόλια παραγγελίας">
+          <OrderField label="Σχόλια για το τμήμα παραγγελιών">
             <textarea
               className="form-control"
               name="sellerComments"
@@ -312,6 +310,12 @@ export default function CompletionArea({
               }
             />
           </OrderField>
+          {String(data.definitioN_PRICE ?? "").trim() ? (
+            <div className="alert alert-info small mb-0 py-2">
+              <i className="bi bi-info-circle me-2" aria-hidden />
+              {data.definitioN_PRICE}
+            </div>
+          ) : null}
         </div>
 
         {submitState.error && (

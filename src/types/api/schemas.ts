@@ -60,6 +60,7 @@ export type APLAT_Sales_Order = {
   customer_tel_otp?: Nullable<string>;
   amka_origin?: Nullable<string>;
   customer_ErpGID?: Nullable<string>;
+  customer_ActivityCode?: Nullable<string>;
   customerPerson_ErpGID?: Nullable<string>;
   person_ErpGID?: Nullable<string>;
   address_ErpGID?: Nullable<string>;
@@ -217,6 +218,7 @@ export type APLAT_Sales_OrderItem = {
   eoppy_SlugName?: Nullable<string>;
   erp_Price?: Nullable<number>;
   erp_EoppyPrice?: Nullable<number>;
+  erp_TypetPrice?: Nullable<number>;
   aiMatchedErpGid?: Nullable<string>;
   aiMatchedBy?: Nullable<string>;
   fuzzyMatched?: Nullable<number>;
@@ -280,6 +282,22 @@ export type OrderEditVM = {
   showIpsosVaros: boolean;
   /** Present in some edit responses; not in swagger but used by the app. */
   ai_ylika?: Nullable<EopyDoc_Ylika[]>;
+  /** Retail edit responses may include available activity/price-list options. */
+  customerActivityOptions?: Nullable<CustomerActivityPriceOption[]>;
+  customerActivities?: Nullable<CustomerActivityPriceOption[]>;
+  list_CustomerActivities?: Nullable<CustomerActivityPriceOption[]>;
+  listCustomerActivities?: Nullable<CustomerActivityPriceOption[]>;
+};
+
+export type CustomerActivityPriceOption = {
+  activitY_CODE?: Nullable<string>;
+  activitY_DESC?: Nullable<string>;
+  typoS_EGKRISIS?: Nullable<number>;
+  ischangeable?: Nullable<0 | 1>;
+  ischangable?: Nullable<0 | 1>;
+  prE_LOADED_PRICE?: Nullable<"ΕΟΠΥΥ" | "ΤΥΠΕΤ" | "ΛΙΑΝΙΚΗ">;
+  finaL_PRICE_LIST_GID?: Nullable<string>;
+  definitioN_PRICE?: Nullable<string>;
 };
 
 export type OrderEditItemResp = {
@@ -391,6 +409,11 @@ export type COLAI_T_CUSTOMER_PERSONAL_INFO = {
   peS_TEL_1?: Nullable<string>;
   telephone1?: Nullable<string>;
   taytothta?: Nullable<string>;
+  ischangeable?: Nullable<0 | 1>;
+  ischangable?: Nullable<0 | 1>;
+  prE_LOADED_PRICE?: Nullable<"ΕΟΠΥΥ" | "ΤΥΠΕΤ" | "ΛΙΑΝΙΚΗ">;
+  activitY_DESC?: Nullable<string>;
+  definitioN_PRICE?: Nullable<string>;
 };
 
 export type OrderPlatformPreviousDto = {
@@ -510,6 +533,7 @@ export type EopyDoc_ErpMappedProduct = {
   erp_name?: Nullable<string>;
   erp_price?: Nullable<number>;
   erp_eoppyprice?: Nullable<number>;
+  erp_typetprice?: Nullable<number>;
   matched_by?: Nullable<string>;
   fuzzy_matched?: Nullable<number>;
 };
@@ -825,6 +849,7 @@ export type RunAIFileAnalysisReq = {
   order_uid?: Nullable<string>;
   catid: number;
   aiclient?: Nullable<string>;
+  skip_last_page?: Nullable<boolean>;
 };
 
 export type FileUploadReq = {

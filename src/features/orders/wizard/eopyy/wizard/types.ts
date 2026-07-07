@@ -53,6 +53,7 @@ export type RunEoppyAiParams = {
   orderUid: string | undefined;
   groupEoppyId: number | undefined;
   aiclient: AiClient;
+  skipLastPage: boolean;
   signal: AbortSignal;
 };
 

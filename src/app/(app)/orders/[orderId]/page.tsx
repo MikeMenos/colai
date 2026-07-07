@@ -94,17 +94,13 @@ export default function OrderStartPage() {
           type="eopyy-bulk"
           description="Ανέβασε πολλές παραγγελίες ταυτόχρονα"
           icon="bi-files"
-          disabled
-          badge="Coming soon"
           onClick={() => router.push("/orders/0/eopyy-bulk/new")}
         />
         <PlatformCard
           title="Λιανικής"
           type="retail"
-          description="Υπό κατασκευή λόγω αναβάθμισης. Παρακαλώ για τις παραγγελίες όπως στείλατε email."
-          icon="bi-tools"
-          disabled
-          badge="Υπό κατασκευή"
+          description="Συμπλήρωσε στοιχεία"
+          icon="bi-ui-checks"
           onClick={(x) => handleContinue(x)}
         />
       </div>

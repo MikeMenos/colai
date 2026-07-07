@@ -19,6 +19,7 @@ export type MassUploadPayload = {
       base64file: string;
       base64filename: string;
     }[];
+    skip_last_page: boolean;
   }[];
 };
 
