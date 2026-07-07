@@ -23,6 +23,13 @@ import CompletionArea from "./CompletionArea";
 import SellerActingSelector from "@/features/orders/components/SellerActingSelector";
 import { useRouter } from "next/navigation";
 import { getRetailOrderValidationIssues } from "./validateRetailOrder";
+import {
+  clearWizardFieldError,
+  focusWizardField,
+  getActiveWizardFieldErrors,
+  getWizardFieldErrors,
+  hasWizardFieldErrors,
+} from "@/features/orders/wizard/validationErrors";
 
 const steps = ["Ασθενής", "Ιατρός", "Υλικά", "Συναίνεση", "Touchdown"] as const;
 
@@ -73,21 +80,12 @@ export default function OrderRetailWizard() {
   const currentLabel = effectiveSteps[step];
 
   const clearError = React.useCallback((field: string) => {
-    setFieldErrors((prev) => {
-      if (!(field in prev)) return prev;
-      const next = { ...prev };
-      delete next[field];
-      return next;
-    });
+    setFieldErrors((prev) => clearWizardFieldError(prev, field));
   }, []);
 
   const goToCustomerActivityField = React.useCallback(() => {
     setStep(0);
-    window.setTimeout(() => {
-      document
-        .querySelector<HTMLElement>('[name="customer_ActivityCode"]')
-        ?.focus();
-    }, 0);
+    focusWizardField("customer_ActivityCode");
   }, []);
 
   function goNext() {
@@ -125,10 +123,7 @@ export default function OrderRetailWizard() {
   function onSaveClick() {
     const issues = currentValidationIssues;
     if (issues.length > 0) {
-      const nextErrors = Object.fromEntries(
-        issues.map((issue) => [issue.field, issue.message]),
-      );
-      setFieldErrors(nextErrors);
+      setFieldErrors(getWizardFieldErrors(issues));
       const firstIssue = issues[0];
       const doctorStepFields = new Set([
         "otherDoctorSuggested_name",
@@ -140,11 +135,7 @@ export default function OrderRetailWizard() {
           ? RETAIL_DOCTOR_STEP_INDEX
           : RETAIL_TOUCHDOWN_STEP_INDEX,
       );
-      window.setTimeout(() => {
-        document
-          .querySelector<HTMLElement>(`[name="${issues[0].field}"]`)
-          ?.focus();
-      }, 0);
+      focusWizardField(firstIssue.field);
       return;
     }
 
@@ -164,7 +155,7 @@ export default function OrderRetailWizard() {
     !String(draftOrder.customer_ActivityCode ?? "").trim();
   const activeFieldErrors = React.useMemo(
     () =>
-      Object.entries(fieldErrors).filter(([field]) => {
+      getActiveWizardFieldErrors(fieldErrors, (field) => {
         if (field === "customer_ActivityCode") {
           return hasMissingCustomerActivity;
         }
@@ -173,7 +164,7 @@ export default function OrderRetailWizard() {
     [fieldErrors, hasMissingCustomerActivity],
   );
   const hasFieldErrors =
-    activeFieldErrors.length > 0 || hasMissingCustomerActivity;
+    hasWizardFieldErrors(activeFieldErrors) || hasMissingCustomerActivity;
   const saveDisabled =
     submitState.loading || consentBlocksProgress || hasFieldErrors;
 
