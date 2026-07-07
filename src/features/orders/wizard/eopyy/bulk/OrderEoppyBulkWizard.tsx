@@ -9,8 +9,7 @@ import LeaveOrderWizardConfirmModal from "@/features/orders/components/LeaveOrde
 import SellerActingSelector from "@/features/orders/components/SellerActingSelector";
 import { registerBulkLeaveGuard } from "./bulkLeaveGuard";
 import { resolveActingSeller } from "@/lib/sellerAccess";
-import { fetchOrders } from "@/store/orders/ordersSlice";
-import { useAppDispatch, useAppSelector } from "@/store/hooks";
+import { useAppSelector } from "@/store/hooks";
 
 const MAX_BULK_SECTIONS = 10;
 const ACCEPTED_FILES = "application/pdf,image/*";
@@ -69,7 +68,7 @@ function getStatusBadge(status: SectionStatus) {
     return { label: "Αποστολή...", className: "text-bg-primary" };
   }
   if (status === "success") {
-    return { label: "Προσωρινά αποθηκευμένη", className: "text-bg-success" };
+    return { label: "Προσωρινά αποθηκευμένη", className: "text-bg-warning" };
   }
   if (status === "error") {
     return { label: "Σφάλμα", className: "text-bg-danger" };
@@ -262,7 +261,6 @@ function shouldUseUploadSourcePicker(): boolean {
 
 export default function OrderEoppyBulkWizard() {
   const router = useRouter();
-  const dispatch = useAppDispatch();
   const userInfos = useAppSelector((s) => s.auth.userInfos);
   const actingSellerCode = useAppSelector((s) => s.auth.actingSellerCode);
   const selectedSeller = React.useMemo(
@@ -330,7 +328,10 @@ export default function OrderEoppyBulkWizard() {
       if (!res.ok || data?.ok === false) {
         throw new Error(data?.message || "Η αποστολή απέτυχε.");
       }
-      void dispatch(fetchOrders({ force: true }));
+      updateSection(sectionId, {
+        status: "success",
+        message: null,
+      });
     } catch (error) {
       updateSection(sectionId, {
         status: "error",
