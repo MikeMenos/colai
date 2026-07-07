@@ -11,9 +11,13 @@ export type RetailValidationIssue = {
   message: string;
 };
 
+export type RetailValidationContext = SuggestedDoctorValidationContext & {
+  customerActivityRequired?: boolean;
+};
+
 export function getRetailOrderValidationIssues(
   draftOrder: Order,
-  context?: SuggestedDoctorValidationContext,
+  context?: RetailValidationContext,
 ): RetailValidationIssue[] {
   if (draftOrder.isTempSave == 1) return [];
 
@@ -26,6 +30,18 @@ export function getRetailOrderValidationIssues(
       : [],
   );
   if (doctorIssues.length > 0) return doctorIssues;
+
+  if (
+    context?.customerActivityRequired &&
+    !String(draftOrder.customer_ActivityCode ?? "").trim()
+  ) {
+    return [
+      {
+        field: "customer_ActivityCode",
+        message: "Επιλέξτε Δραστηριότητα / Τιμοκατάλογο",
+      },
+    ];
+  }
 
   if (!isPaymentMethodSelected(draftOrder.isPaid)) {
     return [

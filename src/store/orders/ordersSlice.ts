@@ -86,23 +86,33 @@ function getDraftOrderYlikoPriceField(order: Order): OrderYlikoPriceField {
   }
 }
 
+function getYlikoPrice(yliko: OrderYlika, priceField: OrderYlikoPriceField) {
+  if (priceField === "erp_EoppyPrice") {
+    return Number(yliko.erp_EoppyPrice ?? yliko.erp_eoppyprice ?? 0);
+  }
+  if (priceField === "erp_TypetPrice") {
+    return Number(yliko.erp_TypetPrice ?? yliko.erp_typetprice ?? 0);
+  }
+  return Number(yliko.erp_Price ?? yliko.erp_price ?? 0);
+}
+
 function recalculateDraftYlikaTotals(draft: DraftState): void {
   const priceField = getDraftOrderYlikoPriceField(draft.order);
 
   draft.order.kostos = draft.ylika.reduce(
-    (acc, x) => acc + Number(x.qty) * Number(x[priceField] || 0),
+    (acc, x) => acc + Number(x.qty) * getYlikoPrice(x, priceField),
     0,
   );
   draft.order.kostos_EOPPY = draft.ylika.reduce(
-    (acc, x) => acc + Number(x.qty) * Number(x.erp_EoppyPrice || 0),
+    (acc, x) => acc + Number(x.qty) * getYlikoPrice(x, "erp_EoppyPrice"),
     0,
   );
   draft.order.kostos_TYPET = draft.ylika.reduce(
-    (acc, x) => acc + Number(x.qty) * Number(x.erp_TypetPrice || 0),
+    (acc, x) => acc + Number(x.qty) * getYlikoPrice(x, "erp_TypetPrice"),
     0,
   );
   draft.order.kostos_RETAIL = draft.ylika.reduce(
-    (acc, x) => acc + Number(x.qty) * Number(x.erp_Price || 0),
+    (acc, x) => acc + Number(x.qty) * getYlikoPrice(x, "erp_Price"),
     0,
   );
   draft.order.posoSymmetoxis = calcPosoSymmetoxisForOrder(draft.order);
@@ -118,6 +128,8 @@ function getEditCustomerActivityOptions(
     data.customerActivities,
     data.list_CustomerActivities,
     data.listCustomerActivities,
+    data.list_RetailCategories,
+    record.list_RetailCategories,
     record.activities,
     record.listActivities,
   ];

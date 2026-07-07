@@ -27,7 +27,11 @@ function Field({
   );
 }
 
-export default function OrderRetailCustomerArea() {
+export default function OrderRetailCustomerArea({
+  clearError,
+}: {
+  clearError?: (field: string) => void;
+}) {
   const data = useAppSelector((s) => s.orders.draft.order);
   const dispatch = useAppDispatch();
   const [showLookup, setShowLookup] = React.useState(false);
@@ -91,6 +95,7 @@ export default function OrderRetailCustomerArea() {
     customerSelectedFromList !== true && listCustomerActivities.length > 0;
 
   const applyCustomerActivityCode = (activityCode: string) => {
+    clearError?.("customer_ActivityCode");
     const selected = listCustomerActivities.find(
       (activity) => activity.activitY_CODE === activityCode,
     );
@@ -98,30 +103,29 @@ export default function OrderRetailCustomerArea() {
     dispatch(
       setDraftProperty({ key: "customer_ActivityCode", value: activityCode }),
     );
-    if (!selected) return;
 
     dispatch(
       setDraftProperty({
         key: "activitY_DESC",
-        value: selected.activitY_DESC ?? "",
+        value: selected?.activitY_DESC ?? "",
       }),
     );
     dispatch(
       setDraftProperty({
         key: "prE_LOADED_PRICE",
-        value: selected.prE_LOADED_PRICE ?? "ΛΙΑΝΙΚΗ",
+        value: selected?.prE_LOADED_PRICE ?? "ΛΙΑΝΙΚΗ",
       }),
     );
     dispatch(
       setDraftProperty({
         key: "ischangeable",
-        value: selected.ischangeable ?? selected.ischangable ?? 1,
+        value: selected?.ischangeable ?? selected?.ischangable ?? 1,
       }),
     );
     dispatch(
       setDraftProperty({
         key: "definitioN_PRICE",
-        value: selected.definitioN_PRICE ?? "",
+        value: selected?.definitioN_PRICE ?? "",
       }),
     );
   };
