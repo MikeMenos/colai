@@ -11,12 +11,14 @@ export async function runEoppyAiWithFallback({
   dispatch,
   orderUid,
   groupEoppyId,
+  skipLastPage = true,
   timeoutMs = EOPPY_AI_TIMEOUT_MS,
   clients = EOPPY_AI_CLIENTS,
 }: {
   dispatch: AppDispatch;
   orderUid: string;
   groupEoppyId: number;
+  skipLastPage?: boolean;
   timeoutMs?: number;
   clients?: AiClient[];
 }): Promise<boolean> {
@@ -30,6 +32,7 @@ export async function runEoppyAiWithFallback({
         orderUid,
         groupEoppyId,
         aiclient,
+        skipLastPage,
         signal: controller.signal,
       });
       return true;

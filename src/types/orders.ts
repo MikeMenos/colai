@@ -156,6 +156,7 @@ export type Order = {
   aiCalculated: boolean;
   aiBatchStatus?: string | null;
   hasAnoia: boolean;
+  lastPageContainsMaterialsGnomateusi?: Nullable<boolean>;
   shouldUpdateRecipientInfos?: number;
   updateRecipient_amka?: string;
   updateRecipient_afm?: string;

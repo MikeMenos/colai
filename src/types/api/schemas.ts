@@ -849,6 +849,7 @@ export type RunAIFileAnalysisReq = {
   order_uid?: Nullable<string>;
   catid: number;
   aiclient?: Nullable<string>;
+  skip_last_page?: Nullable<boolean>;
 };
 
 export type FileUploadReq = {

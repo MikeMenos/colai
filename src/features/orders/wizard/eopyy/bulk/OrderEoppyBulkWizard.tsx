@@ -1,6 +1,13 @@
 "use client";
 
-import type { UploadSide, SectionStatus, MassUploadSection, MassUploadPayload, LocalFilePickerButtonProps, PageUploadBoxProps } from "./OrderEoppyBulkWizard.types";
+import type {
+  UploadSide,
+  SectionStatus,
+  MassUploadSection,
+  MassUploadPayload,
+  LocalFilePickerButtonProps,
+  PageUploadBoxProps,
+} from "./OrderEoppyBulkWizard.types";
 import React from "react";
 import { Capacitor } from "@capacitor/core";
 import { Modal } from "react-bootstrap";
@@ -58,6 +65,7 @@ async function buildMassUploadPayload(
             base64filename: file.name,
           })),
         ),
+        skip_last_page: false,
       },
     ],
   };
@@ -86,7 +94,8 @@ function shouldUseUploadSourcePicker(): boolean {
   if (platform === "android") return true;
   if (platform === "web" && /Android/i.test(navigator.userAgent)) return true;
   return false;
-}function LocalFilePickerButton({
+}
+function LocalFilePickerButton({
   id,
   disabled,
   ariaLabel,
@@ -211,7 +220,8 @@ function shouldUseUploadSourcePicker(): boolean {
       ) : null}
     </>
   );
-}function PageUploadBox({
+}
+function PageUploadBox({
   id,
   title,
   file,
@@ -304,6 +314,7 @@ export default function OrderEoppyBulkWizard() {
   }
 
   async function submitSection(sectionId: string, files: File[]) {
+    const section = sections.find((item) => item.id === sectionId);
     const sellercode = selectedSeller?.sellerCode?.trim() ?? "";
     if (!sellercode) {
       updateSection(sectionId, {
@@ -486,6 +497,7 @@ export default function OrderEoppyBulkWizard() {
                       onFileRemove={() => handleFileRemove(section.id, "back")}
                     />
                   ) : null}
+
                 </div>
 
                 {section.message ? (

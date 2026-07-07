@@ -22,11 +22,13 @@ function normalizeShowConsentForm(value: unknown): boolean | null {
 export function buildEoppyRunAiPayload(
   order: Pick<Order, "uid" | "group_EOPPY_id">,
   aiclient: AiClient,
+  skipLastPage: boolean,
 ): RunAIFileAnalysisReq {
   return {
     order_uid: order.uid,
     catid: order.group_EOPPY_id,
     aiclient,
+    skip_last_page: skipLastPage,
   };
 }
 
@@ -35,6 +37,7 @@ export async function runEoppyAi({
   orderUid,
   groupEoppyId,
   aiclient,
+  skipLastPage,
   signal,
 }: RunEoppyAiParams): Promise<void> {
   const res = await fetch("/api/orders/runai", {
@@ -44,6 +47,7 @@ export async function runEoppyAi({
       buildEoppyRunAiPayload(
         { uid: orderUid ?? "", group_EOPPY_id: groupEoppyId ?? 0 },
         aiclient,
+        skipLastPage,
       ),
     ),
     signal,

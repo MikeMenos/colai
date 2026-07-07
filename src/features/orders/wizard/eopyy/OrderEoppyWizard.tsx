@@ -221,6 +221,7 @@ export default function OrderEoppyWizard({
           orderUid,
           groupEoppyId: group_EOPPY_id,
           aiclient,
+          skipLastPage: draftOrder.lastPageContainsMaterialsGnomateusi !== true,
           signal: controller.signal,
         });
         setAiStatus("done");
@@ -241,7 +242,12 @@ export default function OrderEoppyWizard({
         window.clearTimeout(t);
       }
     },
-    [dispatch, group_EOPPY_id, orderUid],
+    [
+      dispatch,
+      draftOrder.lastPageContainsMaterialsGnomateusi,
+      group_EOPPY_id,
+      orderUid,
+    ],
   );
 
   const currentKey = effectiveStepsRef.current[step]?.key;
