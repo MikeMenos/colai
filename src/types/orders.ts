@@ -181,6 +181,9 @@ export type OrderYlika = Partial<APLAT_Sales_OrderItem> & {
   erp_Price: number;
   erp_EoppyPrice: number;
   erp_TypetPrice: number;
+  erp_price?: number;
+  erp_eoppyprice?: number;
+  erp_typetprice?: number;
 };
 
 /** Uploaded file — based on swagger `APLAT_Sales_FileItem` plus client-only fields. */

@@ -287,6 +287,7 @@ export type OrderEditVM = {
   customerActivities?: Nullable<CustomerActivityPriceOption[]>;
   list_CustomerActivities?: Nullable<CustomerActivityPriceOption[]>;
   listCustomerActivities?: Nullable<CustomerActivityPriceOption[]>;
+  list_RetailCategories?: Nullable<CustomerActivityPriceOption[]>;
 };
 
 export type CustomerActivityPriceOption = {

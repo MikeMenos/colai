@@ -23,6 +23,13 @@ import CompletionArea from "./CompletionArea";
 import SellerActingSelector from "@/features/orders/components/SellerActingSelector";
 import { useRouter } from "next/navigation";
 import { getRetailOrderValidationIssues } from "./validateRetailOrder";
+import {
+  clearWizardFieldError,
+  focusWizardField,
+  getActiveWizardFieldErrors,
+  getWizardFieldErrors,
+  hasWizardFieldErrors,
+} from "@/features/orders/wizard/validationErrors";
 
 const steps = ["Ασθενής", "Ιατρός", "Υλικά", "Συναίνεση", "Touchdown"] as const;
 
@@ -49,6 +56,11 @@ export default function OrderRetailWizard() {
   const listAddressesPersons = useAppSelector(
     (s) => s.orders.draft.list_AddressesPersons,
   );
+  const customerActivityRequired = useAppSelector(
+    (s) =>
+      s.orders.draft.customerSelectedFromList !== true &&
+      s.orders.draft.list_CustomerActivities.length > 0,
+  );
   const suggestedDoctorValidationContext = useAppSelector((s) => ({
     customerIsCompletelyNew: s.orders.draft.customerIsCompletelyNew,
     lastOrderInfoDateIn: s.orders.draft.lastOrderInfoDateIn,
@@ -68,12 +80,12 @@ export default function OrderRetailWizard() {
   const currentLabel = effectiveSteps[step];
 
   const clearError = React.useCallback((field: string) => {
-    setFieldErrors((prev) => {
-      if (!(field in prev)) return prev;
-      const next = { ...prev };
-      delete next[field];
-      return next;
-    });
+    setFieldErrors((prev) => clearWizardFieldError(prev, field));
+  }, []);
+
+  const goToCustomerActivityField = React.useCallback(() => {
+    setStep(0);
+    focusWizardField("customer_ActivityCode");
   }, []);
 
   function goNext() {
@@ -83,7 +95,16 @@ export default function OrderRetailWizard() {
   function goPrev() {
     setStep((s) => Math.max(s - 1, 0));
   }
-  console.log(draftOrder);
+
+  const currentValidationIssues = React.useMemo(
+    () =>
+      getRetailOrderValidationIssues(draftOrder, {
+        ...suggestedDoctorValidationContext,
+        customerActivityRequired,
+      }),
+    [customerActivityRequired, draftOrder, suggestedDoctorValidationContext],
+  );
+
   async function confirmSave() {
     try {
       const result = await dispatch(submitDraftAsync()).unwrap();
@@ -100,32 +121,21 @@ export default function OrderRetailWizard() {
   }
 
   function onSaveClick() {
-    const issues = getRetailOrderValidationIssues(
-      draftOrder,
-      suggestedDoctorValidationContext,
-    );
+    const issues = currentValidationIssues;
     if (issues.length > 0) {
-      const nextErrors = Object.fromEntries(
-        issues.map((issue) => [issue.field, issue.message]),
-      );
-      setFieldErrors(nextErrors);
+      setFieldErrors(getWizardFieldErrors(issues));
       const firstIssue = issues[0];
       const doctorStepFields = new Set([
         "otherDoctorSuggested_name",
         "otherDoctorSuggested_mobile",
         "doctorSuggested_name",
-        "doctorSuggested_tel",
       ]);
       setStep(
         doctorStepFields.has(firstIssue.field)
           ? RETAIL_DOCTOR_STEP_INDEX
           : RETAIL_TOUCHDOWN_STEP_INDEX,
       );
-      window.setTimeout(() => {
-        document
-          .querySelector<HTMLElement>(`[name="${issues[0].field}"]`)
-          ?.focus();
-      }, 0);
+      focusWizardField(firstIssue.field);
       return;
     }
 
@@ -140,7 +150,23 @@ export default function OrderRetailWizard() {
 
   const nextDisabled = currentLabel === "Συναίνεση" && consentBlocksProgress;
 
-  const saveDisabled = submitState.loading || consentBlocksProgress;
+  const hasMissingCustomerActivity =
+    customerActivityRequired &&
+    !String(draftOrder.customer_ActivityCode ?? "").trim();
+  const activeFieldErrors = React.useMemo(
+    () =>
+      getActiveWizardFieldErrors(fieldErrors, (field) => {
+        if (field === "customer_ActivityCode") {
+          return hasMissingCustomerActivity;
+        }
+        return true;
+      }),
+    [fieldErrors, hasMissingCustomerActivity],
+  );
+  const hasFieldErrors =
+    hasWizardFieldErrors(activeFieldErrors) || hasMissingCustomerActivity;
+  const saveDisabled =
+    submitState.loading || consentBlocksProgress || hasFieldErrors;
 
   const submitConfirmOrderAsSeller = getActingSellerDisplayLabel(
     userInfos,
@@ -167,14 +193,20 @@ export default function OrderRetailWizard() {
 
       <SellerActingSelector />
 
-      {currentLabel === "Ασθενής" ? <OrderRetailCustomerArea /> : null}
+      {currentLabel === "Ασθενής" ? (
+        <OrderRetailCustomerArea clearError={clearError} />
+      ) : null}
       {currentLabel === "Ιατρός" ? (
         <OrderDoctorArea errors={fieldErrors} clearError={clearError} />
       ) : null}
       {currentLabel === "Υλικά" ? <MaterialsArea /> : null}
       {currentLabel === "Συναίνεση" ? <SynenaiseisArea /> : null}
       {currentLabel === "Touchdown" ? (
-        <CompletionArea errors={fieldErrors} clearError={clearError} />
+        <CompletionArea
+          errors={fieldErrors}
+          clearError={clearError}
+          onGoToCustomerActivity={goToCustomerActivityField}
+        />
       ) : null}
 
       <div className="order-wizard-nav">

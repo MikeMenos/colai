@@ -33,28 +33,56 @@ function getDefaultAppliedPriceList(value: unknown): AppliedPriceList {
   return "retail";
 }
 
+function getYlikoPriceForAppliedList(
+  yliko: {
+    erp_EoppyPrice?: number;
+    erp_eoppyprice?: number;
+    erp_TypetPrice?: number;
+    erp_typetprice?: number;
+    erp_Price?: number;
+    erp_price?: number;
+  },
+  priceList: AppliedPriceList,
+) {
+  if (priceList === "eopyy") {
+    return Number(yliko.erp_EoppyPrice ?? yliko.erp_eoppyprice ?? 0);
+  }
+  if (priceList === "typet") {
+    return Number(yliko.erp_TypetPrice ?? yliko.erp_typetprice ?? 0);
+  }
+  return Number(yliko.erp_Price ?? yliko.erp_price ?? 0);
+}
+
 export default function CompletionArea({
   errors = {},
   clearError,
+  onGoToCustomerActivity,
 }: {
   errors?: Record<string, string | boolean>;
   clearError?: (field: string) => void;
+  onGoToCustomerActivity?: () => void;
 }) {
   const data = useAppSelector((s) => s.orders.draft.order);
   const ylika = useAppSelector((s) => s.orders.draft.ylika);
+  const customerActivityRequired = useAppSelector(
+    (s) =>
+      s.orders.draft.customerSelectedFromList !== true &&
+      s.orders.draft.list_CustomerActivities.length > 0,
+  );
   const dispatch = useAppDispatch();
   const submitState = useAppSelector((s) => s.orders.draft.submitState);
   const discountChangeAllowed = Number(data.ischangeable) !== 0;
+  const customerActivityError =
+    errors.customer_ActivityCode ||
+    (customerActivityRequired &&
+    !String(data.customer_ActivityCode ?? "").trim()
+      ? "Επιλέξτε Δραστηριότητα / Τιμοκατάλογο"
+      : undefined);
 
   const calculatePriceListTotal = React.useCallback(
     (priceList: AppliedPriceList) =>
       ylika.reduce((acc, x) => {
-        const price =
-          priceList === "eopyy"
-            ? x.erp_EoppyPrice
-            : priceList === "typet"
-              ? x.erp_TypetPrice
-              : x.erp_Price;
+        const price = getYlikoPriceForAppliedList(x, priceList);
         return acc + ((Number(price) || 0) * Number(x.qty) || 0);
       }, 0),
     [ylika],
@@ -130,6 +158,36 @@ export default function CompletionArea({
           <div className="d-flex align-items-center justify-content-between border-bottom mb-2 pb-2">
             <div className="fw-semibold">Touchdown</div>
           </div>
+
+          {typeof customerActivityError === "string" ? (
+            <div className="app-card-soft border-danger-subtle mb-2 border px-3 py-2">
+              <div className="d-flex flex-column gap-2">
+                <div className="d-flex align-items-center gap-2">
+                  <i className="bi bi-exclamation-triangle text-danger" />
+                  <div className="fw-semibold text-danger">
+                    Ελλείψεις πριν την αποθήκευση
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  className="btn w-100 border text-start"
+                  style={{ borderRadius: 12 }}
+                  onClick={onGoToCustomerActivity}
+                >
+                  <div className="d-flex align-items-start gap-2">
+                    <i className="bi bi-arrow-return-right text-danger mt-1" />
+                    <div className="flex-grow-1">
+                      <div className="small text-body-secondary">Ασθενής</div>
+                      <div className="fw-semibold">
+                        {customerActivityError}
+                      </div>
+                    </div>
+                    <i className="bi bi-chevron-right text-body-secondary mt-1" />
+                  </div>
+                </button>
+              </div>
+            </div>
+          ) : null}
 
           <div className="row g-2">
             <div className="col-6">
@@ -275,6 +333,7 @@ export default function CompletionArea({
               }
               onChange={(e) => {
                 const raw = e.target.value;
+                clearError?.("isPaid");
                 dispatch(
                   setDraftProperty({
                     key: "isPaid",

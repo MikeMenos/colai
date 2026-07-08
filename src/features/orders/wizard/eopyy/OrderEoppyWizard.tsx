@@ -42,9 +42,13 @@ import {
   isCustomerTouchdownOnlyField,
 } from "./wizard/customerFieldValidation";
 import {
-  focusWizardField,
   isAllowedSymmPercentage,
 } from "./wizard/wizardUtils";
+import {
+  clearWizardIssue,
+  focusWizardField,
+  getWizardFieldErrors,
+} from "@/features/orders/wizard/validationErrors";
 import { shouldShowYpervasiPlafonStep } from "@/lib/utils/plafon";
 import { runEoppyAi } from "./wizard/runEoppyAi";
 import { EOPPY_AI_TIMEOUT_MS } from "./wizard/runEoppyAiWithFallback";
@@ -126,14 +130,8 @@ export default function OrderEoppyWizard({
   }, []);
 
   const clearError = React.useCallback((field: string) => {
-    setIssues((prev) => prev.filter((x) => x.field !== field));
+    setIssues((prev) => clearWizardIssue(prev, field));
   }, []);
-
-  const errorsByField = React.useMemo(() => {
-    const m: Record<string, string | boolean> = {};
-    for (const it of issues) if (!m[it.field]) m[it.field] = it.message;
-    return m;
-  }, [issues]);
 
   const amkaErrorsByField = React.useMemo(
     () => getDraftAmkaFieldErrors(draftOrder),
@@ -151,22 +149,19 @@ export default function OrderEoppyWizard({
   );
 
   const fieldErrorsByField = React.useMemo(() => {
-    const m: Record<string, string | boolean> = {
+    return {
       ...amkaErrorsByField,
       ...barcodeErrorsByField,
       ...dateOfSyntagiErrorsByField,
+      ...getWizardFieldErrors(issues, {
+        include: (issue) => !isCustomerTouchdownOnlyField(issue.field),
+      }),
     };
-    for (const [field, message] of Object.entries(errorsByField)) {
-      if (!isCustomerTouchdownOnlyField(field)) {
-        m[field] = message;
-      }
-    }
-    return m;
   }, [
     amkaErrorsByField,
     barcodeErrorsByField,
     dateOfSyntagiErrorsByField,
-    errorsByField,
+    issues,
   ]);
 
   const hasAmkaErrors = React.useMemo(
