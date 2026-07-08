@@ -46,6 +46,7 @@ export type ValidateEoppyOrderInput = {
   hasFiles: boolean;
   hasConsentFormFiles: boolean;
   showSynainesiPanel: boolean;
+  isVoiceConsent: boolean;
 };
 
 export type RunEoppyAiParams = {
