@@ -41,9 +41,7 @@ import {
   hasCustomerFieldErrors,
   isCustomerTouchdownOnlyField,
 } from "./wizard/customerFieldValidation";
-import {
-  isAllowedSymmPercentage,
-} from "./wizard/wizardUtils";
+import { isAllowedSymmPercentage } from "./wizard/wizardUtils";
 import {
   clearWizardIssue,
   focusWizardField,
@@ -91,6 +89,7 @@ export default function OrderEoppyWizard({
   const hasConsentFormFiles = files.some(
     (o) => o?.documentCategory === "consent_form",
   );
+  const isVoiceConsent = draftOrder.isVoiceConsent == 1;
   const orderUid = useAppSelector((s) => s.orders?.draft?.order?.uid);
   const group_EOPPY_id = useAppSelector(
     (s) => s.orders?.draft?.order?.group_EOPPY_id,
@@ -117,7 +116,8 @@ export default function OrderEoppyWizard({
     (s) => s.orders.draft.synaineseisResults,
   );
   const consentScoreTooLow = isConsentScoreTooLow(synaineseisResults);
-  const consentBlocksProgress = consentScoreTooLow && hasConsentFormFiles;
+  const consentBlocksProgress =
+    !isVoiceConsent && consentScoreTooLow && hasConsentFormFiles;
   const aiMaterials = useAppSelector((s) => s.orders.draft.ai_ylika);
   const shouldShowWarningPlafon = shouldShowYpervasiPlafonStep(draftOrder);
 
@@ -188,12 +188,14 @@ export default function OrderEoppyWizard({
         hasFiles,
         hasConsentFormFiles,
         showSynainesiPanel,
+        isVoiceConsent,
       }),
     [
       customerIsCompletelyNew,
       draftOrder,
       hasConsentFormFiles,
       hasFiles,
+      isVoiceConsent,
       lastOrderInfoDateIn,
       showSynainesiPanel,
     ],

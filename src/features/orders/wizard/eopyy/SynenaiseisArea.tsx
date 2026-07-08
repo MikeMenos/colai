@@ -3,6 +3,7 @@
 import React from "react";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import {
+  patchDraftOrder,
   setDraftSyntagiUploaded,
   setSynaineseisResults,
 } from "@/store/orders/ordersSlice";
@@ -18,6 +19,7 @@ import {
 import { Alert } from "react-bootstrap";
 import { formatFileSizeMB } from "@/lib/utils/number";
 import type { UploadStatus, UploadingInfo } from "./wizard/types";
+import VoiceConsentConfirmModal from "./VoiceConsentConfirmModal";
 
 const CONSENT_BACK_CATEGORY = "consent_form_back";
 const CONSENT_UPLOAD_CARD_CLASS = "app-card mb-1 px-3 py-2";
@@ -34,6 +36,8 @@ export default function SynenaiseisArea() {
   const synaineseisResults = useAppSelector(
     (s) => s.orders?.draft?.synaineseisResults,
   );
+  const isVoiceConsent =
+    useAppSelector((s) => s.orders?.draft?.order?.isVoiceConsent) == 1;
 
   const [status, setStatus] = React.useState<UploadStatus>("idle");
   const [statusBack, setStatusBack] = React.useState<UploadStatus>("idle");
@@ -44,6 +48,8 @@ export default function SynenaiseisArea() {
   const [uploading, setUploading] = React.useState<UploadingInfo | null>(null);
   const [uploadingBack, setUploadingBack] =
     React.useState<UploadingInfo | null>(null);
+  const [showVoiceConsentConfirm, setShowVoiceConsentConfirm] =
+    React.useState(false);
 
   const consentFiles = files.filter(
     (f) => getConsentFileCategory(f) === "consent_form",
@@ -61,9 +67,52 @@ export default function SynenaiseisArea() {
   const isUploadingNow = status === "uploading";
   const isUploadingBackNow = statusBack === "uploading";
 
+  function handleVoiceConsentChange(
+    event: React.ChangeEvent<HTMLInputElement>,
+  ) {
+    if (event.target.checked) {
+      setShowVoiceConsentConfirm(true);
+      return;
+    }
+
+    dispatch(patchDraftOrder({ isVoiceConsent: 0 }));
+  }
+
+  function confirmVoiceConsent() {
+    dispatch(patchDraftOrder({ isVoiceConsent: 1 }));
+    setShowVoiceConsentConfirm(false);
+  }
+
   return (
     <>
+      <VoiceConsentConfirmModal
+        show={showVoiceConsentConfirm}
+        onClose={() => setShowVoiceConsentConfirm(false)}
+        onConfirm={confirmVoiceConsent}
+      />
+
       <div className={CONSENT_UPLOAD_CARD_CLASS}>
+        <div className="form-check form-switch d-flex align-items-center justify-content-between ps-0">
+          <label
+            className="form-check-label fw-semibold"
+            htmlFor="voice-consent-switch"
+          >
+            Ηχητική συναίνεση
+          </label>
+          <input
+            id="voice-consent-switch"
+            className="form-check-input ms-3"
+            type="checkbox"
+            role="switch"
+            checked={isVoiceConsent}
+            onChange={handleVoiceConsentChange}
+          />
+        </div>
+      </div>
+
+      {!isVoiceConsent ? (
+        <>
+          <div className={CONSENT_UPLOAD_CARD_CLASS}>
             <div className="d-flex align-items-center justify-content-between border-bottom mb-2 pb-2">
               <div className="fw-semibold">Αρχείo συναίνεσης</div>
 
@@ -329,6 +378,8 @@ export default function SynenaiseisArea() {
               </div>
             )}
           </div>
+        </>
+      ) : null}
     </>
   );
 }

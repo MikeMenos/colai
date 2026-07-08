@@ -18,6 +18,7 @@ export function validateEoppyOrder({
   hasFiles,
   hasConsentFormFiles,
   showSynainesiPanel,
+  isVoiceConsent,
 }: ValidateEoppyOrderInput): WizardIssue[] {
   const issues: WizardIssue[] = [];
   const add = (
@@ -149,7 +150,7 @@ export function validateEoppyOrder({
       );
     }
 
-    if (validateSynainesiPanel && !hasConsentFormFiles) {
+    if (validateSynainesiPanel && !isVoiceConsent && !hasConsentFormFiles) {
       add(
         "synenaiseis",
         "consent_form",
