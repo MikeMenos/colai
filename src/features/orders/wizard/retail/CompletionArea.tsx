@@ -6,6 +6,7 @@ import FormErrorsContext from "@/components/ui/FormErrorContect";
 import OrderField from "@/components/ui/OrderField";
 import React from "react";
 import { Alert, FormSelect } from "react-bootstrap";
+import { isRetailCustomerWithoutPriceBadge } from "./retailCustomerBadge";
 
 type AppliedPriceList = "retail" | "eopyy" | "typet";
 
@@ -57,10 +58,18 @@ export default function CompletionArea({
   errors = {},
   clearError,
   onGoToCustomerActivity,
+  onGoToCustomerAmka,
+  onGoToDoctorName,
+  onGoToConsent,
+  consentError,
 }: {
   errors?: Record<string, string | boolean>;
   clearError?: (field: string) => void;
   onGoToCustomerActivity?: () => void;
+  onGoToCustomerAmka?: () => void;
+  onGoToDoctorName?: () => void;
+  onGoToConsent?: () => void;
+  consentError?: string | null;
 }) {
   const data = useAppSelector((s) => s.orders.draft.order);
   const ylika = useAppSelector((s) => s.orders.draft.ylika);
@@ -69,15 +78,68 @@ export default function CompletionArea({
       s.orders.draft.customerSelectedFromList !== true &&
       s.orders.draft.list_CustomerActivities.length > 0,
   );
+  const customerSelectedFromList = useAppSelector(
+    (s) => s.orders.draft.customerSelectedFromList,
+  );
   const dispatch = useAppDispatch();
   const submitState = useAppSelector((s) => s.orders.draft.submitState);
   const discountChangeAllowed = Number(data.ischangeable) !== 0;
+  const retailCustomerWithoutPriceBadge = isRetailCustomerWithoutPriceBadge(
+    data,
+    customerSelectedFromList,
+  );
   const customerActivityError =
     errors.customer_ActivityCode ||
     (customerActivityRequired &&
     !String(data.customer_ActivityCode ?? "").trim()
       ? "Επιλέξτε Δραστηριότητα / Τιμοκατάλογο"
       : undefined);
+  const customerAmkaError = errors.customer_amka;
+  const doctorNameError =
+    errors.doctorSuggested_name ||
+    (retailCustomerWithoutPriceBadge &&
+    !String(data.doctorSuggested_name ?? "").trim()
+      ? "Συμπληρώστε ονοματεπώνυμο"
+      : undefined);
+  const touchdownErrors = [
+    typeof customerActivityError === "string"
+      ? {
+          field: "customer_ActivityCode",
+          step: "Ασθενής",
+          message: customerActivityError,
+          onClick: onGoToCustomerActivity,
+        }
+      : null,
+    typeof customerAmkaError === "string"
+      ? {
+          field: "customer_amka",
+          step: "Ασθενής",
+          message: customerAmkaError,
+          onClick: onGoToCustomerAmka,
+        }
+      : null,
+    typeof doctorNameError === "string"
+      ? {
+          field: "doctorSuggested_name",
+          step: "Ιατρός",
+          message: doctorNameError,
+          onClick: onGoToDoctorName,
+        }
+      : null,
+    typeof consentError === "string"
+      ? {
+          field: "synenaiseis",
+          step: "Συναίνεση",
+          message: consentError,
+          onClick: onGoToConsent,
+        }
+      : null,
+  ].filter(Boolean) as Array<{
+    field: string;
+    step: string;
+    message: string;
+    onClick?: () => void;
+  }>;
 
   const calculatePriceListTotal = React.useCallback(
     (priceList: AppliedPriceList) =>
@@ -159,7 +221,7 @@ export default function CompletionArea({
             <div className="fw-semibold">Touchdown</div>
           </div>
 
-          {typeof customerActivityError === "string" ? (
+          {touchdownErrors.length > 0 ? (
             <div className="app-card-soft border-danger-subtle mb-2 border px-3 py-2">
               <div className="d-flex flex-column gap-2">
                 <div className="d-flex align-items-center gap-2">
@@ -168,23 +230,26 @@ export default function CompletionArea({
                     Ελλείψεις πριν την αποθήκευση
                   </div>
                 </div>
-                <button
-                  type="button"
-                  className="btn w-100 border text-start"
-                  style={{ borderRadius: 12 }}
-                  onClick={onGoToCustomerActivity}
-                >
-                  <div className="d-flex align-items-start gap-2">
-                    <i className="bi bi-arrow-return-right text-danger mt-1" />
-                    <div className="flex-grow-1">
-                      <div className="small text-body-secondary">Ασθενής</div>
-                      <div className="fw-semibold">
-                        {customerActivityError}
+                {touchdownErrors.map((error) => (
+                  <button
+                    key={error.field}
+                    type="button"
+                    className="btn w-100 border text-start"
+                    style={{ borderRadius: 12 }}
+                    onClick={error.onClick}
+                  >
+                    <div className="d-flex align-items-start gap-2">
+                      <i className="bi bi-arrow-return-right text-danger mt-1" />
+                      <div className="flex-grow-1">
+                        <div className="small text-body-secondary">
+                          {error.step}
+                        </div>
+                        <div className="fw-semibold">{error.message}</div>
                       </div>
+                      <i className="bi bi-chevron-right text-body-secondary mt-1" />
                     </div>
-                    <i className="bi bi-chevron-right text-body-secondary mt-1" />
-                  </div>
-                </button>
+                  </button>
+                ))}
               </div>
             </div>
           ) : null}

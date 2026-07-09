@@ -23,6 +23,8 @@ import CompletionArea from "./CompletionArea";
 import SellerActingSelector from "@/features/orders/components/SellerActingSelector";
 import { useRouter } from "next/navigation";
 import { getRetailOrderValidationIssues } from "./validateRetailOrder";
+import { getAmkaInlineFieldError, normalizeAmka } from "@/lib/utils/amka";
+import { isRetailCustomerWithoutPriceBadge } from "./retailCustomerBadge";
 import {
   clearWizardFieldError,
   focusWizardField,
@@ -32,9 +34,6 @@ import {
 } from "@/features/orders/wizard/validationErrors";
 
 const steps = ["Ασθενής", "Ιατρός", "Υλικά", "Συναίνεση", "Touchdown"] as const;
-
-const RETAIL_DOCTOR_STEP_INDEX = 1;
-const RETAIL_TOUCHDOWN_STEP_INDEX = 4;
 
 export default function OrderRetailWizard() {
   const dispatch = useAppDispatch();
@@ -61,6 +60,9 @@ export default function OrderRetailWizard() {
       s.orders.draft.customerSelectedFromList !== true &&
       s.orders.draft.list_CustomerActivities.length > 0,
   );
+  const customerSelectedFromList = useAppSelector(
+    (s) => s.orders.draft.customerSelectedFromList,
+  );
   const suggestedDoctorValidationContext = useAppSelector((s) => ({
     customerIsCompletelyNew: s.orders.draft.customerIsCompletelyNew,
     lastOrderInfoDateIn: s.orders.draft.lastOrderInfoDateIn,
@@ -68,16 +70,46 @@ export default function OrderRetailWizard() {
   const hasConsentFormFiles = files.some(
     (file) => file?.documentCategory === "consent_form",
   );
+  const isVoiceConsent = draftOrder.isVoiceConsent == 1;
   const consentScoreTooLow = isConsentScoreTooLow(synaineseisResults);
-  const consentBlocksProgress = consentScoreTooLow && hasConsentFormFiles;
+  const consentBlocksProgress =
+    !isVoiceConsent && consentScoreTooLow && hasConsentFormFiles;
   const isTempSave = draftOrder.isTempSave == 1;
 
+  const retailCustomerWithoutPriceBadge = isRetailCustomerWithoutPriceBadge(
+    draftOrder,
+    customerSelectedFromList,
+  );
+  const customerAmkaDigits = normalizeAmka(draftOrder.customer_amka);
+  const customerAmkaError = retailCustomerWithoutPriceBadge
+    ? getAmkaInlineFieldError(draftOrder.customer_amka)
+    : null;
+  const shouldShowConsentStep =
+    retailCustomerWithoutPriceBadge &&
+    !!customerAmkaDigits &&
+    !customerAmkaError;
+  const consentError = shouldShowConsentStep
+    ? isVoiceConsent
+      ? null
+      : !hasConsentFormFiles
+      ? "Νέος πελάτης, δεν έχετε ανεβάσει συναίνεση"
+      : consentBlocksProgress
+        ? "Το score δεν είναι αρκετά υψηλό. Παρακαλώ ανεβάστε νέο αρχείο."
+        : null
+    : null;
+
   const effectiveSteps = React.useMemo(() => {
-    return [...steps];
-  }, []);
+    return shouldShowConsentStep
+      ? [...steps]
+      : steps.filter((label) => label !== "Συναίνεση");
+  }, [shouldShowConsentStep]);
 
   const maxStep = effectiveSteps.length - 1;
   const currentLabel = effectiveSteps[step];
+
+  React.useEffect(() => {
+    setStep((current) => Math.min(current, maxStep));
+  }, [maxStep]);
 
   const clearError = React.useCallback((field: string) => {
     setFieldErrors((prev) => clearWizardFieldError(prev, field));
@@ -87,6 +119,20 @@ export default function OrderRetailWizard() {
     setStep(0);
     focusWizardField("customer_ActivityCode");
   }, []);
+
+  const goToCustomerAmkaField = React.useCallback(() => {
+    setStep(0);
+    focusWizardField("customer_amka");
+  }, []);
+
+  const goToDoctorNameField = React.useCallback(() => {
+    setStep(Math.max(0, effectiveSteps.indexOf("Ιατρός")));
+    focusWizardField("doctorSuggested_name");
+  }, [effectiveSteps]);
+
+  const goToConsentStep = React.useCallback(() => {
+    setStep(Math.max(0, effectiveSteps.indexOf("Συναίνεση")));
+  }, [effectiveSteps]);
 
   function goNext() {
     setStep((s) => Math.min(s + 1, maxStep));
@@ -101,8 +147,14 @@ export default function OrderRetailWizard() {
       getRetailOrderValidationIssues(draftOrder, {
         ...suggestedDoctorValidationContext,
         customerActivityRequired,
+        customerSelectedFromList,
       }),
-    [customerActivityRequired, draftOrder, suggestedDoctorValidationContext],
+    [
+      customerActivityRequired,
+      customerSelectedFromList,
+      draftOrder,
+      suggestedDoctorValidationContext,
+    ],
   );
 
   async function confirmSave() {
@@ -130,12 +182,17 @@ export default function OrderRetailWizard() {
         "otherDoctorSuggested_mobile",
         "doctorSuggested_name",
       ]);
-      setStep(
-        doctorStepFields.has(firstIssue.field)
-          ? RETAIL_DOCTOR_STEP_INDEX
-          : RETAIL_TOUCHDOWN_STEP_INDEX,
-      );
-      focusWizardField(firstIssue.field);
+      const shouldShowOnTouchdown =
+        retailCustomerWithoutPriceBadge &&
+        firstIssue.field === "doctorSuggested_name";
+      let targetLabel: (typeof steps)[number] = "Touchdown";
+      if (!shouldShowOnTouchdown && doctorStepFields.has(firstIssue.field)) {
+        targetLabel = "Ιατρός";
+      }
+      setStep(Math.max(0, effectiveSteps.indexOf(targetLabel)));
+      if (!shouldShowOnTouchdown) {
+        focusWizardField(firstIssue.field);
+      }
       return;
     }
 
@@ -153,20 +210,37 @@ export default function OrderRetailWizard() {
   const hasMissingCustomerActivity =
     customerActivityRequired &&
     !String(draftOrder.customer_ActivityCode ?? "").trim();
+  const hasMissingRequiredDoctorName =
+    retailCustomerWithoutPriceBadge &&
+    !String(draftOrder.doctorSuggested_name ?? "").trim();
+  const hasInvalidCustomerAmka = !!customerAmkaError;
   const activeFieldErrors = React.useMemo(
     () =>
       getActiveWizardFieldErrors(fieldErrors, (field) => {
         if (field === "customer_ActivityCode") {
           return hasMissingCustomerActivity;
         }
+        if (field === "customer_amka") {
+          return hasInvalidCustomerAmka;
+        }
+        if (field === "doctorSuggested_name") {
+          return hasMissingRequiredDoctorName;
+        }
         return true;
       }),
-    [fieldErrors, hasMissingCustomerActivity],
+    [
+      fieldErrors,
+      hasInvalidCustomerAmka,
+      hasMissingCustomerActivity,
+      hasMissingRequiredDoctorName,
+    ],
   );
   const hasFieldErrors =
-    hasWizardFieldErrors(activeFieldErrors) || hasMissingCustomerActivity;
+    hasWizardFieldErrors(activeFieldErrors) ||
+    hasMissingCustomerActivity ||
+    hasMissingRequiredDoctorName;
   const saveDisabled =
-    submitState.loading || consentBlocksProgress || hasFieldErrors;
+    submitState.loading || !!consentError || hasFieldErrors;
 
   const submitConfirmOrderAsSeller = getActingSellerDisplayLabel(
     userInfos,
@@ -206,6 +280,10 @@ export default function OrderRetailWizard() {
           errors={fieldErrors}
           clearError={clearError}
           onGoToCustomerActivity={goToCustomerActivityField}
+          onGoToCustomerAmka={goToCustomerAmkaField}
+          onGoToDoctorName={goToDoctorNameField}
+          onGoToConsent={goToConsentStep}
+          consentError={consentError}
         />
       ) : null}
 

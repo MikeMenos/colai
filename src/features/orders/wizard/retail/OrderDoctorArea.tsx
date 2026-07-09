@@ -1,4 +1,7 @@
-import type { SuggestedDoctorSnapshot, OrderDoctorAreaProps } from "./OrderDoctorArea.types";
+import type {
+  SuggestedDoctorSnapshot,
+  OrderDoctorAreaProps,
+} from "./OrderDoctorArea.types";
 import OrderField from "@/components/ui/OrderField";
 import FormErrorsContext from "@/components/ui/FormErrorContect";
 import {
@@ -11,6 +14,7 @@ import type { AppDispatch } from "@/store/store";
 import type { Order } from "@/types/orders";
 import React from "react";
 import DoctorLookupModal from "../modals/DoctorLookupModal";
+import { isRetailCustomerWithoutPriceBadge } from "./retailCustomerBadge";
 
 const OTHER_SUGGESTED_DOCTOR_KEYS = [
   "otherDoctorSuggested_amka",
@@ -27,7 +31,8 @@ const SUGGESTED_DOCTOR_KEYS = [
   "doctorSuggested_domi",
   "doctorSuggested_tel",
   "doctorSuggested_ErpGID",
-] as const;function captureSuggestedDoctorSnapshot(
+] as const;
+function captureSuggestedDoctorSnapshot(
   order: Order,
 ): SuggestedDoctorSnapshot | null {
   if (order.has_suggested_doctor != 2) return null;
@@ -72,7 +77,8 @@ function clearOtherSuggestedDoctorFields(dispatch: AppDispatch) {
   dispatch(
     setDraftProperty({ key: "otherDoctorSuggested_ErpGID", value: null }),
   );
-}export default function OrderDoctorArea({
+}
+export default function OrderDoctorArea({
   errors,
   clearError,
 }: OrderDoctorAreaProps) {
@@ -80,7 +86,12 @@ function clearOtherSuggestedDoctorFields(dispatch: AppDispatch) {
   const draftMeta = useAppSelector((s) => ({
     customerIsCompletelyNew: s.orders.draft.customerIsCompletelyNew,
     lastOrderInfoDateIn: s.orders.draft.lastOrderInfoDateIn,
+    customerSelectedFromList: s.orders.draft.customerSelectedFromList,
   }));
+  const forceSuggestedDoctorForm = isRetailCustomerWithoutPriceBadge(
+    data,
+    draftMeta.customerSelectedFromList,
+  );
   const disableSuggestedDoctorChoice = isSuggestedDoctorChoiceLocked(draftMeta);
   const showSuggestedDoctorChange = shouldShowSuggestedDoctorChangeToggle(
     draftMeta,
@@ -88,7 +99,8 @@ function clearOtherSuggestedDoctorFields(dispatch: AppDispatch) {
   );
   const proposeOtherSuggestedDoctor = data.propose_other_suggested_doctor == 1;
   const showSuggestedDoctorFields =
-    data.has_suggested_doctor == 2 && !proposeOtherSuggestedDoctor;
+    (forceSuggestedDoctorForm || data.has_suggested_doctor == 2) &&
+    !proposeOtherSuggestedDoctor;
   const dispatch = useAppDispatch();
   const [showLookup, setShowLookup] = React.useState(false);
   const [showChangeSuggestedLookup, setShowChangeSuggestedLookup] =
@@ -99,6 +111,23 @@ function clearOtherSuggestedDoctorFields(dispatch: AppDispatch) {
   const openSuggestedDoctorLookup = () => setShowLookup(true);
   const openChangeSuggestedDoctorLookup = () =>
     setShowChangeSuggestedLookup(true);
+
+  React.useEffect(() => {
+    if (!forceSuggestedDoctorForm) return;
+    if (data.has_suggested_doctor != 2) {
+      dispatch(setDraftProperty({ key: "has_suggested_doctor", value: 2 }));
+    }
+    if (!data.hasOtherSystinonIatroBool) {
+      dispatch(
+        setDraftProperty({ key: "hasOtherSystinonIatroBool", value: true }),
+      );
+    }
+  }, [
+    data.has_suggested_doctor,
+    data.hasOtherSystinonIatroBool,
+    dispatch,
+    forceSuggestedDoctorForm,
+  ]);
 
   React.useEffect(() => {
     if (showSuggestedDoctorChange || data.propose_other_suggested_doctor != 1) {
@@ -123,7 +152,9 @@ function clearOtherSuggestedDoctorFields(dispatch: AppDispatch) {
         >
           <div className="fw-semibold">Ιατρός</div>
 
-          {showSuggestedDoctorFields && !disableSuggestedDoctorChoice ? (
+          {showSuggestedDoctorFields &&
+          !disableSuggestedDoctorChoice &&
+          !forceSuggestedDoctorForm ? (
             <button
               type="button"
               className="btn-icon-pill"
@@ -141,7 +172,7 @@ function clearOtherSuggestedDoctorFields(dispatch: AppDispatch) {
           onClose={() => setShowLookup(false)}
         />
 
-        {showSuggestedDoctorChange ? (
+        {showSuggestedDoctorChange && !forceSuggestedDoctorForm ? (
           <>
             <div className="form-check form-switch switch-lg mb-2">
               <input
@@ -321,51 +352,43 @@ function clearOtherSuggestedDoctorFields(dispatch: AppDispatch) {
           </>
         ) : null}
 
-        <fieldset disabled={disableSuggestedDoctorChoice}>
-          <div className="form-check form-switch switch-lg mb-2">
-            <input
-              className="form-check-input"
-              type="checkbox"
-              checked={data.has_suggested_doctor == 2}
-              disabled={proposeOtherSuggestedDoctor}
-              onChange={(e) => {
-                dispatch(
-                  setDraftProperty({
-                    key: "has_suggested_doctor",
-                    value: e.target.checked ? 2 : 0,
-                  }),
-                );
-                dispatch(
-                  setDraftProperty({
-                    key: "hasOtherSystinonIatroBool",
-                    value: e.target.checked,
-                  }),
-                );
-              }}
-              id="has_suggested_doctor"
-            />
-            <label className="form-check-label" htmlFor="has_suggested_doctor">
-              Έχω συστήνων ιατρό
-            </label>
-          </div>
+        <fieldset
+          disabled={disableSuggestedDoctorChoice && !forceSuggestedDoctorForm}
+        >
+          {!forceSuggestedDoctorForm ? (
+            <div className="form-check form-switch switch-lg mb-2">
+              <input
+                className="form-check-input"
+                type="checkbox"
+                checked={data.has_suggested_doctor == 2}
+                disabled={proposeOtherSuggestedDoctor}
+                onChange={(e) => {
+                  dispatch(
+                    setDraftProperty({
+                      key: "has_suggested_doctor",
+                      value: e.target.checked ? 2 : 0,
+                    }),
+                  );
+                  dispatch(
+                    setDraftProperty({
+                      key: "hasOtherSystinonIatroBool",
+                      value: e.target.checked,
+                    }),
+                  );
+                }}
+                id="has_suggested_doctor"
+              />
+              <label
+                className="form-check-label"
+                htmlFor="has_suggested_doctor"
+              >
+                Έχω συστήνων ιατρό
+              </label>
+            </div>
+          ) : null}
 
           {showSuggestedDoctorFields && (
             <>
-              <OrderField label="ΑΜΚΑ Ιατρού">
-                <input
-                  className="form-control"
-                  name="doctorSuggested_amka"
-                  value={data.doctorSuggested_amka ?? ""}
-                  onChange={(e) =>
-                    dispatch(
-                      setDraftProperty({
-                        key: "doctorSuggested_amka",
-                        value: e.target.value,
-                      }),
-                    )
-                  }
-                />
-              </OrderField>
               <OrderField label="Ονοματεπώνυμο">
                 <input
                   className="form-control"
@@ -381,6 +404,22 @@ function clearOtherSuggestedDoctorFields(dispatch: AppDispatch) {
                   }
                 />
               </OrderField>
+              <OrderField label="ΑΜΚΑ Ιατρού">
+                <input
+                  className="form-control"
+                  name="doctorSuggested_amka"
+                  value={data.doctorSuggested_amka ?? ""}
+                  onChange={(e) =>
+                    dispatch(
+                      setDraftProperty({
+                        key: "doctorSuggested_amka",
+                        value: e.target.value,
+                      }),
+                    )
+                  }
+                />
+              </OrderField>
+
               <OrderField label="ΑΦΜ">
                 <input
                   className="form-control"
