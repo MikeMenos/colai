@@ -8,6 +8,11 @@ import React from "react";
 import { FormSelect } from "react-bootstrap";
 import OrderField from "@/components/ui/OrderField";
 import WizardStepBarcodeHint from "../components/WizardStepBarcodeHint";
+import { getAmkaInlineFieldError } from "@/lib/utils/amka";
+import {
+  getRetailCustomerPriceBadge,
+  isRetailCustomerWithoutPriceBadge,
+} from "./retailCustomerBadge";
 
 function Field({
   label,
@@ -84,13 +89,16 @@ export default function OrderRetailCustomerArea({
     setShowLookup(true);
   };
 
-  const customerPriceBadge =
-    customerSelectedFromList === true
-      ? [data.activitY_DESC, data.prE_LOADED_PRICE]
-          .map((value) => String(value ?? "").trim())
-          .filter(Boolean)
-          .join(" - ")
-      : "";
+  const customerPriceBadge = getRetailCustomerPriceBadge(
+    data,
+    customerSelectedFromList,
+  );
+  const customerAmkaError = isRetailCustomerWithoutPriceBadge(
+    data,
+    customerSelectedFromList,
+  )
+    ? getAmkaInlineFieldError(data.customer_amka)
+    : null;
   const showCustomerActivitySelect =
     customerSelectedFromList !== true && listCustomerActivities.length > 0;
 
@@ -253,19 +261,26 @@ export default function OrderRetailCustomerArea({
         <div className="col-6">
           <Field label="ΑΜΚΑ">
             <input
-              className="form-control"
+              className={`form-control ${customerAmkaError ? "is-invalid" : ""}`}
               name="customer_amka"
               inputMode="numeric"
+              aria-invalid={!!customerAmkaError}
               value={data.customer_amka ?? ""}
-              onChange={(e) =>
+              onChange={(e) => {
+                clearError?.("customer_amka");
                 dispatch(
                   setDraftProperty({
                     key: "customer_amka",
                     value: e.target.value,
                   }),
-                )
-              }
+                );
+              }}
             />
+            {customerAmkaError ? (
+              <div className="invalid-feedback d-block">
+                {customerAmkaError}
+              </div>
+            ) : null}
           </Field>
         </div>
         <div className="col-6">
