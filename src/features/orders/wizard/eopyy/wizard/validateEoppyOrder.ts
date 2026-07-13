@@ -14,6 +14,7 @@ import { onlyDigits } from "./wizardUtils";
 export function validateEoppyOrder({
   draftOrder,
   customerIsCompletelyNew,
+  customerProsEbs,
   lastOrderInfoDateIn,
   hasFiles,
   hasConsentFormFiles,
@@ -179,6 +180,7 @@ export function validateEoppyOrder({
 
     for (const issue of getSuggestedDoctorFieldWizardIssues(draftOrder, {
       customerIsCompletelyNew,
+      customerProsEbs,
       lastOrderInfoDateIn,
     })) {
       issues.push(issue);

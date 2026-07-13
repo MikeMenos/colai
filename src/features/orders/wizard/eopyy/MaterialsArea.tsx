@@ -7,6 +7,7 @@ import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import React from "react";
 import MaterialsLookupModal from "../modals/MaterialsLookupModals";
 import SwipeToDeleteYliko from "@/components/ui/SwipeToDeleteYliko";
+import DeferredQuantityInput from "../components/DeferredQuantityInput";
 
 export default function MaterialsArea() {
   const ylika = useAppSelector((s) => s.orders.draft.ylika);
@@ -65,16 +66,14 @@ export default function MaterialsArea() {
                         className="text-end"
                         style={{ maxWidth: 60, minWidth: 60 }}
                       >
-                        <input
-                          className="form-control text-center"
-                          inputMode="numeric"
-                          value={String(y.qty ?? "")}
-                          onChange={(e) => {
-                            const v = e.target.value.replace(/[^\d]/g, "");
+                        <DeferredQuantityInput
+                          value={y.qty}
+                          onCommit={(quantity) => {
+                            if (quantity === y.qty) return;
                             dispatch(
                               updateDraftYlikoQuantity({
                                 index: idx,
-                                quantity: v === "" ? 0 : parseInt(v, 10),
+                                quantity,
                               }),
                             );
                           }}

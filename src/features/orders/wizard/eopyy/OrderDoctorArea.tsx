@@ -82,6 +82,7 @@ export default function OrderDoctorArea({
   const data = useAppSelector((s) => s.orders.draft.order);
   const draftMeta = useAppSelector((s) => ({
     customerIsCompletelyNew: s.orders.draft.customerIsCompletelyNew,
+    customerProsEbs: s.orders.draft.customerProsEbs,
     lastOrderInfoDateIn: s.orders.draft.lastOrderInfoDateIn,
   }));
   const disableFieldsBelowTypos = isSuggestedDoctorChoiceLocked(draftMeta);

@@ -31,14 +31,21 @@ export function isCustomerSelectedFromList(
 
 /** Locks suggested-doctor options for returning customers with a recent prior order. */
 export function isSuggestedDoctorChoiceLocked(
-  draft: Pick<DraftState, "customerIsCompletelyNew" | "lastOrderInfoDateIn">,
+  draft: Pick<
+    DraftState,
+    "customerIsCompletelyNew" | "lastOrderInfoDateIn"
+  > & { customerProsEbs?: DraftState["customerProsEbs"] },
 ): boolean {
   if (draft.customerIsCompletelyNew === true) return false;
+  if (draft.customerProsEbs === true) return false;
   return !isDateOlderThanMonths(draft.lastOrderInfoDateIn, 4);
 }
 
 export function shouldShowSuggestedDoctorChangeToggle(
-  draft: Pick<DraftState, "customerIsCompletelyNew" | "lastOrderInfoDateIn">,
+  draft: Pick<
+    DraftState,
+    "customerIsCompletelyNew" | "lastOrderInfoDateIn"
+  > & { customerProsEbs?: DraftState["customerProsEbs"] },
   customerErpGID: string | null | undefined,
 ): boolean {
   if (!String(customerErpGID ?? "").trim()) return false;

@@ -36,7 +36,7 @@ export const SUGGESTED_DOCTOR_FIELD_ORDER =
 export type SuggestedDoctorValidationContext = Pick<
   DraftState,
   "customerIsCompletelyNew" | "lastOrderInfoDateIn"
->;
+> & { customerProsEbs?: DraftState["customerProsEbs"] };
 
 function isSuggestedDoctorFieldsDisabled(
   context?: SuggestedDoctorValidationContext,
