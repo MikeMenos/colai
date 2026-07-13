@@ -103,6 +103,7 @@ export default function OrderEoppyWizard({
   const customerIsCompletelyNew = useAppSelector(
     (s) => s.orders.draft.customerIsCompletelyNew,
   );
+  const customerProsEbs = useAppSelector((s) => s.orders.draft.customerProsEbs);
   const lastOrderInfoDateIn = useAppSelector(
     (s) => s.orders.draft.lastOrderInfoDateIn,
   );
@@ -184,6 +185,7 @@ export default function OrderEoppyWizard({
       validateEoppyOrderDraft({
         draftOrder,
         customerIsCompletelyNew,
+        customerProsEbs,
         lastOrderInfoDateIn,
         hasFiles,
         hasConsentFormFiles,
@@ -192,6 +194,7 @@ export default function OrderEoppyWizard({
       }),
     [
       customerIsCompletelyNew,
+      customerProsEbs,
       draftOrder,
       hasConsentFormFiles,
       hasFiles,
