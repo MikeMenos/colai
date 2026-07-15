@@ -88,10 +88,11 @@ export default function OrderDoctorArea({
     lastOrderInfoDateIn: s.orders.draft.lastOrderInfoDateIn,
     customerSelectedFromList: s.orders.draft.customerSelectedFromList,
   }));
-  const forceSuggestedDoctorForm = isRetailCustomerWithoutPriceBadge(
-    data,
-    draftMeta.customerSelectedFromList,
-  );
+  const hasPersonErpGID = !!String(data.person_ErpGID ?? "").trim();
+  const disableWithoutSuggestedDoctorSwitch = hasPersonErpGID;
+  const forceSuggestedDoctorForm =
+    hasPersonErpGID &&
+    isRetailCustomerWithoutPriceBadge(data, draftMeta.customerSelectedFromList);
   const disableSuggestedDoctorChoice = isSuggestedDoctorChoiceLocked(draftMeta);
   const showSuggestedDoctorChange = shouldShowSuggestedDoctorChangeToggle(
     draftMeta,
@@ -127,6 +128,19 @@ export default function OrderDoctorArea({
     data.hasOtherSystinonIatroBool,
     dispatch,
     forceSuggestedDoctorForm,
+  ]);
+
+  React.useEffect(() => {
+    if (disableWithoutSuggestedDoctorSwitch) return;
+    if (data.has_suggested_doctor != null) return;
+    dispatch(setDraftProperty({ key: "has_suggested_doctor", value: 0 }));
+    dispatch(
+      setDraftProperty({ key: "hasOtherSystinonIatroBool", value: false }),
+    );
+  }, [
+    data.has_suggested_doctor,
+    disableWithoutSuggestedDoctorSwitch,
+    dispatch,
   ]);
 
   React.useEffect(() => {
@@ -355,6 +369,42 @@ export default function OrderDoctorArea({
         <fieldset
           disabled={disableSuggestedDoctorChoice && !forceSuggestedDoctorForm}
         >
+          <div className="form-check form-switch switch-lg mb-2">
+            <input
+              className="form-check-input"
+              name="has_suggested_doctor"
+              id="has_suggested_doctor_0"
+              type="checkbox"
+              checked={
+                data.has_suggested_doctor == 0 && !proposeOtherSuggestedDoctor
+              }
+              disabled={
+                disableWithoutSuggestedDoctorSwitch ||
+                proposeOtherSuggestedDoctor
+              }
+              onChange={(e) => {
+                dispatch(
+                  setDraftProperty({
+                    key: "has_suggested_doctor",
+                    value: e.target.checked ? 0 : 2,
+                  }),
+                );
+                dispatch(
+                  setDraftProperty({
+                    key: "hasOtherSystinonIatroBool",
+                    value: !e.target.checked,
+                  }),
+                );
+              }}
+            />
+            <label
+              className="form-check-label"
+              htmlFor="has_suggested_doctor_0"
+            >
+              Χωρίς συστήνων ιατρό
+            </label>
+          </div>
+
           {!forceSuggestedDoctorForm ? (
             <div className="form-check form-switch switch-lg mb-2">
               <input
