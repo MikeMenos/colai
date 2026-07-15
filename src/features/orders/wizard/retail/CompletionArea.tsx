@@ -88,19 +88,23 @@ export default function CompletionArea({
     data,
     customerSelectedFromList,
   );
+  const isTempSave = data.isTempSave == 1;
   const customerActivityError =
-    errors.customer_ActivityCode ||
-    (customerActivityRequired &&
-    !String(data.customer_ActivityCode ?? "").trim()
-      ? "Επιλέξτε Δραστηριότητα / Τιμοκατάλογο"
-      : undefined);
-  const customerAmkaError = errors.customer_amka;
+    !isTempSave &&
+    (errors.customer_ActivityCode ||
+      (customerActivityRequired &&
+      !String(data.customer_ActivityCode ?? "").trim()
+        ? "Επιλέξτε Δραστηριότητα / Τιμοκατάλογο"
+        : undefined));
+  const customerAmkaError = !isTempSave ? errors.customer_amka : undefined;
   const doctorNameError =
-    errors.doctorSuggested_name ||
-    (retailCustomerWithoutPriceBadge &&
-    !String(data.doctorSuggested_name ?? "").trim()
-      ? "Συμπληρώστε ονοματεπώνυμο"
-      : undefined);
+    !isTempSave &&
+    (errors.doctorSuggested_name ||
+      (retailCustomerWithoutPriceBadge &&
+      data.has_suggested_doctor != 0 &&
+      !String(data.doctorSuggested_name ?? "").trim()
+        ? "Συμπληρώστε ονοματεπώνυμο"
+        : undefined));
   const touchdownErrors = [
     typeof customerActivityError === "string"
       ? {
@@ -126,7 +130,7 @@ export default function CompletionArea({
           onClick: onGoToDoctorName,
         }
       : null,
-    typeof consentError === "string"
+    !isTempSave && typeof consentError === "string"
       ? {
           field: "synenaiseis",
           step: "Συναίνεση",

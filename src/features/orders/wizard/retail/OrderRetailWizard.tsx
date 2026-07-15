@@ -92,10 +92,10 @@ export default function OrderRetailWizard() {
     ? isVoiceConsent
       ? null
       : !hasConsentFormFiles
-      ? "Νέος πελάτης, δεν έχετε ανεβάσει συναίνεση"
-      : consentBlocksProgress
-        ? "Το score δεν είναι αρκετά υψηλό. Παρακαλώ ανεβάστε νέο αρχείο."
-        : null
+        ? "Νέος πελάτης, δεν έχετε ανεβάσει συναίνεση"
+        : consentBlocksProgress
+          ? "Το score δεν είναι αρκετά υψηλό. Παρακαλώ ανεβάστε νέο αρχείο."
+          : null
     : null;
 
   const effectiveSteps = React.useMemo(() => {
@@ -156,6 +156,10 @@ export default function OrderRetailWizard() {
       suggestedDoctorValidationContext,
     ],
   );
+  const visibleFieldErrors = React.useMemo(
+    () => (isTempSave ? {} : fieldErrors),
+    [fieldErrors, isTempSave],
+  );
 
   async function confirmSave() {
     try {
@@ -211,12 +215,14 @@ export default function OrderRetailWizard() {
     customerActivityRequired &&
     !String(draftOrder.customer_ActivityCode ?? "").trim();
   const hasMissingRequiredDoctorName =
+    !isTempSave &&
     retailCustomerWithoutPriceBadge &&
+    draftOrder.has_suggested_doctor != 0 &&
     !String(draftOrder.doctorSuggested_name ?? "").trim();
   const hasInvalidCustomerAmka = !!customerAmkaError;
   const activeFieldErrors = React.useMemo(
     () =>
-      getActiveWizardFieldErrors(fieldErrors, (field) => {
+      getActiveWizardFieldErrors(visibleFieldErrors, (field) => {
         if (field === "customer_ActivityCode") {
           return hasMissingCustomerActivity;
         }
@@ -229,18 +235,19 @@ export default function OrderRetailWizard() {
         return true;
       }),
     [
-      fieldErrors,
       hasInvalidCustomerAmka,
       hasMissingCustomerActivity,
       hasMissingRequiredDoctorName,
+      visibleFieldErrors,
     ],
   );
   const hasFieldErrors =
-    hasWizardFieldErrors(activeFieldErrors) ||
-    hasMissingCustomerActivity ||
-    hasMissingRequiredDoctorName;
+    !isTempSave &&
+    (hasWizardFieldErrors(activeFieldErrors) ||
+      hasMissingCustomerActivity ||
+      hasMissingRequiredDoctorName);
   const saveDisabled =
-    submitState.loading || !!consentError || hasFieldErrors;
+    submitState.loading || (!isTempSave && (!!consentError || hasFieldErrors));
 
   const submitConfirmOrderAsSeller = getActingSellerDisplayLabel(
     userInfos,
@@ -271,13 +278,13 @@ export default function OrderRetailWizard() {
         <OrderRetailCustomerArea clearError={clearError} />
       ) : null}
       {currentLabel === "Ιατρός" ? (
-        <OrderDoctorArea errors={fieldErrors} clearError={clearError} />
+        <OrderDoctorArea errors={visibleFieldErrors} clearError={clearError} />
       ) : null}
       {currentLabel === "Υλικά" ? <MaterialsArea /> : null}
       {currentLabel === "Συναίνεση" ? <SynenaiseisArea /> : null}
       {currentLabel === "Touchdown" ? (
         <CompletionArea
-          errors={fieldErrors}
+          errors={visibleFieldErrors}
           clearError={clearError}
           onGoToCustomerActivity={goToCustomerActivityField}
           onGoToCustomerAmka={goToCustomerAmkaField}

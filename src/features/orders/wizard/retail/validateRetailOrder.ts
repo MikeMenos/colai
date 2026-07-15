@@ -28,12 +28,15 @@ export function getRetailOrderValidationIssues(
     draftOrder,
     context?.customerSelectedFromList,
   );
+  const withoutSuggestedDoctor = draftOrder.has_suggested_doctor == 0;
+  const requiresSuggestedDoctor =
+    retailCustomerWithoutPriceBadge && !withoutSuggestedDoctor;
   const doctorIssues: RetailValidationIssue[] = [
     ...getOtherSuggestedDoctorFieldWizardIssues(draftOrder),
-    ...(retailCustomerWithoutPriceBadge
+    ...(requiresSuggestedDoctor
       ? []
       : getSuggestedDoctorFieldWizardIssues(draftOrder, context)),
-    ...(retailCustomerWithoutPriceBadge &&
+    ...(requiresSuggestedDoctor &&
     !String(draftOrder.doctorSuggested_name ?? "").trim()
       ? [
           {
