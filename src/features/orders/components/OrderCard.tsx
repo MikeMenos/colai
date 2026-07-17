@@ -10,6 +10,10 @@ import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { deleteOrderAsync } from "@/store/orders/ordersSlice";
 import { useRouter } from "next/navigation";
 import { formatCurrencyGR } from "@/lib/utils/number";
+import {
+  formatRecipientAddress,
+  hasOrderRecipientInfo,
+} from "@/lib/utils/orderRecipient";
 
 const ACTION_WIDTH = 88;
 const DESKTOP_MEDIA_QUERY = "(min-width: 768px)";
@@ -241,6 +245,23 @@ export default function OrderCard({
       ? order.doctorSuggested_amka
       : order.doctor_amka;
   const sellerName = order.sellerName?.trim();
+  const showRecipientInfo = hasOrderRecipientInfo(order);
+  const recipientAddress = formatRecipientAddress(order);
+  const customerMobile = order.customer_mobile?.trim();
+  const recipientName = order.recipient_name?.trim();
+  const recipientAmka = order.recipient_amka?.trim();
+  const recipientMobile = order.recipient_mobile?.trim();
+  const recipientOtherContact = [
+    order.recipient_mobile2,
+    order.recipient_tel,
+  ]
+    .map((value) => value?.trim())
+    .filter(Boolean)
+    .join(" / ");
+  const recipientSummary = [order.recipient_relation, order.recipient_reason]
+    .map((value) => value?.trim())
+    .filter(Boolean)
+    .join(" • ");
 
   const chipStyle: React.CSSProperties = {
     display: "inline-flex",
@@ -552,6 +573,14 @@ export default function OrderCard({
                       {order.customer_amka}
                     </div>
                   </div>
+                  {customerMobile ? (
+                    <div className="col-4">
+                      <div className="small text-secondary">
+                        Κινητό Πελάτη
+                      </div>
+                      <div className="fw-medium">{customerMobile}</div>
+                    </div>
+                  ) : null}
                   <div className="col-4">
                     <div className="small text-secondary">Έκπτωση</div>
                     <div className="fw-medium">
@@ -579,6 +608,43 @@ export default function OrderCard({
                         <span>Πωλητής</span>
                       </div>
                       <div className="fw-medium">{sellerName}</div>
+                    </div>
+                  ) : null}
+
+                  {showRecipientInfo ? (
+                    <div className="col-12">
+                      <div className="d-flex align-items-center gap-2 text-secondary small">
+                        <i className="bi bi-person-lines-fill" aria-hidden />
+                        <span>Παραλήπτης</span>
+                      </div>
+                      {recipientName ? (
+                        <div className="fw-medium">{recipientName}</div>
+                      ) : null}
+                      {recipientAmka ? (
+                        <div className="text-secondary small">
+                          AMKA: {recipientAmka}
+                        </div>
+                      ) : null}
+                      {recipientMobile ? (
+                        <div className="text-secondary small">
+                          Κινητό: {recipientMobile}
+                        </div>
+                      ) : null}
+                      {recipientSummary ? (
+                        <div className="text-secondary small">
+                          {recipientSummary}
+                        </div>
+                      ) : null}
+                      {recipientOtherContact ? (
+                        <div className="text-secondary small">
+                          Τηλ: {recipientOtherContact}
+                        </div>
+                      ) : null}
+                      {recipientAddress ? (
+                        <div className="text-secondary small">
+                          {recipientAddress}
+                        </div>
+                      ) : null}
                     </div>
                   ) : null}
                 </div>
