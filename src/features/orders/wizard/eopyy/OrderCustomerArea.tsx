@@ -99,6 +99,7 @@ export default function OrderCustomerArea({
     dispatch(setDraftProperty({ key: "person_ErpGID", value: null }));
     dispatch(setDraftProperty({ key: "address_ErpGID", value: null }));
     dispatch(setDraftProperty({ key: "shipTo_other_address", value: 0 }));
+    dispatch(setDraftProperty({ key: "shipToOtherAddressBool", value: false }));
     dispatch(
       setDraftProperty({ key: "recipient_from_erp_lookup", value: null }),
     );
@@ -130,6 +131,46 @@ export default function OrderCustomerArea({
     );
     clearOtherRecipientFields(dispatch);
     savedRecipientSelectionRef.current = null;
+  }, [
+    data.address_ErpGID,
+    data.person_ErpGID,
+    dispatch,
+    listAddressesPersons,
+    preselected_address_GID,
+    preselected_person_GID,
+  ]);
+
+  const selectExistingRecipient = React.useCallback(() => {
+    dispatch(setDraftProperty({ key: "has_other_recipient", value: 0 }));
+    dispatch(setDraftProperty({ key: "shipTo_other_address", value: 0 }));
+    dispatch(setDraftProperty({ key: "shipToOtherAddressBool", value: false }));
+
+    const saved = savedRecipientSelectionRef.current;
+    const { person_ErpGID, address_ErpGID } = resolveSavedRecipientSelection(
+      listAddressesPersons,
+      {
+        personErpGID: data.person_ErpGID ?? saved?.person_ErpGID,
+        addressErpGID: data.address_ErpGID ?? saved?.address_ErpGID,
+        preselectedPerson: preselected_person_GID,
+        preselectedAddress: preselected_address_GID,
+      },
+    );
+
+    dispatch(
+      setDraftProperty({
+        key: "person_ErpGID",
+        value: person_ErpGID,
+      }),
+    );
+    dispatch(
+      setDraftProperty({
+        key: "address_ErpGID",
+        value: address_ErpGID,
+      }),
+    );
+    clearOtherRecipientFields(dispatch);
+    savedRecipientSelectionRef.current = null;
+    setShowNewRecipientConfirm(false);
   }, [
     data.address_ErpGID,
     data.person_ErpGID,
@@ -601,36 +642,34 @@ export default function OrderCustomerArea({
           </label>
         </div>
 
-        {data.shipTo_other_address != 1 && (
-          <div className="form-check form-switch switch-lg mb-2">
-            <input
-              className="form-check-input"
-              name="has_other_recipient"
-              type="checkbox"
-              checked={data.has_other_recipient == 1}
-              onChange={(e) => {
-                const val = e.target.checked ? 1 : 0;
-                if (val === 1) {
-                  if (listAddressesPersons.length > 0) {
-                    setShowNewRecipientConfirm(true);
-                    return;
-                  }
-                  enableOtherRecipient();
+        <div className="form-check form-switch switch-lg mb-2">
+          <input
+            className="form-check-input"
+            name="has_other_recipient"
+            type="checkbox"
+            checked={data.has_other_recipient == 1}
+            onChange={(e) => {
+              const val = e.target.checked ? 1 : 0;
+              if (val === 1) {
+                if (listAddressesPersons.length > 0) {
+                  setShowNewRecipientConfirm(true);
                   return;
                 }
+                enableOtherRecipient();
+                return;
+              }
 
-                dispatch(
-                  setDraftProperty({ key: "has_other_recipient", value: 0 }),
-                );
-                disableOtherRecipient();
-              }}
-              id="has_other_recipient"
-            />
-            <label className="form-check-label" htmlFor="has_other_recipient">
-              Παραλαβή από νέο πρόσωπο
-            </label>
-          </div>
-        )}
+              dispatch(
+                setDraftProperty({ key: "has_other_recipient", value: 0 }),
+              );
+              disableOtherRecipient();
+            }}
+            id="has_other_recipient"
+          />
+          <label className="form-check-label" htmlFor="has_other_recipient">
+            Παραλαβή από νέο πρόσωπο
+          </label>
+        </div>
 
         {data.has_other_recipient == 1 && (
           <>
@@ -962,54 +1001,64 @@ export default function OrderCustomerArea({
           </>
         )}
 
-        {data.has_other_recipient != 1 && (
-          <div className="form-check form-switch switch-lg mb-2">
-            <input
-              className="form-check-input"
-              name="shipTo_other_address"
-              type="checkbox"
-              checked={data.shipTo_other_address == 1}
-              onChange={(e) => {
-                const checked = e.target.checked;
+        <div className="form-check form-switch switch-lg mb-2">
+          <input
+            className="form-check-input"
+            name="shipTo_other_address"
+            type="checkbox"
+            checked={data.shipTo_other_address == 1}
+            onChange={(e) => {
+              const checked = e.target.checked;
+              dispatch(
+                setDraftProperty({
+                  key: "shipTo_other_address",
+                  value: checked ? 1 : 0,
+                }),
+              );
+              dispatch(
+                setDraftProperty({
+                  key: "shipToOtherAddressBool",
+                  value: checked,
+                }),
+              );
+              if (checked) {
+                dispatch(
+                  setDraftProperty({ key: "has_other_recipient", value: 0 }),
+                );
+                clearOtherRecipientFields(dispatch);
+                dispatch(
+                  setDraftProperty({ key: "address_ErpGID", value: null }),
+                );
                 dispatch(
                   setDraftProperty({
-                    key: "shipTo_other_address",
-                    value: checked ? 1 : 0,
+                    key: "person_ErpGID",
+                    value: preselected_person_GID,
                   }),
                 );
-                if (checked) {
-                  dispatch(
-                    setDraftProperty({ key: "address_ErpGID", value: null }),
-                  );
-                  dispatch(
-                    setDraftProperty({ key: "has_other_recipient", value: 0 }),
-                  );
-                  clearOtherRecipientFields(dispatch);
-                  dispatch(
-                    setDraftProperty({
-                      key: "person_ErpGID",
-                      value: preselected_person_GID,
-                    }),
-                  );
-                } else if (data.person_ErpGID && data.person_ErpGID != "") {
-                  dispatch(
-                    setDraftProperty({
-                      key: "address_ErpGID",
-                      value:
-                        listAddressesPersons.find(
-                          (x) => x.person_ErpGID == data.person_ErpGID,
-                        )?.addresses?.[0]?.address_ErpGID ?? null,
-                    }),
-                  );
-                }
-              }}
-              id="shipTo_other_address"
-            />
-            <label className="form-check-label" htmlFor="shipTo_other_address">
-              Παράδοση σε νέα διεύθυνση
-            </label>
-          </div>
-        )}
+                dispatch(
+                  setDraftProperty({
+                    key: "recipient_from_erp_lookup",
+                    value: null,
+                  }),
+                );
+              } else if (data.person_ErpGID && data.person_ErpGID != "") {
+                dispatch(
+                  setDraftProperty({
+                    key: "address_ErpGID",
+                    value:
+                      listAddressesPersons.find(
+                        (x) => x.person_ErpGID == data.person_ErpGID,
+                      )?.addresses?.[0]?.address_ErpGID ?? null,
+                  }),
+                );
+              }
+            }}
+            id="shipTo_other_address"
+          />
+          <label className="form-check-label" htmlFor="shipTo_other_address">
+            Παράδοση σε νέα διεύθυνση
+          </label>
+        </div>
 
         {data.shipTo_other_address == 1 && (
           <>
@@ -1077,7 +1126,7 @@ export default function OrderCustomerArea({
           enableOtherRecipient();
           setShowNewRecipientConfirm(false);
         }}
-        onSelectExisting={() => setShowNewRecipientConfirm(false)}
+        onSelectExisting={selectExistingRecipient}
         onCancel={() => setShowNewRecipientConfirm(false)}
       />
     </div>
