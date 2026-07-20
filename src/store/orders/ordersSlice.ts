@@ -1105,11 +1105,25 @@ const ordersSlice = createSlice({
           const savedActivityCode = String(
             state.draft.order.customer_ActivityCode ?? "",
           ).trim();
-          const selectedActivity = savedActivityCode
+          let selectedActivity = savedActivityCode
             ? state.draft.list_CustomerActivities.find(
                 (activity) => activity.activitY_CODE === savedActivityCode,
               )
             : undefined;
+          if (
+            !selectedActivity &&
+            state.draft.order.type === "retail" &&
+            savedActivityCode
+          ) {
+            const numericCode = Number.parseInt(savedActivityCode, 10);
+            if (
+              Number.isInteger(numericCode) &&
+              numericCode >= 0 &&
+              numericCode < state.draft.list_CustomerActivities.length
+            ) {
+              selectedActivity = state.draft.list_CustomerActivities[numericCode];
+            }
+          }
 
           if (selectedActivity) {
             state.draft.order.activitY_DESC =
