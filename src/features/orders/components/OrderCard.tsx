@@ -369,6 +369,32 @@ export default function OrderCard({
           {order.customer_name ?? ""}
         </div>
 
+        {order.barcode?.trim() ? (
+          <div
+            className="d-inline-flex align-items-center gap-1 mt-1"
+            style={{
+              ...chipStyle,
+              ...softPrimaryStyle,
+              maxWidth: "100%",
+              fontWeight: 650,
+              fontVariantNumeric: "tabular-nums",
+              letterSpacing: 0.3,
+            }}
+            title={order.barcode.trim()}
+          >
+            <i className="bi bi-upc" aria-hidden />
+            <span
+              style={{
+                overflow: "hidden",
+                textOverflow: "ellipsis",
+                whiteSpace: "nowrap",
+              }}
+            >
+              {order.barcode.trim()}
+            </span>
+          </div>
+        ) : null}
+
         <div
           className="text-secondary"
           style={{
