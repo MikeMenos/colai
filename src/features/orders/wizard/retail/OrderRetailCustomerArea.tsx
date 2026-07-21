@@ -584,7 +584,7 @@ export default function OrderRetailCustomerArea({
         </label>
       </div>
 
-      <div className="form-check form-switch switch-lg mb-2">
+      {/* <div className="form-check form-switch switch-lg mb-2">
         <input
           className="form-check-input"
           name="has_other_recipient"
@@ -609,43 +609,46 @@ export default function OrderRetailCustomerArea({
         <label className="form-check-label" htmlFor="has_other_recipient">
           Παραλαβή από νέο πρόσωπο
         </label>
-      </div>
+      </div> */}
 
       {!data.shipToOtherAddressBool &&
         data.has_other_recipient != 1 &&
         listAddressesPersons.length > 0 && (
-        <Field label="Θα παραδοθεί σε">
-          <FormSelect
-            name="person_ErpGID"
-            value={data.person_ErpGID ?? ""}
-            onChange={(e) => {
-              dispatch(
-                setDraftProperty({
-                  key: "person_ErpGID",
-                  value: e.target.value,
-                }),
-              );
-              if (data.shipTo_other_address != 1) {
+          <Field label="Θα παραδοθεί σε">
+            <FormSelect
+              name="person_ErpGID"
+              value={data.person_ErpGID ?? ""}
+              onChange={(e) => {
                 dispatch(
                   setDraftProperty({
-                    key: "address_ErpGID",
-                    value:
-                      listAddressesPersons.find(
-                        (p) => p.person_ErpGID == e.target.value,
-                      )?.addresses?.[0]?.address_ErpGID ?? null,
+                    key: "person_ErpGID",
+                    value: e.target.value,
                   }),
                 );
-              }
-            }}
-          >
-            {listAddressesPersons.map((x) => (
-              <option key={x.person_ErpGID ?? ""} value={x.person_ErpGID ?? ""}>
-                {x.personName}
-              </option>
-            ))}
-          </FormSelect>
-        </Field>
-      )}
+                if (data.shipTo_other_address != 1) {
+                  dispatch(
+                    setDraftProperty({
+                      key: "address_ErpGID",
+                      value:
+                        listAddressesPersons.find(
+                          (p) => p.person_ErpGID == e.target.value,
+                        )?.addresses?.[0]?.address_ErpGID ?? null,
+                    }),
+                  );
+                }
+              }}
+            >
+              {listAddressesPersons.map((x) => (
+                <option
+                  key={x.person_ErpGID ?? ""}
+                  value={x.person_ErpGID ?? ""}
+                >
+                  {x.personName}
+                </option>
+              ))}
+            </FormSelect>
+          </Field>
+        )}
 
       {!data.shipToOtherAddressBool &&
         data.has_other_recipient != 1 &&
