@@ -88,15 +88,6 @@ export default function OrderRetailWizard() {
     retailCustomerWithoutPriceBadge &&
     !!customerAmkaDigits &&
     !customerAmkaError;
-  const consentError = shouldShowConsentStep
-    ? isVoiceConsent
-      ? null
-      : !hasConsentFormFiles
-        ? "Νέος πελάτης, δεν έχετε ανεβάσει συναίνεση"
-        : consentBlocksProgress
-          ? "Το score δεν είναι αρκετά υψηλό. Παρακαλώ ανεβάστε νέο αρχείο."
-          : null
-    : null;
 
   const effectiveSteps = React.useMemo(() => {
     return shouldShowConsentStep
@@ -128,10 +119,6 @@ export default function OrderRetailWizard() {
   const goToDoctorNameField = React.useCallback(() => {
     setStep(Math.max(0, effectiveSteps.indexOf("Ιατρός")));
     focusWizardField("doctorSuggested_name");
-  }, [effectiveSteps]);
-
-  const goToConsentStep = React.useCallback(() => {
-    setStep(Math.max(0, effectiveSteps.indexOf("Συναίνεση")));
   }, [effectiveSteps]);
 
   function goNext() {
@@ -246,8 +233,7 @@ export default function OrderRetailWizard() {
     (hasWizardFieldErrors(activeFieldErrors) ||
       hasMissingCustomerActivity ||
       hasMissingRequiredDoctorName);
-  const saveDisabled =
-    submitState.loading || (!isTempSave && (!!consentError || hasFieldErrors));
+  const saveDisabled = submitState.loading || (!isTempSave && hasFieldErrors);
 
   const submitConfirmOrderAsSeller = getActingSellerDisplayLabel(
     userInfos,
@@ -289,8 +275,6 @@ export default function OrderRetailWizard() {
           onGoToCustomerActivity={goToCustomerActivityField}
           onGoToCustomerAmka={goToCustomerAmkaField}
           onGoToDoctorName={goToDoctorNameField}
-          onGoToConsent={goToConsentStep}
-          consentError={consentError}
         />
       ) : null}
 

@@ -60,16 +60,12 @@ export default function CompletionArea({
   onGoToCustomerActivity,
   onGoToCustomerAmka,
   onGoToDoctorName,
-  onGoToConsent,
-  consentError,
 }: {
   errors?: Record<string, string | boolean>;
   clearError?: (field: string) => void;
   onGoToCustomerActivity?: () => void;
   onGoToCustomerAmka?: () => void;
   onGoToDoctorName?: () => void;
-  onGoToConsent?: () => void;
-  consentError?: string | null;
 }) {
   const data = useAppSelector((s) => s.orders.draft.order);
   const ylika = useAppSelector((s) => s.orders.draft.ylika);
@@ -128,14 +124,6 @@ export default function CompletionArea({
           step: "Ιατρός",
           message: doctorNameError,
           onClick: onGoToDoctorName,
-        }
-      : null,
-    !isTempSave && typeof consentError === "string"
-      ? {
-          field: "synenaiseis",
-          step: "Συναίνεση",
-          message: consentError,
-          onClick: onGoToConsent,
         }
       : null,
   ].filter(Boolean) as Array<{
