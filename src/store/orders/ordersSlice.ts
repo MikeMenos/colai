@@ -60,7 +60,9 @@ function normalizeShowConsentForm(value: unknown): boolean {
   if (value === 1 || value === true) return true;
   if (value === 0 || value === false) return false;
 
-  const text = String(value ?? "").trim().toLowerCase();
+  const text = String(value ?? "")
+    .trim()
+    .toLowerCase();
   return text === "1" || text === "true";
 }
 
@@ -141,9 +143,7 @@ function getEditCustomerActivityOptions(
         Array.isArray(value) &&
         value.some(
           (row) =>
-            row !== null &&
-            typeof row === "object" &&
-            "activitY_CODE" in row,
+            row !== null && typeof row === "object" && "activitY_CODE" in row,
         ),
     );
   return Array.isArray(list)
@@ -366,9 +366,7 @@ async function resolveEditCustomerStatusFromCustomerAmka(
       Object.keys(data.lastCustomerWebOrder).length > 0
         ? (data.lastCustomerWebOrder as Record<string, unknown>)
         : null;
-    const editShowConsentForm = normalizeShowConsentForm(
-      data.showConsentForm,
-    );
+    const editShowConsentForm = normalizeShowConsentForm(data.showConsentForm);
     if (Number(order.statusId) !== 0) {
       return { ...payload, editShowConsentForm };
     }
@@ -394,6 +392,8 @@ async function resolveEditCustomerStatusFromCustomerAmka(
     return payload;
   }
 }
+
+export const SUBMIT_DRAFT_TIMEOUT_MS = 30_000;
 
 export const submitDraftAsync = createAsyncThunk<
   PostOrderSuccess,
@@ -449,13 +449,32 @@ export const submitDraftAsync = createAsyncThunk<
     isTempSave: draft.order.isTempSave,
   };
 
-  const res = await fetch("/api/orders", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(payload),
-  });
+  const controller = new AbortController();
+  const timeoutId = setTimeout(
+    () => controller.abort(),
+    SUBMIT_DRAFT_TIMEOUT_MS,
+  );
 
-  return parseProxyJson<PostOrderSuccess>(res, "Failed to submit order");
+  try {
+    const res = await fetch("/api/orders", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+      signal: controller.signal,
+    });
+
+    return await parseProxyJson<PostOrderSuccess>(
+      res,
+      "Failed to submit order",
+    );
+  } catch (e: unknown) {
+    if (controller.signal.aborted) {
+      throw new Error("Η αποθήκευση απέτυχε.");
+    }
+    throw e;
+  } finally {
+    clearTimeout(timeoutId);
+  }
 });
 
 export const editDraftAsync = createAsyncThunk<
@@ -525,37 +544,34 @@ function getCustomerAddressLoadKey({
 export const loadCustomerAddressesAsync = createAsyncThunk<
   GetCustomerAddressesSuccess,
   LoadCustomerAddressesArgs
->(
-  "orders/loadCustomerAddressesAsync",
-  async (args) => {
-    const { customer_ErpGID, customer_name, customer_address, customer_amka } =
-      args;
-    const loadKey = getCustomerAddressLoadKey(args);
-    const inFlight = inFlightCustomerAddressLoads.get(loadKey);
-    if (inFlight) return inFlight;
+>("orders/loadCustomerAddressesAsync", async (args) => {
+  const { customer_ErpGID, customer_name, customer_address, customer_amka } =
+    args;
+  const loadKey = getCustomerAddressLoadKey(args);
+  const inFlight = inFlightCustomerAddressLoads.get(loadKey);
+  if (inFlight) return inFlight;
 
-    const loadPromise = fetch(
-      `/api/customers/${customer_ErpGID}/addresses?customerAMKA=${customer_amka ?? ""}&customerName=${customer_name ?? ""}&customerAddress=${customer_address ?? ""}&_ts=${Date.now()}`,
-      {
-        method: "GET",
-        cache: "no-store",
-        headers: { "Cache-Control": "no-cache", Pragma: "no-cache" },
-      },
-    ).then((res) =>
-      parseProxyJson<GetCustomerAddressesSuccess>(
-        res,
-        "Failed to load addresses",
-      ),
-    );
-    inFlightCustomerAddressLoads.set(loadKey, loadPromise);
-    loadPromise.then(
-      () => inFlightCustomerAddressLoads.delete(loadKey),
-      () => inFlightCustomerAddressLoads.delete(loadKey),
-    );
+  const loadPromise = fetch(
+    `/api/customers/${customer_ErpGID}/addresses?customerAMKA=${customer_amka ?? ""}&customerName=${customer_name ?? ""}&customerAddress=${customer_address ?? ""}&_ts=${Date.now()}`,
+    {
+      method: "GET",
+      cache: "no-store",
+      headers: { "Cache-Control": "no-cache", Pragma: "no-cache" },
+    },
+  ).then((res) =>
+    parseProxyJson<GetCustomerAddressesSuccess>(
+      res,
+      "Failed to load addresses",
+    ),
+  );
+  inFlightCustomerAddressLoads.set(loadKey, loadPromise);
+  loadPromise.then(
+    () => inFlightCustomerAddressLoads.delete(loadKey),
+    () => inFlightCustomerAddressLoads.delete(loadKey),
+  );
 
-    return loadPromise;
-  },
-);
+  return loadPromise;
+});
 
 const initialStateBase: OrdersState = {
   orders: [],
@@ -1087,7 +1103,8 @@ const ordersSlice = createSlice({
         state.draft.ylika = (action.payload.data.items ?? []) as OrderYlika[];
         recalculateDraftYlikaTotals(state.draft);
         state.draft.files = (action.payload.data.files ?? []) as OrderFile[];
-        state.draft.showConsentForm = action.payload.editShowConsentForm === true;
+        state.draft.showConsentForm =
+          action.payload.editShowConsentForm === true;
         state.draft.list_DiscountReasons = (action.payload.data
           .list_DiscountReasons ?? []) as OrdeListOfSelections[];
         state.draft.list_KatigoriesParoxis = (action.payload.data
@@ -1121,7 +1138,8 @@ const ordersSlice = createSlice({
               numericCode >= 0 &&
               numericCode < state.draft.list_CustomerActivities.length
             ) {
-              selectedActivity = state.draft.list_CustomerActivities[numericCode];
+              selectedActivity =
+                state.draft.list_CustomerActivities[numericCode];
             }
           }
 
@@ -1137,7 +1155,9 @@ const ordersSlice = createSlice({
               state.draft.order.definitioN_PRICE;
             if (selectedActivity.prE_LOADED_PRICE) {
               state.draft.order.prE_LOADED_PRICE =
-                normalizeRetailPreloadedPrice(selectedActivity.prE_LOADED_PRICE);
+                normalizeRetailPreloadedPrice(
+                  selectedActivity.prE_LOADED_PRICE,
+                );
               recalculateDraftYlikaTotals(state.draft);
             }
           }
