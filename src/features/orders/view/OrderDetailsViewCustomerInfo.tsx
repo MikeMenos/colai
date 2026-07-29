@@ -33,6 +33,13 @@ export default function OrderDetailsViewCustomerInfo({
   const showRecipientInfo = hasOrderRecipientInfo(order);
   const recipientAddress = formatRecipientAddress(order);
   const recipientContact = formatRecipientContact(order);
+  const customerPhones = [
+    ...new Set(
+      [order.customer_tel, order.customer_mobile]
+        .map((value) => value?.trim())
+        .filter(Boolean),
+    ),
+  ].join(" / ");
 
   return (
     <div className="app-card p-0">
@@ -100,7 +107,7 @@ export default function OrderDetailsViewCustomerInfo({
 
           <div className="col-6">
             <div className="small text-secondary">Τηλέφωνο</div>
-            <div className="fw-medium">{order.customer_tel}</div>
+            <div className="fw-medium">{customerPhones}</div>
           </div>
 
           <div className="col-6">

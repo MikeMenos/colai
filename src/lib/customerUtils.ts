@@ -38,6 +38,8 @@ export function isSuggestedDoctorChoiceLocked(
 ): boolean {
   if (draft.customerIsCompletelyNew === true) return false;
   if (draft.customerProsEbs === true) return false;
+  // Empty/missing date is treated as older than 4 months → not locked.
+  if (!String(draft.lastOrderInfoDateIn ?? "").trim()) return false;
   return !isDateOlderThanMonths(draft.lastOrderInfoDateIn, 4);
 }
 

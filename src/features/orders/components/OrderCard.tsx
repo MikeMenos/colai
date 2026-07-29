@@ -248,6 +248,10 @@ export default function OrderCard({
   const showRecipientInfo = hasOrderRecipientInfo(order);
   const recipientAddress = formatRecipientAddress(order);
   const customerMobile = order.customer_mobile?.trim();
+  const customerTel = order.customer_tel?.trim();
+  const customerPhones = [
+    ...new Set([customerMobile, customerTel].filter(Boolean)),
+  ].join(" / ");
   const recipientName = order.recipient_name?.trim();
   const recipientAmka = order.recipient_amka?.trim();
   const recipientMobile = order.recipient_mobile?.trim();
@@ -599,12 +603,12 @@ export default function OrderCard({
                       {order.customer_amka}
                     </div>
                   </div>
-                  {customerMobile ? (
+                  {customerPhones ? (
                     <div className="col-4">
                       <div className="small text-secondary">
                         Κινητό Πελάτη
                       </div>
-                      <div className="fw-medium">{customerMobile}</div>
+                      <div className="fw-medium">{customerPhones}</div>
                     </div>
                   ) : null}
                   <div className="col-4">
