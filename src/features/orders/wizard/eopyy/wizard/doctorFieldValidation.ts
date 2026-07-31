@@ -21,10 +21,6 @@ const REQUIRED_SUGGESTED_DOCTOR_FIELDS = [
     field: "doctorSuggested_name",
     message: "Συμπληρώστε ονοματεπώνυμο",
   },
-  {
-    field: "doctorSuggested_tel",
-    message: "Συμπληρώστε κινητό",
-  },
 ] as const satisfies ReadonlyArray<RequiredOtherSuggestedDoctorField>;
 
 export const OTHER_SUGGESTED_DOCTOR_FIELD_ORDER =
