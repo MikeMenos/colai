@@ -8,11 +8,13 @@ import {
   getOtherSuggestedDoctorFieldWizardIssues,
   getSuggestedDoctorFieldWizardIssues,
 } from "./doctorFieldValidation";
+import { getMaterialsQtyWizardIssues } from "./materialsValidation";
 import type { StepKey, ValidateEoppyOrderInput, WizardIssue } from "./types";
 import { onlyDigits } from "./wizardUtils";
 
 export function validateEoppyOrder({
   draftOrder,
+  ylika = [],
   customerIsCompletelyNew,
   customerProsEbs,
   lastOrderInfoDateIn,
@@ -195,6 +197,10 @@ export function validateEoppyOrder({
     }
 
     for (const issue of getDraftDateOfSyntagiWizardIssues(draftOrder)) {
+      issues.push(issue);
+    }
+
+    for (const issue of getMaterialsQtyWizardIssues(ylika)) {
       issues.push(issue);
     }
   }

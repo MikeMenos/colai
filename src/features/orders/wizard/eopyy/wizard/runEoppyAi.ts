@@ -1,5 +1,4 @@
 import { parseJson } from "@/lib/api/client";
-import type { AppDispatch } from "@/store/store";
 import type { RunAiApiResponse } from "@/types/api/responses";
 import type { RunAIFileAnalysisReq } from "@/types/api/schemas";
 import type { Order } from "@/types/orders";
@@ -12,7 +11,9 @@ function normalizeShowConsentForm(value: unknown): boolean | null {
   if (value === 1 || value === true) return true;
   if (value === 0 || value === false) return false;
 
-  const text = String(value ?? "").trim().toLowerCase();
+  const text = String(value ?? "")
+    .trim()
+    .toLowerCase();
   if (text === "1" || text === "true") return true;
   if (text === "0" || text === "false") return false;
 
@@ -56,8 +57,7 @@ export async function runEoppyAi({
   const response = await parseJson<RunAiApiResponse>(res);
   if (!res.ok || response?.ok === false || response?.result === false) {
     throw new Error(
-      response?.message ||
-        "Το αίτημα ΑΙ δεν ήταν επιτυχές. Εισάγετε τα στοιχεία χειροκίνητα ή προσπαθήστε αργότερα.",
+      `Το αίτημα ΑΙ δεν ήταν επιτυχές. Εισάγετε τα στοιχεία χειροκίνητα ή προσπαθήστε με ${aiclient === "Claude" ? "Claude" : "Gemini"}.`,
     );
   }
 
@@ -66,8 +66,7 @@ export async function runEoppyAi({
     throw new Error(
       data?.errorMessage ||
         data?.message ||
-        response?.message ||
-        "Το αίτημα ΑΙ δεν ήταν επιτυχές. Εισάγετε τα στοιχεία χειροκίνητα ή προσπαθήστε αργότερα.",
+        `Το αίτημα ΑΙ δεν ήταν επιτυχές. Εισάγετε τα στοιχεία χειροκίνητα ή προσπαθήστε με ${aiclient === "Claude" ? "Gemini" : "Claude"}.`,
     );
   }
 

@@ -60,12 +60,16 @@ export default function CompletionArea({
   onGoToCustomerActivity,
   onGoToCustomerAmka,
   onGoToDoctorName,
+  onGoToMaterials,
+  materialsQtyError,
 }: {
   errors?: Record<string, string | boolean>;
   clearError?: (field: string) => void;
   onGoToCustomerActivity?: () => void;
   onGoToCustomerAmka?: () => void;
   onGoToDoctorName?: () => void;
+  onGoToMaterials?: () => void;
+  materialsQtyError?: string | null;
 }) {
   const data = useAppSelector((s) => s.orders.draft.order);
   const ylika = useAppSelector((s) => s.orders.draft.ylika);
@@ -101,6 +105,11 @@ export default function CompletionArea({
       !String(data.doctorSuggested_name ?? "").trim()
         ? "Συμπληρώστε ονοματεπώνυμο"
         : undefined));
+  const materialsError =
+    !isTempSave &&
+    (typeof errors.materials_qty === "string"
+      ? errors.materials_qty
+      : materialsQtyError);
   const touchdownErrors = [
     typeof customerActivityError === "string"
       ? {
@@ -124,6 +133,14 @@ export default function CompletionArea({
           step: "Ιατρός",
           message: doctorNameError,
           onClick: onGoToDoctorName,
+        }
+      : null,
+    typeof materialsError === "string"
+      ? {
+          field: "materials_qty",
+          step: "Υλικά",
+          message: materialsError,
+          onClick: onGoToMaterials,
         }
       : null,
   ].filter(Boolean) as Array<{
