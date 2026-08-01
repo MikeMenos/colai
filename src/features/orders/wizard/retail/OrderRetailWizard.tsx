@@ -26,6 +26,11 @@ import { getRetailOrderValidationIssues } from "./validateRetailOrder";
 import { getAmkaInlineFieldError, normalizeAmka } from "@/lib/utils/amka";
 import { isRetailCustomerWithoutPriceBadge } from "./retailCustomerBadge";
 import {
+  hasInvalidMaterialsQty,
+  MATERIALS_QTY_FIELD,
+  MATERIALS_QTY_MESSAGE,
+} from "@/features/orders/wizard/eopyy/wizard/materialsValidation";
+import {
   clearWizardFieldError,
   focusWizardField,
   getActiveWizardFieldErrors,
@@ -46,6 +51,7 @@ export default function OrderRetailWizard() {
   const [showSubmitConfirm, setShowSubmitConfirm] = React.useState(false);
   const submitState = useAppSelector((s) => s.orders.draft.submitState);
   const draftOrder = useAppSelector((s) => s.orders.draft.order);
+  const ylika = useAppSelector((s) => s.orders.draft.ylika);
   const files = useAppSelector((s) => s.orders?.draft?.files) ?? [];
   const synaineseisResults = useAppSelector(
     (s) => s.orders.draft.synaineseisResults,
@@ -121,6 +127,10 @@ export default function OrderRetailWizard() {
     focusWizardField("doctorSuggested_name");
   }, [effectiveSteps]);
 
+  const goToMaterialsStep = React.useCallback(() => {
+    setStep(Math.max(0, effectiveSteps.indexOf("Υλικά")));
+  }, [effectiveSteps]);
+
   function goNext() {
     setStep((s) => Math.min(s + 1, maxStep));
   }
@@ -135,12 +145,14 @@ export default function OrderRetailWizard() {
         ...suggestedDoctorValidationContext,
         customerActivityRequired,
         customerSelectedFromList,
+        ylika,
       }),
     [
       customerActivityRequired,
       customerSelectedFromList,
       draftOrder,
       suggestedDoctorValidationContext,
+      ylika,
     ],
   );
   const visibleFieldErrors = React.useMemo(
@@ -177,11 +189,16 @@ export default function OrderRetailWizard() {
         retailCustomerWithoutPriceBadge &&
         firstIssue.field === "doctorSuggested_name";
       let targetLabel: (typeof steps)[number] = "Touchdown";
-      if (!shouldShowOnTouchdown && doctorStepFields.has(firstIssue.field)) {
+      if (firstIssue.field === MATERIALS_QTY_FIELD) {
+        targetLabel = "Υλικά";
+      } else if (
+        !shouldShowOnTouchdown &&
+        doctorStepFields.has(firstIssue.field)
+      ) {
         targetLabel = "Ιατρός";
       }
       setStep(Math.max(0, effectiveSteps.indexOf(targetLabel)));
-      if (!shouldShowOnTouchdown) {
+      if (!shouldShowOnTouchdown && firstIssue.field !== MATERIALS_QTY_FIELD) {
         focusWizardField(firstIssue.field);
       }
       return;
@@ -206,6 +223,8 @@ export default function OrderRetailWizard() {
     retailCustomerWithoutPriceBadge &&
     draftOrder.has_suggested_doctor != 0 &&
     !String(draftOrder.doctorSuggested_name ?? "").trim();
+  const hasInvalidMaterialsQtyError =
+    !isTempSave && hasInvalidMaterialsQty(ylika);
   const hasInvalidCustomerAmka = !!customerAmkaError;
   const activeFieldErrors = React.useMemo(
     () =>
@@ -219,10 +238,14 @@ export default function OrderRetailWizard() {
         if (field === "doctorSuggested_name") {
           return hasMissingRequiredDoctorName;
         }
+        if (field === MATERIALS_QTY_FIELD) {
+          return hasInvalidMaterialsQtyError;
+        }
         return true;
       }),
     [
       hasInvalidCustomerAmka,
+      hasInvalidMaterialsQtyError,
       hasMissingCustomerActivity,
       hasMissingRequiredDoctorName,
       visibleFieldErrors,
@@ -232,7 +255,8 @@ export default function OrderRetailWizard() {
     !isTempSave &&
     (hasWizardFieldErrors(activeFieldErrors) ||
       hasMissingCustomerActivity ||
-      hasMissingRequiredDoctorName);
+      hasMissingRequiredDoctorName ||
+      hasInvalidMaterialsQtyError);
   const saveDisabled = submitState.loading || (!isTempSave && hasFieldErrors);
 
   const submitConfirmOrderAsSeller = getActingSellerDisplayLabel(
@@ -275,6 +299,10 @@ export default function OrderRetailWizard() {
           onGoToCustomerActivity={goToCustomerActivityField}
           onGoToCustomerAmka={goToCustomerAmkaField}
           onGoToDoctorName={goToDoctorNameField}
+          onGoToMaterials={goToMaterialsStep}
+          materialsQtyError={
+            hasInvalidMaterialsQtyError ? MATERIALS_QTY_MESSAGE : null
+          }
         />
       ) : null}
 

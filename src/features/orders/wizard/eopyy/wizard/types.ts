@@ -1,7 +1,7 @@
 import type { ReactNode } from "react";
 import type { AiClient, AiStatus } from "@/lib/utils/ai";
 import type { AppDispatch } from "@/store/store";
-import type { Order } from "@/types/orders";
+import type { Order, OrderYlika } from "@/types/orders";
 import type { StepOrderEntry } from "../componentProps";
 
 export type StepKey =
@@ -41,6 +41,7 @@ export type UploadingInfo = {
 
 export type ValidateEoppyOrderInput = {
   draftOrder: Order;
+  ylika?: ReadonlyArray<Pick<OrderYlika, "qty">>;
   customerIsCompletelyNew?: boolean;
   customerProsEbs?: boolean;
   lastOrderInfoDateIn?: string;

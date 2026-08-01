@@ -5,7 +5,10 @@ import {
   getSuggestedDoctorFieldWizardIssues,
   type SuggestedDoctorValidationContext,
 } from "@/features/orders/wizard/eopyy/wizard/doctorFieldValidation";
-import type { Order } from "@/types/orders";
+import {
+  getMaterialsQtyWizardIssues,
+} from "@/features/orders/wizard/eopyy/wizard/materialsValidation";
+import type { Order, OrderYlika } from "@/types/orders";
 import { isRetailCustomerWithoutPriceBadge } from "./retailCustomerBadge";
 
 export type RetailValidationIssue = {
@@ -16,6 +19,7 @@ export type RetailValidationIssue = {
 export type RetailValidationContext = SuggestedDoctorValidationContext & {
   customerActivityRequired?: boolean;
   customerSelectedFromList?: boolean | null;
+  ylika?: ReadonlyArray<Pick<OrderYlika, "qty">>;
 };
 
 export function getRetailOrderValidationIssues(
@@ -75,6 +79,14 @@ export function getRetailOrderValidationIssues(
       },
     ];
   }
+
+  const materialsIssues = getMaterialsQtyWizardIssues(context?.ylika ?? [])
+    .filter((issue) => typeof issue.message === "string")
+    .map((issue) => ({
+      field: issue.field,
+      message: issue.message as string,
+    }));
+  if (materialsIssues.length > 0) return materialsIssues;
 
   if (!isPaymentMethodSelected(draftOrder.isPaid)) {
     return [

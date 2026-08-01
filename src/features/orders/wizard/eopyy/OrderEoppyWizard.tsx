@@ -76,6 +76,7 @@ export default function OrderEoppyWizard({
   const [showSubmitConfirm, setShowSubmitConfirm] = React.useState(false);
 
   const draftOrder = useAppSelector((s) => s.orders.draft.order);
+  const ylika = useAppSelector((s) => s.orders.draft.ylika);
   const files = useAppSelector((s) => s.orders?.draft?.files) ?? [];
   const hasFiles = files.some((o) => o?.documentCategory === "recipe");
   const recipeFileCount = files.filter(
@@ -184,6 +185,7 @@ export default function OrderEoppyWizard({
     () =>
       validateEoppyOrderDraft({
         draftOrder,
+        ylika,
         customerIsCompletelyNew,
         customerProsEbs,
         lastOrderInfoDateIn,
@@ -201,6 +203,7 @@ export default function OrderEoppyWizard({
       isVoiceConsent,
       lastOrderInfoDateIn,
       showSynainesiPanel,
+      ylika,
     ],
   );
   const runAi = React.useCallback(
