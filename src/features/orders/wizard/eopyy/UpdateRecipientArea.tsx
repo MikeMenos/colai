@@ -1,13 +1,20 @@
 import OrderField from "@/components/ui/OrderField";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { setDraftProperty } from "@/store/orders/ordersSlice";
+import { parseProxyJson } from "@/lib/api/client";
 import {
   hasText,
   isBlank,
   pickFirstNonBlankString,
   trimmedString,
 } from "@/lib/utils/string";
+import PelatologioCustomerDetailsModal from "@/features/pelatologio/modals/PelatologioCustomerDetailsModal";
+import type {
+  ColaiSearchAmkaCustomer,
+  PostWcSearchAmkaResponse,
+} from "@/types/api";
 import React from "react";
+import { Alert } from "react-bootstrap";
 
 export default function UpdateRecipientArea() {
   const dispatch = useAppDispatch();
@@ -29,6 +36,14 @@ export default function UpdateRecipientArea() {
   /** Lookup-selected recipient may match customer AMKA but still needs ΑΦΜ on this step. */
   const showAfmField =
     !isSamePersonAndCustomerAmka || data.recipient_from_erp_lookup == 1;
+
+  const customerErpGid = String(data.customer_ErpGID ?? "").trim();
+  const [customerCardLoading, setCustomerCardLoading] = React.useState(false);
+  const [customerCardError, setCustomerCardError] = React.useState<
+    string | null
+  >(null);
+  const [selectedCustomer, setSelectedCustomer] =
+    React.useState<ColaiSearchAmkaCustomer | null>(null);
 
   const initialValues = React.useMemo(
     () => ({
@@ -184,14 +199,87 @@ export default function UpdateRecipientArea() {
     data.recipient_name,
   );
 
+  async function openCustomerCard() {
+    if (!customerErpGid || customerCardLoading) return;
+
+    setCustomerCardLoading(true);
+    setCustomerCardError(null);
+    try {
+      const res = await fetch("/api/wc/search-amka", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ typos: "TR_GID", sea: customerErpGid }),
+        cache: "no-store",
+      });
+      const response = await parseProxyJson<PostWcSearchAmkaResponse>(
+        res,
+        "Αποτυχία φόρτωσης καρτέλας πελάτη",
+      );
+      if (!response.ok) {
+        throw new Error(
+          response.message || "Αποτυχία φόρτωσης καρτέλας πελάτη",
+        );
+      }
+      const customer = response.customers?.[0] ?? null;
+      if (!customer) {
+        throw new Error("Δεν βρέθηκε καρτέλα πελάτη");
+      }
+      setSelectedCustomer(customer);
+    } catch (err) {
+      setSelectedCustomer(null);
+      setCustomerCardError(
+        err instanceof Error
+          ? err.message
+          : "Αποτυχία φόρτωσης καρτέλας πελάτη",
+      );
+    } finally {
+      setCustomerCardLoading(false);
+    }
+  }
+
   return (
     <div className="app-card px-3 py-2">
-      <div className="d-flex align-items-center justify-content-between border-bottom mb-2 pb-2">
+      <div className="border-bottom mb-2 pb-2">
+        {customerErpGid ? (
+          <div className="d-flex justify-content-center mb-2">
+            <button
+              type="button"
+              className="btn btn-sm d-inline-flex align-items-center gap-2 px-3 py-1"
+              onClick={() => void openCustomerCard()}
+              disabled={customerCardLoading}
+              aria-label="Προβολή καρτέλας πελάτη"
+              style={{
+                borderRadius: 999,
+                background: "rgba(var(--bs-primary-rgb), 0.1)",
+                border: "1px solid rgba(var(--bs-primary-rgb), 0.22)",
+                color: "var(--bs-primary)",
+                fontWeight: 600,
+              }}
+            >
+              {customerCardLoading ? (
+                <span
+                  className="spinner-border spinner-border-sm"
+                  aria-hidden
+                  style={{ width: "0.9rem", height: "0.9rem" }}
+                />
+              ) : (
+                <i className="bi bi-eye-fill" aria-hidden />
+              )}
+              <span>Προβολή καρτέλας πελάτη</span>
+            </button>
+          </div>
+        ) : null}
         <div className="fw-semibold">
           Επικαιροποίηση στοιχείων παραλήπτη
           {recipientTitleSuffix ? ` - ${recipientTitleSuffix}` : ""}
         </div>
       </div>
+
+      {customerCardError ? (
+        <Alert variant="danger" className="small mb-2 py-2">
+          {customerCardError}
+        </Alert>
+      ) : null}
 
       {!showAfmField ? (
         <>
@@ -291,6 +379,12 @@ export default function UpdateRecipientArea() {
           {isSaveFeedbackActive ? "Αποθηκεύτηκε" : "Αποθήκευση"}
         </button>
       </div>
+
+      <PelatologioCustomerDetailsModal
+        show={selectedCustomer != null}
+        customer={selectedCustomer}
+        onClose={() => setSelectedCustomer(null)}
+      />
     </div>
   );
 }

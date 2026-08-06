@@ -41,9 +41,9 @@ export default function BottomNav() {
     [draft],
   );
   const [pendingHref, setPendingHref] = React.useState<string | null>(null);
-  const [leaveModalMode, setLeaveModalMode] = React.useState<
-    "wizard" | "bulk"
-  >("wizard");
+  const [leaveModalMode, setLeaveModalMode] = React.useState<"wizard" | "bulk">(
+    "wizard",
+  );
   const [tempSaveToast, setTempSaveToast] = React.useState<string | null>(null);
   const guardWizardLeave = shouldGuardOrderWizardLeave(pathname);
   const onBulkPage = isOrderEoppyBulkPath(pathname);
@@ -55,7 +55,7 @@ export default function BottomNav() {
       icon: "bi-list-check",
       label: "Παραγγελίες",
     },
-    { href: "/pelatologio", icon: "bi-people", label: "Πελατολόγιο" },
+    { href: "/pelatologio", icon: "bi-people", label: "Πελάτες" },
     { href: "/diadikasia-wc", icon: "bi-calendar-check", label: "WC" },
     { href: "/salesWC", icon: "bi-receipt", label: "Πωλήσεις" },
     {

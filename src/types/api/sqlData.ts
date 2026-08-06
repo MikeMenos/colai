@@ -20,7 +20,7 @@ export interface SellerTeamatesWC {
   TURNOVER: string;
 }
 
-export type ColaiSearchAmkaTypos = "NAME" | "AMKA" | "TELEPHONE";
+export type ColaiSearchAmkaTypos = "NAME" | "AMKA" | "TELEPHONE" | "TR_GID";
 
 export type ColaiSearchAmkaRowTypos =
   | "01 CUSTOMER_MAIN_ADDRESS"

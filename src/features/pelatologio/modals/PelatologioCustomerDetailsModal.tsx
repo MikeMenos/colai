@@ -4,6 +4,7 @@ import React from "react";
 import { Button, Modal } from "react-bootstrap";
 
 import MapDirectionsChooser from "@/components/ui/MapDirectionsChooser";
+import TruncatedClickTooltip from "@/components/ui/TruncatedClickTooltip";
 import type {
   ColaiSearchAmkaAddress,
   ColaiSearchAmkaCustomer,
@@ -114,6 +115,63 @@ function AddressCard({ address }: { address: ColaiSearchAmkaAddress }) {
     .join(" ");
   const canOpenMap = Boolean(mapQuery);
 
+  const mapButtonClassName =
+    "btn btn-sm btn-outline-primary d-inline-flex align-items-center gap-1 flex-shrink-0";
+  const mapButtonStyle: React.CSSProperties = {
+    borderRadius: 999,
+    padding: "4px 10px",
+    fontSize: 12,
+    fontWeight: 700,
+    lineHeight: 1,
+  };
+
+  function renderMapButton() {
+    if (!canOpenMap) return null;
+    return (
+      <button
+        type="button"
+        className={mapButtonClassName}
+        style={mapButtonStyle}
+        aria-label="Άνοιγμα επιλογών χάρτη"
+        onClick={() => setShowMapChooser(true)}
+      >
+        <i className="bi bi-box-arrow-up-right" aria-hidden />
+        Χάρτης
+      </button>
+    );
+  }
+
+  function renderMainBadge() {
+    return address.isMain ? (
+      <span className="badge bg-primary-subtle text-primary-emphasis border">
+        Κύρια
+      </span>
+    ) : (
+      <span className="badge bg-body-tertiary text-secondary border">
+        Επιπλέον
+      </span>
+    );
+  }
+
+  function renderLastDeliveryBadge() {
+    if (!address.isLastDelivery) return null;
+    return (
+      <span className="badge text-bg-warning">
+        <i className="bi bi-geo-alt-fill me-1" aria-hidden />
+        Τελευταία παράδοση
+      </span>
+    );
+  }
+
+  function renderBadges() {
+    return (
+      <>
+        {renderMainBadge()}
+        {renderLastDeliveryBadge()}
+      </>
+    );
+  }
+
   return (
     <>
       <div
@@ -133,60 +191,33 @@ function AddressCard({ address }: { address: ColaiSearchAmkaAddress }) {
         }
       >
         <div className="d-flex align-items-start justify-content-between gap-2">
-          <div className="min-w-0 overflow-hidden pe-2 flex-grow-1">
-            <div
-              className="d-inline-flex align-items-center gap-2"
-              style={{ maxWidth: "100%" }}
-            >
-              <div
-                className="fw-semibold text-truncate"
-                title={line || undefined}
-                style={{ lineHeight: 1.3, minWidth: 0, flex: "0 1 auto" }}
-              >
-                {line || "—"}
-              </div>
-              {canOpenMap ? (
-                <button
-                  type="button"
-                  className="btn btn-sm btn-outline-primary d-inline-flex align-items-center gap-1 flex-shrink-0"
-                  style={{
-                    borderRadius: 999,
-                    padding: "4px 10px",
-                    fontSize: 12,
-                    fontWeight: 700,
-                    lineHeight: 1,
-                  }}
-                  aria-label="Άνοιγμα επιλογών χάρτη"
-                  onClick={() => setShowMapChooser(true)}
-                >
-                  <i className="bi bi-box-arrow-up-right" aria-hidden />
-                  Χάρτης
-                </button>
-              ) : null}
-            </div>
+          <div className="min-w-0 overflow-hidden flex-grow-1">
+            <TruncatedClickTooltip
+              text={line || "—"}
+              className="fw-semibold"
+              style={{ lineHeight: 1.3 }}
+              tooltipId={`address-tooltip-${address.key}`}
+            />
             {telephone ? (
               <div className="mt-1">
                 <PhoneLine label="Τηλ" phone={telephone} />
               </div>
             ) : null}
           </div>
-          <div className="d-flex flex-column align-items-end gap-1 flex-shrink-0">
-            {address.isMain ? (
-              <span className="badge bg-primary-subtle text-primary-emphasis border">
-                Κύρια
-              </span>
-            ) : (
-              <span className="badge bg-body-tertiary text-secondary border">
-                Επιπλέον
-              </span>
-            )}
-            {address.isLastDelivery ? (
-              <span className="badge text-bg-warning">
-                <i className="bi bi-geo-alt-fill me-1" aria-hidden />
-                Τελευταία παράδοση
-              </span>
-            ) : null}
+          <div className="d-none d-md-flex flex-column align-items-end gap-1 flex-shrink-0">
+            <div className="d-inline-flex align-items-center gap-1">
+              {renderMapButton()}
+              {renderMainBadge()}
+            </div>
+            {renderLastDeliveryBadge()}
           </div>
+        </div>
+
+        <div className="d-flex d-md-none align-items-center justify-content-between flex-wrap gap-2 mt-2">
+          <div className="d-flex align-items-center flex-wrap gap-1">
+            {renderBadges()}
+          </div>
+          {canOpenMap ? renderMapButton() : null}
         </div>
       </div>
 

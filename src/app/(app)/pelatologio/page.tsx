@@ -93,7 +93,7 @@ export default function PelatologioPage() {
   return (
     <div className="d-flex flex-column gap-3">
       <div className="app-card p-3">
-        <div className="fw-semibold mb-2">Πελατολόγιο</div>
+        <div className="fw-semibold mb-2">Πελάτες</div>
         <form
           className="d-flex flex-column gap-2"
           onSubmit={(event) => void runSearch(event)}
