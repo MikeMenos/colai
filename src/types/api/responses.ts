@@ -6,7 +6,12 @@ import type {
   PagingResults,
   ToastMessage,
 } from "./common";
-import type { SellerSalesWC, SellerTeamatesWC } from "./sqlData";
+import type {
+  SellerSalesWC,
+  SellerTeamatesWC,
+  ColaiSearchAmkaCustomer,
+  ColaiSearchAmkaRow,
+} from "./sqlData";
 import type { GenikiTaxTrackResponse } from "./schemas";
 import type {
   APLAT_Sales_Order,
@@ -26,7 +31,6 @@ import type {
   ReadEoppyDocumentAIResp,
   SearchAddresses_Response,
   SearchCustomers_Response,
-  SearchDoctors_Response,
   SearchErpContactsResponse,
   StaticDataResp,
   WCdiadikasiaGetDataVM,
@@ -92,9 +96,11 @@ export type RunAiApiResponse = ReadEoppyDocumentAIResp & {
 };
 
 /** `POST /api/orders/file` */
-export type FileUploadApiResponse = ApiSuccess<
-  ToastMessage & { dataobject?: Nullable<ConsentUploadDataObject> }
-> | ApiFailure;
+export type FileUploadApiResponse =
+  | ApiSuccess<
+      ToastMessage & { dataobject?: Nullable<ConsentUploadDataObject> }
+    >
+  | ApiFailure;
 
 /** `GET /api/dashboard` */
 export type GetDashboardResponse = ApiSuccess<DashboardVM> | ApiFailure;
@@ -121,7 +127,9 @@ export type ReviewDiscountRequestResponse =
   | ApiFailure;
 
 /** `GET /api/wc-diadikasia/calendar` */
-export type GetWcCalendarResponse = ApiSuccess<WCdiadikasiaGetDataVM> | ApiFailure;
+export type GetWcCalendarResponse =
+  | ApiSuccess<WCdiadikasiaGetDataVM>
+  | ApiFailure;
 
 /** `GET /api/wc/order-list` */
 export type GetWcOrderListResponse =
@@ -131,6 +139,15 @@ export type GetWcOrderListResponse =
 /** `GET /api/wc/teamates` */
 export type GetWcTeamatesResponse =
   | ApiSuccess<{ records: SellerTeamatesWC[] }>
+  | ApiFailure;
+
+/** `POST /api/wc/search-amka` */
+export type PostWcSearchAmkaResponse =
+  | ApiSuccess<{
+      totalcount: number;
+      rows: ColaiSearchAmkaRow[];
+      customers: ColaiSearchAmkaCustomer[];
+    }>
   | ApiFailure;
 
 /** `GET /api/gt-track-and-trace` */
@@ -167,7 +184,8 @@ export type FileUploadSuccess = Success<FileUploadApiResponse>;
 export type GetDashboardSuccess = Success<GetDashboardResponse>;
 export type GetStaticDataSuccess = Success<GetStaticDataResponse>;
 export type GetDiscountRequestsSuccess = Success<GetDiscountRequestsResponse>;
-export type ReviewDiscountRequestSuccess = Success<ReviewDiscountRequestResponse>;
+export type ReviewDiscountRequestSuccess =
+  Success<ReviewDiscountRequestResponse>;
 export type GetWcCalendarSuccess = Success<GetWcCalendarResponse>;
 export type GetWcOrderListSuccess = Success<GetWcOrderListResponse>;
 export type GetWcTeamatesSuccess = Success<GetWcTeamatesResponse>;

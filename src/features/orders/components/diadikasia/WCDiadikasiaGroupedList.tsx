@@ -1,12 +1,11 @@
 "use client";
 
-import type { MapAction } from "./WCDiadikasiaGroupedList.types";
 import React from "react";
-import { Modal } from "react-bootstrap";
 import type { SearchCustomerTelsData, wcCalendar } from "@/types/wc";
 import { wcCalendarTaskCode, wcCustomerGid } from "@/types/wc";
 import { fetchCustomerTelsCached } from "@/features/orders/diadikasia/fetchCustomerTels";
 import { CollapsibleAppTile } from "@/components/ui/CollapsibleAppTile";
+import MapDirectionsChooser from "@/components/ui/MapDirectionsChooser";
 import { formatUIDate } from "@/lib/utils/date";
 import { formatCurrencyGR } from "@/lib/utils/number";
 import {
@@ -41,32 +40,6 @@ function getDeliveryInfo(row: wcCalendar) {
   const query = [address, postal, city].filter(Boolean).join(" ");
 
   return { location, query };
-}function mapLinks(query: string, location: string): MapAction[] {
-  const encodedQuery = encodeURIComponent(query);
-
-  return [
-    {
-      label: "Google Maps",
-      href: `https://www.google.com/maps/search/?api=1&query=${encodedQuery}`,
-      icon: "bi-google",
-    },
-    {
-      label: "Maps",
-      href: `https://maps.apple.com/?q=${encodedQuery}`,
-      icon: "bi-map",
-    },
-    {
-      label: "Waze",
-      href: `https://waze.com/ul?q=${encodedQuery}&navigate=yes`,
-      icon: "bi-sign-turn-right",
-    },
-    {
-      label: "Αντιγραφή διεύθυνσης",
-      href: null,
-      icon: "bi-copy",
-      copyValue: location,
-    },
-  ];
 }
 
 function WcDeliveryInfoSection({ row }: { row: wcCalendar }) {
@@ -74,13 +47,6 @@ function WcDeliveryInfoSection({ row }: { row: wcCalendar }) {
 
   const delivery = getDeliveryInfo(row);
   if (!delivery) return null;
-
-  const links = mapLinks(delivery.query, delivery.location);
-
-  async function handleCopy(value: string) {
-    await navigator.clipboard.writeText(value);
-    setShowMapChooser(false);
-  }
 
   return (
     <>
@@ -143,77 +109,12 @@ function WcDeliveryInfoSection({ row }: { row: wcCalendar }) {
         </div>
       </section>
 
-      <Modal
+      <MapDirectionsChooser
         show={showMapChooser}
         onHide={() => setShowMapChooser(false)}
-        centered
-        contentClassName="border-0 bg-transparent shadow-none"
-      >
-        <Modal.Body className="p-0">
-          <div
-            style={{
-              position: "relative",
-              borderRadius: 24,
-              padding: 12,
-              background: "rgba(var(--bs-body-bg-rgb))",
-              backdropFilter: "blur(22px)",
-              WebkitBackdropFilter: "blur(22px)",
-              boxShadow: "0 18px 50px rgba(0,0,0,.12)",
-            }}
-          >
-            <div className="text-center fw-semibold mb-2">Άνοιγμα χάρτη με:</div>
-
-            <div className="d-flex flex-column gap-2">
-              {links.map((link) => {
-                if (link.href !== null) {
-                  return (
-                    <a
-                      key={link.label}
-                      href={link.href}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="d-flex align-items-center justify-content-center gap-2 text-decoration-none"
-                      style={{
-                        minHeight: 48,
-                        borderRadius: 999,
-                        background: "rgba(var(--bs-secondary-rgb), .10)",
-                        color: "var(--bs-body-color)",
-                        fontWeight: 700,
-                        fontSize: 15,
-                      }}
-                      onClick={() => setShowMapChooser(false)}
-                    >
-                      <i className={`bi ${link.icon}`} aria-hidden />
-                      {link.label}
-                    </a>
-                  );
-                }
-
-                return (
-                  <button
-                    key={link.label}
-                    type="button"
-                    className="border-0 d-flex align-items-center justify-content-center gap-2"
-                    style={{
-                      minHeight: 48,
-                      borderRadius: 999,
-                      background: "rgba(var(--bs-secondary-rgb), .10)",
-                      color: "var(--bs-body-color)",
-                      fontWeight: 700,
-                      fontSize: 15,
-                    }}
-                    onClick={() => handleCopy(link.copyValue)}
-                  >
-                    <i className={`bi ${link.icon}`} aria-hidden />
-                    {link.label}
-                  </button>
-                );
-              })}
-            </div>
-
-          </div>
-        </Modal.Body>
-      </Modal>
+        query={delivery.query}
+        location={delivery.location}
+      />
     </>
   );
 }
