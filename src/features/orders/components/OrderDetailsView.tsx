@@ -9,6 +9,7 @@ import OrderDetailsViewSystinon from "../view/OrderDetailsViewSystinon";
 import OrderDetailsYlikaInfo from "../view/OrderDetailsYlikaInfo";
 import OrderDetailsSyntagiInfo from "../view/OrderDetailsSyntagiInfo";
 import OrderDetailsViewRetailPaymentInfo from "../view/OrderDetailsViewRetailPaymentInfo";
+import OrderDetailsViewSellerComments from "../view/OrderDetailsViewSellerComments";
 
 export default function OrderDetailsView({
   order,
@@ -61,6 +62,8 @@ export default function OrderDetailsView({
       ) : null}
 
       <OrderDetailsSyntagiInfo />
+
+      <OrderDetailsViewSellerComments order={order} />
     </div>
   );
 }
