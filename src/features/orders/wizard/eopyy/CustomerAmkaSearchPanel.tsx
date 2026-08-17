@@ -1,6 +1,9 @@
 "use client";
 
-import type { UseCustomerAmkaSearchResult, CustomerAmkaSearchPanelProps } from "./CustomerAmkaSearchPanel.types";
+import type {
+  UseCustomerAmkaSearchResult,
+  CustomerAmkaSearchPanelProps,
+} from "./CustomerAmkaSearchPanel.types";
 import React from "react";
 import AppLoader from "@/components/ui/AppLoader";
 import { formatLastCustomerWebOrderRow } from "@/lib/customerUtils";
@@ -131,7 +134,11 @@ export function useCustomerAmkaSearch(
     async (lwo: Record<string, unknown>) => {
       setApplying(true);
       try {
-        await applyLastCustomerWebOrderFromSearch(dispatch, lwo, searchOptions());
+        await applyLastCustomerWebOrderFromSearch(
+          dispatch,
+          lwo,
+          searchOptions(),
+        );
         finish();
       } finally {
         setApplying(false);
@@ -141,7 +148,11 @@ export function useCustomerAmkaSearch(
   );
 
   const handleContinueAsNew = React.useCallback(() => {
-    applyCompletelyNewCustomerFromAmka(dispatch, normalizedAmka, searchOptions());
+    applyCompletelyNewCustomerFromAmka(
+      dispatch,
+      normalizedAmka,
+      searchOptions(),
+    );
     finish();
   }, [dispatch, finish, normalizedAmka, searchOptions]);
 
@@ -247,7 +258,7 @@ function AmkaSearchDropdownContent({
       {!search.loading && lastWebOrderRow && search.lastCustomerWebOrder ? (
         <>
           <div className="amka-search-dropdown-header">
-            Προηγούμενη παραγγελία
+            Επιλεξτε τελευταια παραγγελια
           </div>
           <AmkaSearchDropdownItem
             icon="bi-clock-history"
@@ -289,7 +300,8 @@ function AmkaSearchDropdownContent({
       ) : null}
     </>
   );
-}export function CustomerAmkaSearchPanel({
+}
+export function CustomerAmkaSearchPanel({
   amka,
   completeGate = false,
   onResolved,

@@ -412,7 +412,7 @@ export default function OrderCustomerArea({
               amka={data.customer_amka ?? ""}
               anchorRef={amkaSearchAnchorRef}
               open={amkaSearchOpen}
-              resetWizardOnDifferentAmka
+              resetWizardOnDifferentAmka={aiCalculated}
               baselineCustomerAmkaRef={baselineCustomerAmkaRef}
               onDismiss={() => setAmkaSearchOpen(false)}
               onResolved={() => {
