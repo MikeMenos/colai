@@ -1,12 +1,10 @@
 import { normalizeAmka } from "@/lib/utils/amka";
 import {
   clearDraftAddressesList,
-  setAIMaterials,
   setCustomerIsCompletelyNew,
   setCustomerProsEbs,
   setCustomerSelectedFromList,
   setDraftProperty,
-  setDraftYlika,
   setLastOrderInfoCustomerErpGID,
   setLastOrderInfoDateIn,
   setLastWebOrderFromLoadInfo,
@@ -91,53 +89,6 @@ const CUSTOMER_AND_DELIVERY_FIELDS: (keyof Order)[] = [
   "updateRecipient_mobile",
 ];
 
-const SYNTAGI_FIELDS: (keyof Order)[] = [
-  "barcode",
-  "dateOfSyntagi",
-  "dateIsxyeiApo",
-  "dateIsxyeiEos",
-  "katigoriaParoxis",
-  "eidos_Egkrisis",
-  "eoppy_Diagnosi_Code",
-  "eoppy_Diagnosi_Name",
-  "eoppy_Diagnosi2_Code",
-  "eoppy_Diagnosi2_Name",
-  "diagnosi1_GID",
-  "diagnosi2_GID",
-];
-
-const SYMMETOXi_FIELDS: (keyof Order)[] = [
-  "symm",
-  "symmPercentage",
-  "kostos",
-  "kostos_EOPPY",
-  "kostos_RETAIL",
-  "posoSymmetoxis",
-  "posoDiscounted",
-  "calculatedDiscPercent",
-  "maxPosoKostousGiaSymmetoxi",
-  "plafonGiftAmount",
-  "payFullOrDiscount",
-  "isPaid",
-  "eopyyVerifyNoParticipation",
-  "hasConfirmedMidenikiPliromi",
-  "discount_reason_id",
-  "discount_reason",
-  "isDiscountApproved",
-  "dateDiscountReviewed",
-  "discountReviewedByUID",
-  "discountReviewedByName",
-  "dateDiscountNotify",
-  "finalPaymentAmount",
-  "countYlika",
-];
-
-const ORDER_FIELDS_TO_CLEAR: (keyof Order)[] = [
-  ...CUSTOMER_AND_DELIVERY_FIELDS,
-  ...SYNTAGI_FIELDS,
-  ...SYMMETOXi_FIELDS,
-];
-
 export function shouldResetWizardForCustomerAmkaChange(
   baselineCustomerAmka: string | null | undefined,
   selectedCustomerAmka: string | null | undefined,
@@ -148,7 +99,7 @@ export function shouldResetWizardForCustomerAmkaChange(
   return baseline !== selected;
 }
 
-/** Clears patient/delivery data and Συνταγή/Υλικά/Συμμετοχή; keeps order shell and Γνωμάτευση uploads. */
+/** Clears patient/delivery data for a new AMKA selection; keeps Συνταγή, Υλικά, Συμμετοχή, order shell, and Γνωμάτευση uploads. */
 export function resetDraftForDifferentCustomerSelection(
   dispatch: AppDispatch,
 ): void {
@@ -160,10 +111,8 @@ export function resetDraftForDifferentCustomerSelection(
   dispatch(setCustomerIsCompletelyNew(true));
   dispatch(setLastWebOrderFromLoadInfo(undefined));
   dispatch(setShowConsentForm(undefined));
-  dispatch(setDraftYlika([]));
-  dispatch(setAIMaterials([]));
 
-  for (const key of ORDER_FIELDS_TO_CLEAR) {
+  for (const key of CUSTOMER_AND_DELIVERY_FIELDS) {
     dispatch(setDraftProperty({ key, value: null }));
   }
 
@@ -172,8 +121,4 @@ export function resetDraftForDifferentCustomerSelection(
   dispatch(setDraftProperty({ key: "shipToOtherAddressBool", value: false }));
   dispatch(setDraftProperty({ key: "has_suggested_doctor", value: 0 }));
   dispatch(setDraftProperty({ key: "hasOtherSystinonIatroBool", value: false }));
-  dispatch(setDraftProperty({ key: "eopyyVerifyNoParticipation", value: 0 }));
-  dispatch(setDraftProperty({ key: "payFullOrDiscount", value: 0 }));
-  dispatch(setDraftProperty({ key: "kostos", value: 0 }));
-  dispatch(setDraftProperty({ key: "posoSymmetoxis", value: 0 }));
 }

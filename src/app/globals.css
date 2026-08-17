@@ -824,7 +824,7 @@ html[data-bs-theme="dark"] .leave-order-modal__icon {
   font-weight: 700;
   letter-spacing: 0.04em;
   text-transform: uppercase;
-  color: var(--bs-secondary-color);
+  color: var(--bs-primary);
   background: var(--bs-body-bg);
   border-bottom: 1px solid var(--bs-border-color-translucent);
 }
