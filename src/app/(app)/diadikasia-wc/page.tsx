@@ -9,6 +9,7 @@ import AppLoader from "@/components/ui/AppLoader";
 import PullToRefresh from "@/components/ui/PullToRefresh";
 import WCDiadikasiaGroupedList from "@/features/orders/components/diadikasia/WCDiadikasiaGroupedList";
 import OrderSellerScopeToggle from "@/features/orders/components/OrderSellerScopeToggle";
+import { useSellerScope } from "@/hooks/useSellerScope";
 import { fetchWCCalendar } from "@/store/wcDiadikasia/wcDiadikasiaSlice";
 import { Alert, Button, FormSelect, Modal } from "react-bootstrap";
 import { parseOrderDate } from "@/features/orders/diadikasia/groupWcCalendarByLastOrderDate";
@@ -35,7 +36,6 @@ export default function DiadikasiaWC() {
   const searchParams = useSearchParams();
 
   const wcDiadikasia = useAppSelector((s) => s.wcDiadiaksia);
-  const userInfo = useAppSelector((s) => s.auth.userInfos);
   const listLoading = useAppSelector((s) => s.wcDiadiaksia.loadingList);
   const refreshing = useAppSelector((s) => s.wcDiadiaksia.refreshingList);
   const error = useAppSelector((s) => s.wcDiadiaksia.error);
@@ -57,10 +57,12 @@ export default function DiadikasiaWC() {
     : WC_STATUS_FILTER_DEFAULT;
   const monthOrder = searchParams.get("monthOrder") === "asc" ? "asc" : "desc";
   const [q, setQ] = React.useState(urlSearch);
-  const [showAllAccounts, setShowAllAccounts] = React.useState(false);
-  const loggedSellerCode = userInfo?.sellerCode?.trim() ?? "";
-  const urlSellerCode = (searchParams.get("sellercode") ?? "").trim();
-  const sellerCodeFilter = showAllAccounts ? "" : loggedSellerCode;
+  const {
+    showAllAccounts,
+    sellerCodeFilter,
+    loggedSellerCode,
+    setShowAllAccounts,
+  } = useSellerScope();
 
   const applySearchToUrl = React.useCallback(
     (next: string) => {
@@ -154,23 +156,6 @@ export default function DiadikasiaWC() {
   }, [urlSearch]);
 
   React.useEffect(() => {
-    if (showAllAccounts || !loggedSellerCode) return;
-    if (urlSellerCode === loggedSellerCode) return;
-
-    const params = new URLSearchParams(searchParams.toString());
-    params.set("sellercode", loggedSellerCode);
-    const qs = params.toString();
-    router.push(qs ? `${pathname}?${qs}` : pathname, { scroll: false });
-  }, [
-    loggedSellerCode,
-    pathname,
-    router,
-    searchParams,
-    showAllAccounts,
-    urlSellerCode,
-  ]);
-
-  React.useEffect(() => {
     void dispatch(
       fetchWCCalendar({
         ...(urlSearch ? { q: urlSearch } : {}),
@@ -192,21 +177,6 @@ export default function DiadikasiaWC() {
       }),
     ).unwrap();
   }, [dispatch, sellerCodeFilter, urlSearch]);
-
-  const handleSellerScopeChange = React.useCallback(
-    (nextShowAllAccounts: boolean) => {
-      setShowAllAccounts(nextShowAllAccounts);
-      const params = new URLSearchParams(searchParams.toString());
-      if (nextShowAllAccounts || !loggedSellerCode) {
-        params.delete("sellercode");
-      } else {
-        params.set("sellercode", loggedSellerCode);
-      }
-      const qs = params.toString();
-      router.push(qs ? `${pathname}?${qs}` : pathname, { scroll: false });
-    },
-    [loggedSellerCode, pathname, router, searchParams],
-  );
 
   const visibleItems = React.useMemo(() => {
     let items = wcDiadikasia.calendar.filter((item) =>
@@ -286,7 +256,7 @@ export default function DiadikasiaWC() {
                 !loggedSellerCode ||
                 (listLoading && wcDiadikasia.calendar.length === 0)
               }
-              onChange={handleSellerScopeChange}
+              onChange={setShowAllAccounts}
             />
           </div>
         </div>

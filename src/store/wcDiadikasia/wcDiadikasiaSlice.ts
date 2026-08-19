@@ -146,6 +146,7 @@ const wcDiadikasiaSlice = createSlice({
             const force = typeof action.meta.arg === "object" && !!(action.meta.arg as any)?.force;
             if (force) state.refreshingList = true;
             else state.loadingList = true;
+            state.error = null;
         });
         b.addCase(fetchWCCalendar.fulfilled, (state, action) => {
             const payload = action.payload;
@@ -155,18 +156,20 @@ const wcDiadikasiaSlice = createSlice({
 
             if (!payload.ok) {
                 state.error = payload.message ?? "Σφάλμα φόρτωσης";
+                state.calendar = [];
                 return;
             }
 
             // Backend uses `statusCode: 0` for success; some environments may use `200`.
             const sc = payload.statusCode as number | undefined;
-            const statusOk = sc === undefined || sc === 0 || sc === 200;
-            const list = payload.listData;
-
-            if (!statusOk && !Array.isArray(list)) {
-                state.error = payload.message ?? payload.detailedMessage ?? "Σφάλμα φόρτωσης";
+            if (sc !== undefined && sc !== 0 && sc !== 200) {
+                state.error =
+                    payload.message ?? payload.detailedMessage ?? "Σφάλμα φόρτωσης";
+                state.calendar = [];
                 return;
             }
+
+            const list = payload.listData;
 
             state.error = null;
             state.calendar = Array.isArray(list) ? (list as wcCalendar[]) : [];
