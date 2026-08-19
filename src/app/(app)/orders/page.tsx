@@ -1,7 +1,6 @@
 "use client";
 
 import React from "react";
-import { useSearchParams } from "next/navigation";
 
 import AppLoader from "@/components/ui/AppLoader";
 import PullToRefresh from "@/components/ui/PullToRefresh";
@@ -16,6 +15,7 @@ import {
 } from "@/lib/api/orderListQuery";
 import { getAiClientsByPriority } from "@/lib/utils/ai";
 import { getListPaginationState } from "@/lib/pagination/listPagination";
+import { useSellerScope } from "@/hooks/useSellerScope";
 import { useUrlListNavigation } from "@/hooks/useUrlListNavigation";
 import {
   fetchOrders,
@@ -25,7 +25,6 @@ import { useAppDispatch, useAppSelector } from "@/store/hooks";
 
 export default function OrdersPage() {
   const dispatch = useAppDispatch();
-  const searchParams = useSearchParams();
   const userInfo = useAppSelector((s) => s.auth.userInfos);
   const availableAiClients = useAppSelector((s) => s.auth.availableAiClients);
   const orders = useAppSelector((s) => s.orders.orders);
@@ -39,17 +38,18 @@ export default function OrdersPage() {
     urlPageSize,
     goToPage,
     applySearchToUrl,
-    mutateSearchParams,
   } = useUrlListNavigation({
     defaultPage: DEFAULT_ORDER_LIST_PAGE,
     defaultPageSize: DEFAULT_ORDER_LIST_PAGE_SIZE,
   });
 
   const [q, setQ] = React.useState(urlSearch);
-  const [showAllAccounts, setShowAllAccounts] = React.useState(false);
-  const loggedSellerCode = userInfo?.sellerCode?.trim() ?? "";
-  const urlSellerCode = (searchParams.get("sellercode") ?? "").trim();
-  const sellerCodeFilter = showAllAccounts ? "" : loggedSellerCode;
+  const {
+    showAllAccounts,
+    sellerCodeFilter,
+    loggedSellerCode,
+    setShowAllAccounts,
+  } = useSellerScope({ resetPage: true });
   const retryAiClient = React.useMemo(
     () => getAiClientsByPriority(availableAiClients)[0] ?? "Claude",
     [availableAiClients],
@@ -58,16 +58,6 @@ export default function OrdersPage() {
   React.useEffect(() => {
     setQ(urlSearch);
   }, [urlSearch]);
-
-  React.useEffect(() => {
-    if (showAllAccounts || !loggedSellerCode) return;
-    if (urlSellerCode === loggedSellerCode) return;
-
-    mutateSearchParams((params) => {
-      params.set("sellercode", loggedSellerCode);
-      params.delete("page");
-    });
-  }, [loggedSellerCode, mutateSearchParams, showAllAccounts, urlSellerCode]);
 
   React.useEffect(() => {
     void dispatch(
@@ -91,21 +81,6 @@ export default function OrdersPage() {
       }),
     ).unwrap();
   }, [dispatch, urlSearch, urlPage, urlPageSize, sellerCodeFilter]);
-
-  const handleSellerScopeChange = React.useCallback(
-    (nextShowAllAccounts: boolean) => {
-      setShowAllAccounts(nextShowAllAccounts);
-      mutateSearchParams((params) => {
-        if (nextShowAllAccounts || !loggedSellerCode) {
-          params.delete("sellercode");
-        } else {
-          params.set("sellercode", loggedSellerCode);
-        }
-        params.delete("page");
-      });
-    },
-    [loggedSellerCode, mutateSearchParams],
-  );
 
   const handleRetryAi = React.useCallback(
     async (orderUid: string) => {
@@ -164,7 +139,7 @@ export default function OrdersPage() {
           <OrderSellerScopeToggle
             allAccounts={showAllAccounts}
             disabled={!loggedSellerCode || (listLoading && orders.length === 0)}
-            onChange={handleSellerScopeChange}
+            onChange={setShowAllAccounts}
           />
         </div>
       </div>

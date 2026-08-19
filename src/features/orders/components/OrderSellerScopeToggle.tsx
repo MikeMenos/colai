@@ -1,7 +1,8 @@
 "use client";
 
 import type { Props } from "./OrderSellerScopeToggle.types";
-import React from "react";export default function OrderSellerScopeToggle({
+import React from "react";
+export default function OrderSellerScopeToggle({
   allAccounts,
   disabled = false,
   onChange,
@@ -13,12 +14,13 @@ import React from "react";export default function OrderSellerScopeToggle({
 
   return (
     <div className="d-flex align-items-center justify-content-between gap-3 rounded border px-3 py-2">
-      <div className="d-flex min-w-0 align-items-center gap-2">
+      <div className="d-flex align-items-center min-w-0 gap-2">
         <i
           className={`bi ${allAccounts ? "bi-people-fill" : "bi-person-fill"} text-primary`}
           aria-hidden
         />
-        <span className="fw-semibold">{label}</span>
+        <span className="fw-semibold small d-md-none">{label}</span>
+        <span className="fw-semibold d-none d-md-inline">{label}</span>
       </div>
 
       <div className="form-check form-switch switch-lg m-0 flex-shrink-0">
