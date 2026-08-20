@@ -3,8 +3,8 @@
 import type { SellerActingSelectorProps } from "./SellerActingSelector.types";
 import React from "react";
 
-import SearchableSelect from "@/components/ui/SearchableSelect";
-import type { SearchableSelectOption } from "@/components/ui/SearchableSelect.types";
+import SellerActingLookupModal from "@/features/orders/wizard/modals/SellerActingLookupModal";
+import type { SellerActingLookupOption } from "@/features/orders/wizard/modals/SellerActingLookupModal.types";
 import {
   getAccessibleSellers,
   getOwnSellerCode,
@@ -14,6 +14,12 @@ import {
 import { setActingSellerCode } from "@/features/auth/authSlice";
 import { setDraftProperty } from "@/store/orders/ordersSlice";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
+
+function getOptionDisplayLabel(option: SellerActingLookupOption): string {
+  const name = option.label.trim() || option.value;
+  const code = option.description?.trim();
+  return code && code !== name ? `${name} (${code})` : name;
+}
 
 export default function SellerActingSelector({
   className = "",
@@ -26,6 +32,7 @@ export default function SellerActingSelector({
   const draftSellerCode = useAppSelector(
     (s) => s.orders.draft.order.sellerCode,
   );
+  const [showLookup, setShowLookup] = React.useState(false);
 
   const accessSellers = getAccessibleSellers(userInfos);
   const ownSellerCode = getOwnSellerCode(userInfos);
@@ -35,8 +42,8 @@ export default function SellerActingSelector({
     [userInfos],
   );
 
-  const options = React.useMemo<SearchableSelectOption[]>(() => {
-    const items: SearchableSelectOption[] = [];
+  const options = React.useMemo<SellerActingLookupOption[]>(() => {
+    const items: SellerActingLookupOption[] = [];
 
     if (defaultSeller?.sellerCode) {
       const ownLabel =
@@ -59,6 +66,12 @@ export default function SellerActingSelector({
 
     return items;
   }, [accessSellers, defaultSeller]);
+
+  const selectedOption =
+    options.find((option) => option.value === selectedValue) ?? null;
+  const selectedLabel = selectedOption
+    ? getOptionDisplayLabel(selectedOption)
+    : "Επιλέξτε πωλητή…";
 
   React.useEffect(() => {
     if (!defaultSeller?.sellerCode) return;
@@ -128,10 +141,11 @@ export default function SellerActingSelector({
 
   const errorMessage =
     typeof error === "string" ? error : error ? "Επιλέξτε πωλητή" : null;
+  const canClear = Boolean(actingSellerCode?.trim());
 
   return (
     <div
-      className={`app-card-soft searchable-select-shell d-flex align-items-center mb-1 gap-2 px-3 py-2 ${className}`.trim()}
+      className={`app-card-soft d-flex align-items-center mb-1 gap-2 px-3 py-2 ${className}`.trim()}
     >
       <i
         className="bi bi-person-badge text-secondary flex-shrink-0"
@@ -141,22 +155,55 @@ export default function SellerActingSelector({
         <div className="text-secondary mb-1" style={{ fontSize: 11 }}>
           Παραγγελία ως
         </div>
-        <SearchableSelect
-          size="sm"
-          name="actingSellerCode"
-          options={options}
-          value={selectedValue}
-          onChange={handleChange}
-          ariaLabel="Επιλογή πωλητή"
-          placeholder="Επιλέξτε πωλητή…"
-          searchPlaceholder="Αναζήτηση πωλητή…"
-          allowClear
-          isInvalid={Boolean(errorMessage)}
-        />
+        <div className="input-group input-group-sm">
+          <input
+            type="text"
+            readOnly
+            name="actingSellerCode"
+            className={`form-control${errorMessage ? " is-invalid" : ""}`}
+            value={selectedOption ? selectedLabel : ""}
+            placeholder="Επιλέξτε πωλητή…"
+            onClick={() => setShowLookup(true)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" || e.key === " ") {
+                e.preventDefault();
+                setShowLookup(true);
+              }
+            }}
+            aria-label="Επιλογή πωλητή"
+            style={{ cursor: "pointer" }}
+          />
+          {canClear ? (
+            <button
+              type="button"
+              className="btn btn-outline-secondary"
+              aria-label="Επιστροφή στον προεπιλεγμένο πωλητή"
+              onClick={() => handleChange("")}
+            >
+              <i className="bi bi-x-lg" aria-hidden />
+            </button>
+          ) : null}
+          <button
+            type="button"
+            className="btn btn-primary"
+            onClick={() => setShowLookup(true)}
+            aria-label="Αναζήτηση πωλητή"
+          >
+            <i className="bi bi-search" />
+          </button>
+        </div>
         {errorMessage ? (
           <div className="invalid-feedback d-block">{errorMessage}</div>
         ) : null}
       </div>
+
+      <SellerActingLookupModal
+        show={showLookup}
+        options={options}
+        value={selectedValue}
+        onSelect={handleChange}
+        onClose={() => setShowLookup(false)}
+      />
     </div>
   );
 }
