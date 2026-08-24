@@ -1,5 +1,3 @@
-/* eslint-disable no-restricted-globals */
-
 const CACHE_NAME = "colai-pwa-v2";
 const PRECACHE_URLS = ["/", "/offline", "/manifest.webmanifest"];
 

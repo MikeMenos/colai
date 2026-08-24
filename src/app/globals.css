@@ -692,6 +692,7 @@ html[data-pwa="true"]  .modal-grow-scroll .modal-content {
   -webkit-overflow-scrolling: touch;
 }
 
+
 html[data-bs-theme="dark"], .modal-content {
   background-color: var(--app-bg);
 }
