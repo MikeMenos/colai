@@ -181,7 +181,6 @@ export default function OrderEoppyWizard({
     () => hasCustomerFieldErrors(draftOrder),
     [draftOrder],
   );
-
   const runValidation = React.useCallback(
     () =>
       validateEoppyOrderDraft({

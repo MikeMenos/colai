@@ -26,7 +26,6 @@ const CUSTOMER_AND_DELIVERY_FIELDS: (keyof Order)[] = [
   "customer_mobile2",
   "customer_email",
   "customer_dob",
-  "customer_tel_otp",
   "amka_origin",
   "customer_ErpGID",
   "person_erpid",
@@ -55,12 +54,6 @@ const CUSTOMER_AND_DELIVERY_FIELDS: (keyof Order)[] = [
   "recipient_ErpGID",
   "recipient_ErpContact_PersonGID",
   "recipient_ErpContact_AddressGID",
-  "doctor_amka",
-  "doctor_name",
-  "doctor_afm",
-  "doctor_Domi",
-  "doctor_DomiTypos",
-  "doctor_ErpGID",
   "has_suggested_doctor",
   "doctorSuggested_amka",
   "doctorSuggested_name",
@@ -77,8 +70,6 @@ const CUSTOMER_AND_DELIVERY_FIELDS: (keyof Order)[] = [
   "shipMethodId",
   "shipMethodName",
   "shipMethod_GID",
-  "deliverySunday",
-  "deliveryMorning",
   "shipToOtherAddressBool",
   "shouldUpdateRecipientInfos",
   "updateRecipient_amka",
@@ -88,6 +79,19 @@ const CUSTOMER_AND_DELIVERY_FIELDS: (keyof Order)[] = [
   "updateRecipient_tk",
   "updateRecipient_mobile",
 ];
+
+/** AI-filled fields kept when selecting a customer by AMKA (with Συνταγή / Υλικά / Συμμετοχή). */
+export const PRESERVE_AI_FIELDS_ON_CUSTOMER_SELECTION = new Set<keyof Order>([
+  "doctor_amka",
+  "doctor_name",
+  "doctor_afm",
+  "doctor_Domi",
+  "doctor_DomiTypos",
+  "doctor_ErpGID",
+  "customer_tel_otp",
+  "deliverySunday",
+  "deliveryMorning",
+]);
 
 export function shouldResetWizardForCustomerAmkaChange(
   baselineCustomerAmka: string | null | undefined,
@@ -99,7 +103,7 @@ export function shouldResetWizardForCustomerAmkaChange(
   return baseline !== selected;
 }
 
-/** Clears patient/delivery data for a new AMKA selection; keeps Συνταγή, Υλικά, Συμμετοχή, order shell, and Γνωμάτευση uploads. */
+/** Clears patient/delivery data for a new AMKA selection; keeps Συνταγή, Υλικά, Συμμετοχή, Ιατρός συνταγής, OTP, delivery flags, order shell, and Γνωμάτευση uploads. */
 export function resetDraftForDifferentCustomerSelection(
   dispatch: AppDispatch,
 ): void {
