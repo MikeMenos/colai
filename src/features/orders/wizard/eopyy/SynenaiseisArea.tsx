@@ -18,15 +18,12 @@ import {
 } from "@/lib/consentUpload";
 import { Alert } from "react-bootstrap";
 import { formatFileSizeMB } from "@/lib/utils/number";
+import { isPdfFile } from "@/lib/utils/order";
 import type { UploadStatus, UploadingInfo } from "./wizard/types";
 import VoiceConsentConfirmModal from "./VoiceConsentConfirmModal";
 
 const CONSENT_BACK_CATEGORY = "consent_form_back";
 const CONSENT_UPLOAD_CARD_CLASS = "app-card mb-1 px-3 py-2";
-
-function isPdf(name: string, mimeType?: string) {
-  return mimeType === "application/pdf" || name.toLowerCase().endsWith(".pdf");
-}
 
 export default function SynenaiseisArea() {
   const dispatch = useAppDispatch();
@@ -153,7 +150,7 @@ export default function SynenaiseisArea() {
                 <div className="d-flex align-items-start justify-content-between">
                   <div className="d-flex gap-2">
                     <i
-                      className={`bi ${isPdf(uploading.name, uploading.fileType) ? "bi-filetype-pdf" : "bi-image"}`}
+                      className={`bi ${isPdfFile(uploading.name, uploading.fileType) ? "bi-filetype-pdf" : "bi-image"}`}
                     />
                     <div>
                       <div className="fw-semibold">{uploading.name}</div>
@@ -198,7 +195,7 @@ export default function SynenaiseisArea() {
                       ? String(f.fileSize)
                       : formatFileSizeMB(f.fileSize)
                     : "";
-                  const pdf = isPdf(name ?? "", f.fileType ?? undefined);
+                  const pdf = isPdfFile(name ?? "", f.fileType ?? undefined);
 
                   return (
                     <div
@@ -301,7 +298,7 @@ export default function SynenaiseisArea() {
                 <div className="d-flex align-items-start justify-content-between">
                   <div className="d-flex gap-2">
                     <i
-                      className={`bi ${isPdf(uploadingBack.name, uploadingBack.fileType) ? "bi-filetype-pdf" : "bi-image"}`}
+                      className={`bi ${isPdfFile(uploadingBack.name, uploadingBack.fileType) ? "bi-filetype-pdf" : "bi-image"}`}
                     />
                     <div>
                       <div className="fw-semibold">{uploadingBack.name}</div>
@@ -348,7 +345,7 @@ export default function SynenaiseisArea() {
                       ? String(f.fileSize)
                       : formatFileSizeMB(f.fileSize)
                     : "";
-                  const pdf = isPdf(name ?? "", f.fileType ?? undefined);
+                  const pdf = isPdfFile(name ?? "", f.fileType ?? undefined);
 
                   return (
                     <div
