@@ -5,9 +5,11 @@ import { Modal } from "react-bootstrap";
 import type { OrderFile } from "@/types/orders";
 import {
   getOrderFileDisplayName,
+  getOrderFilePdfPreviewUrl,
   getOrderFileViewUrl,
   isOrderFilePdf,
 } from "@/lib/utils/order";
+import OrderFilePdfPreview from "./OrderFilePdfPreview";
 
 export type OrderFilePreviewModalProps = {
   show: boolean;
@@ -21,6 +23,7 @@ export default function OrderFilePreviewModal({
   onClose,
 }: OrderFilePreviewModalProps) {
   const url = file ? getOrderFileViewUrl(file) : null;
+  const pdfUrl = file ? getOrderFilePdfPreviewUrl(file) : null;
   const title = file ? getOrderFileDisplayName(file) : "Προβολή αρχείου";
   const isPdf = file ? isOrderFilePdf(file) : false;
 
@@ -41,19 +44,19 @@ export default function OrderFilePreviewModal({
 
       <Modal.Body className="p-0 d-flex flex-column">
         {url ? (
-          isPdf ? (
-            <iframe
-              src={url}
-              title={title}
-              className="order-file-preview-frame w-100 border-0"
-            />
-          ) : (
+          isPdf && pdfUrl ? (
+            <OrderFilePdfPreview url={pdfUrl} title={title} active={show} />
+          ) : !isPdf ? (
             <div className="order-file-preview-image-wrap d-flex align-items-center justify-content-center p-3">
               <img
                 src={url}
                 alt={title}
                 className="order-file-preview-image img-fluid"
               />
+            </div>
+          ) : (
+            <div className="small text-secondary p-4 text-center">
+              Δεν ήταν δυνατή η προβολή του αρχείου.
             </div>
           )
         ) : (
