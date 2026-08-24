@@ -786,13 +786,21 @@ html[data-pwa="true"] .order-file-preview-modal-root.modal {
   overflow: hidden;
 }
 
-.order-file-preview-frame {
-  display: block;
+.order-file-preview-pdf-scroll {
   flex: 1 1 auto;
-  width: 100%;
   min-height: 0;
-  height: 100%;
+  overflow: auto;
+  -webkit-overflow-scrolling: touch;
   background: #fff;
+}
+
+.order-file-preview-pdf-page {
+  display: block;
+  margin: 0 auto 0.5rem;
+}
+
+.order-file-preview-pdf-page:last-child {
+  margin-bottom: 0;
 }
 
 .order-file-preview-image-wrap {

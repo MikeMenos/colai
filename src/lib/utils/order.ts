@@ -17,6 +17,13 @@ export function getOrderFileViewUrl(f: OrderFile): string | null {
   return `${DOCS_BASE}${encodeURIComponent(suffix)}`;
 }
 
+/** Same-origin URL for react-pdf (avoids cross-origin fetch issues in WebView). */
+export function getOrderFilePdfPreviewUrl(f: OrderFile): string | null {
+  const suffix = getFileSuffix(f);
+  if (!suffix) return null;
+  return `/api/docs/preview?name=${encodeURIComponent(suffix)}`;
+}
+
 export function getOrderFileDisplayName(f: OrderFile): string {
   return f.originalFileName ?? f.name ?? f.base64filename ?? "";
 }
