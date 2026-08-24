@@ -45,10 +45,11 @@ export default function OrdersPage() {
 
   const [q, setQ] = React.useState(urlSearch);
   const {
-    showAllAccounts,
     sellerCodeFilter,
+    sellerScopeValue,
     loggedSellerCode,
-    setShowAllAccounts,
+    canSelectSeller,
+    setSellerCodeFilter,
   } = useSellerScope({ resetPage: true });
   const retryAiClient = React.useMemo(
     () => getAiClientsByPriority(availableAiClients)[0] ?? "Claude",
@@ -137,9 +138,9 @@ export default function OrdersPage() {
             </button>
           </div>
           <OrderSellerScopeToggle
-            allAccounts={showAllAccounts}
-            disabled={!loggedSellerCode || (listLoading && orders.length === 0)}
-            onChange={setShowAllAccounts}
+            value={sellerScopeValue}
+            disabled={!canSelectSeller || (listLoading && orders.length === 0)}
+            onChange={setSellerCodeFilter}
           />
         </div>
       </div>
@@ -153,7 +154,9 @@ export default function OrdersPage() {
               <OrderCard
                 key={o.id}
                 order={o}
-                showSellerName={showAllAccounts}
+                showSellerName={
+                  !sellerCodeFilter || sellerCodeFilter !== loggedSellerCode
+                }
                 onRetryAi={handleRetryAi}
                 onDelete={() => {}}
               />

@@ -20,8 +20,6 @@ export function canAccessSeller(
   const normalizedOwn = normalizeSellerCode(userInfo?.sellerCode);
   if (normalizedOwn && normalizedTarget === normalizedOwn) return true;
 
-  if (!isManagerWithoutSellerRole(userInfo)) return false;
-
   return (userInfo?.listAccessSellers ?? []).some(
     (seller) => normalizeSellerCode(seller.sellerCode) === normalizedTarget,
   );
@@ -56,6 +54,63 @@ export function getAccessibleSellers(
     return Boolean(code) && code !== ownCode;
   });
 }
+
+export type SellerLookupOption = {
+  value: string;
+  label: string;
+  description?: string;
+};
+
+export function buildSellerLookupOptions(
+  userInfos: Maybe<ApiUserInfo>,
+): SellerLookupOption[] {
+  const items: SellerLookupOption[] = [];
+  const ownSeller = resolveActingSeller(userInfos, null);
+
+  if (ownSeller?.sellerCode) {
+    const ownLabel = ownSeller.sellerName?.trim() || ownSeller.sellerCode;
+    items.push({
+      value: ownSeller.sellerCode,
+      label: `${ownLabel} (Εγώ)`,
+    });
+  }
+
+  for (const seller of getAccessibleSellers(userInfos)) {
+    const code = seller.sellerCode?.trim() ?? "";
+    if (!code || items.some((item) => item.value === code)) continue;
+    items.push({
+      value: code,
+      label: seller.sellerName?.trim() || code,
+      description: code || undefined,
+    });
+  }
+
+  return items;
+}
+
+export function getSellerLookupOptionDisplayLabel(
+  option: SellerLookupOption,
+): string {
+  const name = option.label.trim() || option.value;
+  const code = option.description?.trim();
+  return code && code !== name ? `${name} (${code})` : name;
+}
+
+export function resolveSellerScopeCode(
+  userInfos: Maybe<ApiUserInfo>,
+  storedSellerCode: Maybe<string>,
+): string {
+  const stored = storedSellerCode?.trim() ?? "";
+  const options = buildSellerLookupOptions(userInfos);
+  const allowed = new Set(options.map((option) => option.value));
+  if (stored && allowed.has(stored)) return stored;
+
+  const ownCode = getOwnSellerCode(userInfos);
+  if (ownCode && allowed.has(ownCode)) return ownCode;
+
+  return options[0]?.value ?? "";
+}
+
 
 export function getActingSellerCodeForApi(
   userInfos: Maybe<ApiUserInfo>,

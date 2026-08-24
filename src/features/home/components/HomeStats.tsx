@@ -308,10 +308,10 @@ export default function HomeStats() {
   const dispatch = useAppDispatch();
   const dash = useAppSelector((s) => s.dashboard);
   const {
-    showAllAccounts,
     sellerCodeFilter,
-    loggedSellerCode,
-    setShowAllAccounts,
+    sellerScopeValue,
+    canSelectSeller,
+    setSellerCodeFilter,
   } = useSellerScope();
 
   React.useEffect(() => {
@@ -341,9 +341,11 @@ export default function HomeStats() {
       <div className={showInitialDashLoader ? "d-none" : undefined}>
         <div className="d-grid gap-3">
           <OrderSellerScopeToggle
-            allAccounts={showAllAccounts}
-            disabled={!loggedSellerCode || (dash.loading && dash.lastFetchedAt === 0)}
-            onChange={setShowAllAccounts}
+            value={sellerScopeValue}
+            disabled={
+              !canSelectSeller || (dash.loading && dash.lastFetchedAt === 0)
+            }
+            onChange={setSellerCodeFilter}
           />
           <div
             className="d-grid gap-3"

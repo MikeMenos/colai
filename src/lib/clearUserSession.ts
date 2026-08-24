@@ -1,3 +1,5 @@
+import { SELLER_SCOPE_STORAGE_KEY } from "@/lib/sellerScope";
+
 /** localStorage keys that hold user-specific cached app data (not UI prefs like theme). */
 export const USER_SESSION_STORAGE_KEYS = [
   "auth",
@@ -5,6 +7,7 @@ export const USER_SESSION_STORAGE_KEYS = [
   "staticData",
   "discountRequests",
   "wc",
+  SELLER_SCOPE_STORAGE_KEY,
 ] as const;
 
 export function clearUserSessionLocalStorage(): void {
