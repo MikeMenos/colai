@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { getAmkaInlineFieldError, isValidAmka, normalizeAmka } from "@/lib/utils/amka";
+import { getAmkaInlineFieldError, isValidAmka } from "@/lib/utils/amka";
 import { CustomerAmkaSearchPanel } from "./CustomerAmkaSearchPanel";
 
 export default function CustomerAmkaGate() {
@@ -58,8 +58,7 @@ export default function CustomerAmkaGate() {
             aria-expanded={amkaIsValid && resultsOpen}
             aria-haspopup="listbox"
             onChange={(e) => {
-              const digits = normalizeAmka(e.target.value);
-              const next = digits.startsWith("80") ? digits : digits.slice(0, 11);
+              const next = e.target.value;
               setAmka(next);
               setResultsOpen(isValidAmka(next));
             }}
