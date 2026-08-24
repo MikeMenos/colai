@@ -7,10 +7,12 @@ import {
 } from "@/store/orders/ordersSlice";
 import { resetStaticDataUserSession } from "@/store/staticData/staticDataSlice";
 import { resetWcDiadikasiaUserSession } from "@/store/wcDiadikasia/wcDiadikasiaSlice";
+import { resetSellerScope } from "@/lib/sellerScope";
 import type { AppDispatch } from "@/store/store";
 
 export function clearUserSessionOnLogout(dispatch: AppDispatch): void {
   clearUserSessionLocalStorage();
+  resetSellerScope();
   dispatch(resetEntireDraft());
   dispatch(resetOrdersListCache());
   dispatch(resetStaticDataUserSession());

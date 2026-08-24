@@ -1,5 +1,5 @@
-export type Props = {
-  allAccounts: boolean;
+export type OrderSellerScopeToggleProps = {
+  value: string;
   disabled?: boolean;
-  onChange: (next: boolean) => void;
+  onChange: (sellerCode: string) => void;
 };

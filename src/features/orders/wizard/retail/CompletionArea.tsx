@@ -61,6 +61,7 @@ export default function CompletionArea({
   onGoToCustomerAmka,
   onGoToDoctorName,
   onGoToMaterials,
+  customerAmkaError: customerAmkaErrorProp = null,
   materialsQtyError,
 }: {
   errors?: Record<string, string | boolean>;
@@ -69,6 +70,7 @@ export default function CompletionArea({
   onGoToCustomerAmka?: () => void;
   onGoToDoctorName?: () => void;
   onGoToMaterials?: () => void;
+  customerAmkaError?: string | null;
   materialsQtyError?: string | null;
 }) {
   const data = useAppSelector((s) => s.orders.draft.order);
@@ -96,7 +98,10 @@ export default function CompletionArea({
       !String(data.customer_ActivityCode ?? "").trim()
         ? "Επιλέξτε Δραστηριότητα / Τιμοκατάλογο"
         : undefined));
-  const customerAmkaError = !isTempSave ? errors.customer_amka : undefined;
+  const customerAmkaError =
+    !isTempSave &&
+    (customerAmkaErrorProp ||
+      (typeof errors.customer_amka === "string" ? errors.customer_amka : undefined));
   const doctorNameError =
     !isTempSave &&
     (errors.doctorSuggested_name ||

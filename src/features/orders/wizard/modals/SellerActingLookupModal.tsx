@@ -38,7 +38,7 @@ export default function SellerActingLookupModal({
 
   return (
     <Modal
-      dialogClassName="modal-grow-scroll"
+      dialogClassName="seller-acting-lookup-modal"
       show={show}
       onHide={onClose}
       centered

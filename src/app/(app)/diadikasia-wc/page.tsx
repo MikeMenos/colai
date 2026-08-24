@@ -58,10 +58,10 @@ export default function DiadikasiaWC() {
   const monthOrder = searchParams.get("monthOrder") === "asc" ? "asc" : "desc";
   const [q, setQ] = React.useState(urlSearch);
   const {
-    showAllAccounts,
     sellerCodeFilter,
-    loggedSellerCode,
-    setShowAllAccounts,
+    sellerScopeValue,
+    canSelectSeller,
+    setSellerCodeFilter,
   } = useSellerScope();
 
   const applySearchToUrl = React.useCallback(
@@ -251,12 +251,12 @@ export default function DiadikasiaWC() {
               onDebouncedChange={applySearchToUrl}
             />
             <OrderSellerScopeToggle
-              allAccounts={showAllAccounts}
+              value={sellerScopeValue}
               disabled={
-                !loggedSellerCode ||
+                !canSelectSeller ||
                 (listLoading && wcDiadikasia.calendar.length === 0)
               }
-              onChange={setShowAllAccounts}
+              onChange={setSellerCodeFilter}
             />
           </div>
         </div>

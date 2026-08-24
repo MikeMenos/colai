@@ -3,23 +3,18 @@
 import type { SellerActingSelectorProps } from "./SellerActingSelector.types";
 import React from "react";
 
+import SellerLookupField from "@/features/orders/components/SellerLookupField";
 import SellerActingLookupModal from "@/features/orders/wizard/modals/SellerActingLookupModal";
-import type { SellerActingLookupOption } from "@/features/orders/wizard/modals/SellerActingLookupModal.types";
 import {
-  getAccessibleSellers,
+  buildSellerLookupOptions,
   getOwnSellerCode,
+  getSellerLookupOptionDisplayLabel,
   hasSellerAccessList,
   resolveActingSeller,
 } from "@/lib/sellerAccess";
 import { setActingSellerCode } from "@/features/auth/authSlice";
 import { setDraftProperty } from "@/store/orders/ordersSlice";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
-
-function getOptionDisplayLabel(option: SellerActingLookupOption): string {
-  const name = option.label.trim() || option.value;
-  const code = option.description?.trim();
-  return code && code !== name ? `${name} (${code})` : name;
-}
 
 export default function SellerActingSelector({
   className = "",
@@ -34,44 +29,21 @@ export default function SellerActingSelector({
   );
   const [showLookup, setShowLookup] = React.useState(false);
 
-  const accessSellers = getAccessibleSellers(userInfos);
   const ownSellerCode = getOwnSellerCode(userInfos);
   const selectedValue = actingSellerCode?.trim() || ownSellerCode || "";
   const defaultSeller = React.useMemo(
     () => resolveActingSeller(userInfos, null),
     [userInfos],
   );
-
-  const options = React.useMemo<SellerActingLookupOption[]>(() => {
-    const items: SellerActingLookupOption[] = [];
-
-    if (defaultSeller?.sellerCode) {
-      const ownLabel =
-        defaultSeller.sellerName?.trim() || defaultSeller.sellerCode;
-      items.push({
-        value: defaultSeller.sellerCode,
-        label: `${ownLabel} (Εγώ)`,
-      });
-    }
-
-    for (const seller of accessSellers) {
-      const code = seller.sellerCode?.trim() ?? "";
-      if (!code || items.some((item) => item.value === code)) continue;
-      items.push({
-        value: code,
-        label: seller.sellerName?.trim() || code,
-        description: code || undefined,
-      });
-    }
-
-    return items;
-  }, [accessSellers, defaultSeller]);
-
+  const options = React.useMemo(
+    () => buildSellerLookupOptions(userInfos),
+    [userInfos],
+  );
   const selectedOption =
     options.find((option) => option.value === selectedValue) ?? null;
   const selectedLabel = selectedOption
-    ? getOptionDisplayLabel(selectedOption)
-    : "Επιλέξτε πωλητή…";
+    ? getSellerLookupOptionDisplayLabel(selectedOption)
+    : "";
 
   React.useEffect(() => {
     if (!defaultSeller?.sellerCode) return;
@@ -98,43 +70,21 @@ export default function SellerActingSelector({
     dispatch(setActingSellerCode(actingCode));
     clearError?.("actingSellerCode");
 
-    if (actingCode) {
-      const seller = accessSellers.find(
-        (item) => item.sellerCode?.trim() === actingCode,
-      );
-      if (seller?.sellerCode?.trim()) {
-        dispatch(
-          setDraftProperty({
-            key: "sellerCode",
-            value: seller.sellerCode.trim(),
-          }),
-        );
-        if (seller.sellerName?.trim()) {
-          dispatch(
-            setDraftProperty({
-              key: "sellerName",
-              value: seller.sellerName.trim(),
-            }),
-          );
-        }
-      }
-      return;
-    }
+    const seller = resolveActingSeller(userInfos, actingCode);
+    if (!seller?.sellerCode) return;
 
-    if (defaultSeller?.sellerCode) {
-      dispatch(
-        setDraftProperty({
-          key: "sellerCode",
-          value: defaultSeller.sellerCode,
-        }),
-      );
-      dispatch(
-        setDraftProperty({
-          key: "sellerName",
-          value: defaultSeller.sellerName?.trim() ?? defaultSeller.sellerCode,
-        }),
-      );
-    }
+    dispatch(
+      setDraftProperty({
+        key: "sellerCode",
+        value: seller.sellerCode,
+      }),
+    );
+    dispatch(
+      setDraftProperty({
+        key: "sellerName",
+        value: seller.sellerName?.trim() ?? seller.sellerCode,
+      }),
+    );
   };
 
   if (!hasSellerAccessList(userInfos)) return null;
@@ -152,46 +102,15 @@ export default function SellerActingSelector({
         aria-hidden
       />
       <div className="flex-grow-1" style={{ minWidth: 0 }}>
-        <div className="text-secondary mb-1" style={{ fontSize: 11 }}>
-          Παραγγελία ως
-        </div>
-        <div className="input-group input-group-sm">
-          <input
-            type="text"
-            readOnly
-            name="actingSellerCode"
-            className={`form-control${errorMessage ? " is-invalid" : ""}`}
-            value={selectedOption ? selectedLabel : ""}
-            placeholder="Επιλέξτε πωλητή…"
-            onClick={() => setShowLookup(true)}
-            onKeyDown={(e) => {
-              if (e.key === "Enter" || e.key === " ") {
-                e.preventDefault();
-                setShowLookup(true);
-              }
-            }}
-            aria-label="Επιλογή πωλητή"
-            style={{ cursor: "pointer" }}
-          />
-          {canClear ? (
-            <button
-              type="button"
-              className="btn btn-outline-secondary"
-              aria-label="Επιστροφή στον προεπιλεγμένο πωλητή"
-              onClick={() => handleChange("")}
-            >
-              <i className="bi bi-x-lg" aria-hidden />
-            </button>
-          ) : null}
-          <button
-            type="button"
-            className="btn btn-primary"
-            onClick={() => setShowLookup(true)}
-            aria-label="Αναζήτηση πωλητή"
-          >
-            <i className="bi bi-search" />
-          </button>
-        </div>
+        <SellerLookupField
+          label="Παραγγελία ως"
+          name="actingSellerCode"
+          displayValue={selectedOption ? selectedLabel : ""}
+          isInvalid={Boolean(errorMessage)}
+          canClear={canClear}
+          onOpen={() => setShowLookup(true)}
+          onClear={() => handleChange("")}
+        />
         {errorMessage ? (
           <div className="invalid-feedback d-block">{errorMessage}</div>
         ) : null}

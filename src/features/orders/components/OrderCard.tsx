@@ -54,7 +54,7 @@ export default function OrderCard({
   const aiBatchStatus = order.aiBatchStatus?.trim().toLowerCase() ?? "";
   const aiQueued = aiBatchStatus === "queued" || aiBatchStatus === "processing";
   const aiFailed = aiBatchStatus === "failed";
-  const isAiLocked = aiQueued || aiFailed;
+  const isAiLocked = aiQueued;
   const canSwipeDelete = canDelete && !isDesktop && !isAiLocked;
 
   const [x, setX] = React.useState(0);
@@ -255,10 +255,7 @@ export default function OrderCard({
   const recipientName = order.recipient_name?.trim();
   const recipientAmka = order.recipient_amka?.trim();
   const recipientMobile = order.recipient_mobile?.trim();
-  const recipientOtherContact = [
-    order.recipient_mobile2,
-    order.recipient_tel,
-  ]
+  const recipientOtherContact = [order.recipient_mobile2, order.recipient_tel]
     .map((value) => value?.trim())
     .filter(Boolean)
     .join(" / ");
@@ -375,7 +372,7 @@ export default function OrderCard({
 
         {order.barcode?.trim() ? (
           <div
-            className="d-inline-flex align-items-center gap-1 mt-1"
+            className="d-inline-flex align-items-center mt-1 gap-1"
             style={{
               ...chipStyle,
               ...softPrimaryStyle,
@@ -451,16 +448,13 @@ export default function OrderCard({
         {aiFailed ? (
           <button
             type="button"
-            className="btn btn-sm btn-outline-danger d-inline-flex align-items-center justify-content-center gap-1 mt-2"
+            className="btn btn-sm btn-outline-danger d-inline-flex align-items-center justify-content-center gap-1"
             onClick={handleRetryAi}
             disabled={retryingAi || !onRetryAi}
             style={{ borderRadius: 999, fontWeight: 600 }}
           >
             {retryingAi ? (
-              <span
-                className="spinner-border spinner-border-sm"
-                aria-hidden
-              />
+              <span className="spinner-border spinner-border-sm" aria-hidden />
             ) : (
               <i className="bi bi-arrow-clockwise" aria-hidden />
             )}
@@ -605,9 +599,7 @@ export default function OrderCard({
                   </div>
                   {customerPhones ? (
                     <div className="col-4">
-                      <div className="small text-secondary">
-                        Κινητό Πελάτη
-                      </div>
+                      <div className="small text-secondary">Κινητό Πελάτη</div>
                       <div className="fw-medium">{customerPhones}</div>
                     </div>
                   ) : null}
@@ -633,7 +625,7 @@ export default function OrderCard({
                   </div>
                   {showSellerName && sellerName ? (
                     <div className="col-12">
-                      <div className="d-flex align-items-center gap-2 text-secondary small">
+                      <div className="d-flex align-items-center text-secondary small gap-2">
                         <i className="bi bi-person-badge" aria-hidden />
                         <span>Πωλητής</span>
                       </div>
@@ -643,7 +635,7 @@ export default function OrderCard({
 
                   {showRecipientInfo ? (
                     <div className="col-12">
-                      <div className="d-flex align-items-center gap-2 text-secondary small">
+                      <div className="d-flex align-items-center text-secondary small gap-2">
                         <i className="bi bi-person-lines-fill" aria-hidden />
                         <span>Παραλήπτης</span>
                       </div>
@@ -717,8 +709,7 @@ export default function OrderCard({
                       borderRadius: 14,
                       padding: "10px 12px",
                       fontWeight: 700,
-                      boxShadow:
-                        "0 10px 18px rgba(var(--bs-primary-rgb), .22)",
+                      boxShadow: "0 10px 18px rgba(var(--bs-primary-rgb), .22)",
                     }}
                   >
                     <i className="bi bi-eye me-2" />

@@ -1,11 +1,20 @@
 "use client";
 
-import { useCallback, useEffect, useRef } from "react";
+import { useCallback, useEffect, useSyncExternalStore } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useAppSelector } from "@/store/hooks";
 import {
-  applySellerScopeToParams,
-  isAllAccountsSearchParam,
+  getOwnSellerCode,
+  hasSellerAccessList,
+  resolveSellerScopeCode,
+} from "@/lib/sellerAccess";
+import {
+  getSellerScopeSellerCode,
+  getSellerScopeServerSnapshot,
+  SELLER_SCOPE_PARAM,
+  setSellerScopeSellerCode,
+  stripSellerScopeSearchParams,
+  subscribeSellerScope,
 } from "@/lib/sellerScope";
 
 type UseSellerScopeOptions = {
@@ -17,56 +26,60 @@ export function useSellerScope(options: UseSellerScopeOptions = {}) {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
-  const skipDefaultScopeRef = useRef(false);
-  const loggedSellerCode =
-    useAppSelector((s) => s.auth.userInfos)?.sellerCode?.trim() ?? "";
+  const userInfos = useAppSelector((s) => s.auth.userInfos);
+  const storedSellerCode = useSyncExternalStore(
+    subscribeSellerScope,
+    getSellerScopeSellerCode,
+    getSellerScopeServerSnapshot,
+  );
   const queryString = searchParams.toString();
-  const urlSellerCode = (searchParams.get("sellercode") ?? "").trim();
-  const showAllAccounts = isAllAccountsSearchParam(searchParams);
-  const sellerCodeFilter = showAllAccounts ? "" : loggedSellerCode;
+  const sellerScopeValue = resolveSellerScopeCode(userInfos, storedSellerCode);
+  const sellerCodeFilter = sellerScopeValue;
+  const loggedSellerCode = getOwnSellerCode(userInfos);
+  const canSelectSeller = hasSellerAccessList(userInfos);
 
   const replaceParams = useCallback(
     (mutate: (params: URLSearchParams) => void) => {
       const params = new URLSearchParams(queryString);
       mutate(params);
-      if (resetPage) params.delete("page");
       const qs = params.toString();
       router.replace(qs ? `${pathname}?${qs}` : pathname, { scroll: false });
     },
-    [pathname, queryString, resetPage, router],
+    [pathname, queryString, router],
   );
 
   useEffect(() => {
-    if (skipDefaultScopeRef.current) return;
-    if (!loggedSellerCode) return;
-    if (showAllAccounts) return;
-    if (urlSellerCode === loggedSellerCode) return;
+    if (
+      !searchParams.get(SELLER_SCOPE_PARAM) &&
+      !(searchParams.get("sellercode") ?? "").trim()
+    ) {
+      return;
+    }
 
     replaceParams((params) => {
-      applySellerScopeToParams(params, {
-        showAllAccounts: false,
-        loggedSellerCode,
-      });
+      stripSellerScopeSearchParams(params);
     });
-  }, [loggedSellerCode, replaceParams, showAllAccounts, urlSellerCode]);
+  }, [replaceParams, searchParams]);
 
-  const setShowAllAccounts = useCallback(
-    (nextShowAllAccounts: boolean) => {
-      skipDefaultScopeRef.current = true;
+  const setSellerCodeFilter = useCallback(
+    (nextSellerCode: string) => {
+      const next = resolveSellerScopeCode(userInfos, nextSellerCode);
+      setSellerScopeSellerCode(next);
+      if (!resetPage) return;
+
       replaceParams((params) => {
-        applySellerScopeToParams(params, {
-          showAllAccounts: nextShowAllAccounts,
-          loggedSellerCode,
-        });
+        stripSellerScopeSearchParams(params);
+        params.delete("page");
       });
     },
-    [loggedSellerCode, replaceParams],
+    [replaceParams, resetPage, userInfos],
   );
 
   return {
-    showAllAccounts,
     sellerCodeFilter,
+    sellerScopeValue,
     loggedSellerCode,
-    setShowAllAccounts,
+    canSelectSeller,
+    setSellerCodeFilter,
   };
 }

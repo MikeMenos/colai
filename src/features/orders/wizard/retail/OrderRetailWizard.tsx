@@ -225,7 +225,8 @@ export default function OrderRetailWizard() {
     !String(draftOrder.doctorSuggested_name ?? "").trim();
   const hasInvalidMaterialsQtyError =
     !isTempSave && hasInvalidMaterialsQty(ylika);
-  const hasInvalidCustomerAmka = !!customerAmkaError;
+  const hasInvalidCustomerAmka =
+    !isTempSave && retailCustomerWithoutPriceBadge && !!customerAmkaError;
   const activeFieldErrors = React.useMemo(
     () =>
       getActiveWizardFieldErrors(visibleFieldErrors, (field) => {
@@ -256,7 +257,8 @@ export default function OrderRetailWizard() {
     (hasWizardFieldErrors(activeFieldErrors) ||
       hasMissingCustomerActivity ||
       hasMissingRequiredDoctorName ||
-      hasInvalidMaterialsQtyError);
+      hasInvalidMaterialsQtyError ||
+      hasInvalidCustomerAmka);
   const saveDisabled = submitState.loading || (!isTempSave && hasFieldErrors);
 
   const submitConfirmOrderAsSeller = getActingSellerDisplayLabel(
@@ -300,6 +302,7 @@ export default function OrderRetailWizard() {
           onGoToCustomerAmka={goToCustomerAmkaField}
           onGoToDoctorName={goToDoctorNameField}
           onGoToMaterials={goToMaterialsStep}
+          customerAmkaError={customerAmkaError}
           materialsQtyError={
             hasInvalidMaterialsQtyError ? MATERIALS_QTY_MESSAGE : null
           }
