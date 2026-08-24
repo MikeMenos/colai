@@ -13,4 +13,5 @@ export type GnomateuseisUploadSectionProps = {
   upload: FileUploadState;
   maxFiles?: number;
   footer?: React.ReactNode;
+  showFilePreview?: boolean;
 };

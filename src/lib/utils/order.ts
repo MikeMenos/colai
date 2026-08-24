@@ -16,3 +16,17 @@ export function getOrderFileViewUrl(f: OrderFile): string | null {
   if (!suffix) return null;
   return `${DOCS_BASE}${encodeURIComponent(suffix)}`;
 }
+
+export function getOrderFileDisplayName(f: OrderFile): string {
+  return f.originalFileName ?? f.name ?? f.base64filename ?? "";
+}
+
+export function isPdfFile(name: string, mimeType?: string | null): boolean {
+  return (
+    mimeType === "application/pdf" || name.toLowerCase().endsWith(".pdf")
+  );
+}
+
+export function isOrderFilePdf(f: OrderFile): boolean {
+  return isPdfFile(getOrderFileDisplayName(f), f.fileType);
+}

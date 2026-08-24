@@ -1,6 +1,7 @@
 import type { CSSProperties } from "react";
 import type { OrderFile } from "@/types/orders";
 import { formatFileSizeMB } from "@/lib/utils/number";
+import { getOrderFileDisplayName, isPdfFile } from "@/lib/utils/order";
 import type { UploadStatus, UploadingInfo } from "./types";
 
 export const FILE_INFO_WRAP_STYLE: CSSProperties = {
@@ -10,16 +11,6 @@ export const FILE_INFO_WRAP_STYLE: CSSProperties = {
 };
 
 export const MAX_RECIPE_FILES = 2;
-
-export function isPdf(name: string, mimeType?: string) {
-  return mimeType === "application/pdf" || name.toLowerCase().endsWith(".pdf");
-}
-
-export function getOrderFileDisplayName(file: OrderFile): string {
-  return (
-    file.originalFileName ?? file.name ?? file.base64filename ?? ""
-  );
-}
 
 export function FileTypeIcon({
   name,
@@ -32,7 +23,7 @@ export function FileTypeIcon({
 }) {
   return (
     <i
-      className={`${className} ${isPdf(name, mimeType) ? "bi-filetype-pdf" : "bi-image"}`}
+      className={`${className} ${isPdfFile(name, mimeType) ? "bi-filetype-pdf" : "bi-image"}`}
     />
   );
 }
