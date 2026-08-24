@@ -3,16 +3,13 @@
 import type { GnomateuseisUploadSectionProps } from "./GnomateuseisUploadSection.types";
 import React from "react";
 import FileUploadButton from "../FileUploadButton";
-import type { OrderFile } from "@/types/orders";
-import type { FileUploadState } from "./useFileUploadState";
 import {
   UploadErrorAlert,
   UploadProgressBlock,
   UploadedFileRow,
   formatUploadingSizeMb,
 } from "./fileUploadUi";
-import { getOrderFileDisplayName, getOrderFileViewUrl } from "@/lib/utils/order";
-import { OrderFilePreviewButtons } from "@/components/ui/OrderFilePreviewButton";
+import { getOrderFileDisplayName } from "@/lib/utils/order";
 
 export default function GnomateuseisUploadSection({
   title,
@@ -26,7 +23,6 @@ export default function GnomateuseisUploadSection({
   upload,
   maxFiles,
   footer,
-  showFilePreview = false,
 }: GnomateuseisUploadSectionProps) {
   const sectionFiles = files.filter(
     (f) => f.documentCategory === documentCategory,
@@ -35,24 +31,11 @@ export default function GnomateuseisUploadSection({
     maxFiles == null ? true : sectionFiles.length < maxFiles;
   const formatSize =
     documentCategory === "recipe_aux" ? formatUploadingSizeMb : undefined;
-  const previewableFiles = showFilePreview
-    ? sectionFiles.filter((file) => getOrderFileViewUrl(file))
-    : [];
 
   return (
     <div className="app-card overflow-hidden p-3">
       <div className="d-flex align-items-center justify-content-between border-bottom mb-2 pb-2">
-        <div className="d-flex align-items-center min-w-0 flex-wrap gap-2">
-          <div className="fw-semibold">{title}</div>
-          {previewableFiles.length > 0 ? (
-            <OrderFilePreviewButtons
-              files={previewableFiles}
-              variant="outline-primary"
-              size="sm"
-              style={{ borderRadius: 999, fontWeight: 600 }}
-            />
-          ) : null}
-        </div>
+        <div className="fw-semibold">{title}</div>
 
         {canAdd ? (
           <div className="d-flex align-items-center gap-2">
