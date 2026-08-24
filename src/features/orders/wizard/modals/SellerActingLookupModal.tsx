@@ -42,6 +42,7 @@ export default function SellerActingLookupModal({
       show={show}
       onHide={onClose}
       centered
+      restoreFocus={false}
       contentClassName="premium-modal"
     >
       <Modal.Header closeButton>
@@ -77,6 +78,9 @@ export default function SellerActingLookupModal({
                     onClick={() => {
                       onSelect(option.value);
                       onClose();
+                      if (document.activeElement instanceof HTMLElement) {
+                        document.activeElement.blur();
+                      }
                     }}
                   >
                     <div className="d-flex align-items-start justify-content-between gap-2">

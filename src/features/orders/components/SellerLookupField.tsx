@@ -30,8 +30,10 @@ export default function SellerLookupField({
           value={displayValue}
           placeholder={placeholder}
           disabled={disabled}
-          onClick={() => {
-            if (!disabled) onOpen();
+          onClick={(e) => {
+            if (disabled) return;
+            e.currentTarget.blur();
+            onOpen();
           }}
           onKeyDown={(e) => {
             if (disabled) return;
