@@ -32,6 +32,7 @@ import type {
   IRecipientFormData,
 } from "@/lib/interface";
 import { calcPosoSymmetoxisForOrder } from "@/lib/utils/plafon";
+import { isAiBatchFailed } from "@/lib/utils/ai";
 import { AppDispatch, RootState } from "@/store/store";
 import { formatStringToISODDateTime, formatUIDate } from "@/lib/utils/date";
 import { parseGreekDecimal } from "@/lib/utils/number";
@@ -1189,28 +1190,40 @@ const ordersSlice = createSlice({
         }
 
         const isExistingSavedOrder = Number(order?.id) > 0;
+        const aiBatchFailed = isAiBatchFailed(state.draft.order.aiBatchStatus);
         if (isExistingSavedOrder) {
-          state.draft.customerAmkaGateCompleted = true;
+          if (aiBatchFailed) {
+            state.draft.customerAmkaGateCompleted = undefined;
+            state.draft.order.aiCalculated = false;
+            state.draft.customerIsCompletelyNew = true;
+            state.draft.customerSelectedFromList = undefined;
+            state.draft.customerProsEbs = undefined;
+            state.draft.lastWebOrderFromLoadInfo = undefined;
+            state.draft.lastOrderInfoCustomerErpGID = undefined;
+            state.draft.lastOrderInfoDateIn = undefined;
+          } else {
+            state.draft.customerAmkaGateCompleted = true;
 
-          const customerGid = String(
-            state.draft.order.customer_ErpGID ?? order?.customer_ErpGID ?? "",
-          ).trim();
-          if (customerGid && !editCustomerStatus) {
-            state.draft.customerIsCompletelyNew = false;
-            state.draft.customerSelectedFromList = true;
-            state.draft.customerProsEbs = false;
-          }
+            const customerGid = String(
+              state.draft.order.customer_ErpGID ?? order?.customer_ErpGID ?? "",
+            ).trim();
+            if (customerGid && !editCustomerStatus) {
+              state.draft.customerIsCompletelyNew = false;
+              state.draft.customerSelectedFromList = true;
+              state.draft.customerProsEbs = false;
+            }
 
-          const hasRecipeFiles = (action.payload.data?.files ?? []).some(
-            (f) => f?.documentCategory === "recipe",
-          );
-          const loadedOrder = order as Order;
-          if (
-            loadedOrder?.aiCalculated ||
-            loadedOrder?.statusId === 0 ||
-            hasRecipeFiles
-          ) {
-            state.draft.order.aiCalculated = true;
+            const hasRecipeFiles = (action.payload.data?.files ?? []).some(
+              (f) => f?.documentCategory === "recipe",
+            );
+            const loadedOrder = order as Order;
+            if (
+              loadedOrder?.aiCalculated ||
+              loadedOrder?.statusId === 0 ||
+              hasRecipeFiles
+            ) {
+              state.draft.order.aiCalculated = true;
+            }
           }
         }
 
