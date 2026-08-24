@@ -28,15 +28,15 @@ export default function OrderFilePreviewModal({
     <Modal
       show={show}
       onHide={onClose}
-      centered
-      size="xl"
-      fullscreen="md-down"
+      size="lg"
       restoreFocus={false}
+      className="order-file-preview-modal-root"
       dialogClassName="order-file-preview-modal"
-      contentClassName="premium-modal"
     >
       <Modal.Header closeButton>
-        <Modal.Title className="h6 mb-0 text-truncate">{title}</Modal.Title>
+        <Modal.Title className="order-file-preview-title" title={title}>
+          {title}
+        </Modal.Title>
       </Modal.Header>
 
       <Modal.Body className="p-0 d-flex flex-column">

@@ -158,7 +158,6 @@ export default function GnomateuseisArea({
         onFileAdded={handleFileAdded}
         upload={recipeUpload}
         maxFiles={2}
-        showFilePreview
         footer={aiStatusPanel}
       />
 

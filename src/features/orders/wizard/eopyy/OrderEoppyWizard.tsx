@@ -17,6 +17,7 @@ import {
 } from "@/lib/utils/ai";
 import SubmitOrderConfirmModal from "../modals/SubmitOrderConfirmModal";
 import SellerActingSelector from "@/features/orders/components/SellerActingSelector";
+import OrderRecipeFilePreviewBar from "./OrderRecipeFilePreviewBar";
 import { getActingSellerDisplayLabel } from "@/lib/sellerAccess";
 import { useRouter } from "next/navigation";
 import { buildStepDefs } from "./wizard/buildStepDefs";
@@ -379,6 +380,8 @@ export default function OrderEoppyWizard({
       className={`order-wizard d-flex flex-column gap-2${showWizardNav ? "order-wizard--has-nav" : ""}`}
     >
       <StepIndicator steps={labels} current={step} setStep={setStep} />
+
+      <OrderRecipeFilePreviewBar />
 
       <SellerActingSelector clearError={clearError} />
 

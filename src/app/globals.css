@@ -696,24 +696,115 @@ html[data-bs-theme="dark"], .modal-content {
   background-color: var(--app-bg);
 }
 
+.order-file-preview-modal-root.modal {
+  --preview-modal-inset-top: var(--safe-top);
+  --preview-modal-inset-bottom: var(--safe-bottom);
+  align-items: flex-start;
+  justify-content: center;
+  padding: var(--preview-modal-inset-top) 0.5rem var(--preview-modal-inset-bottom);
+  overflow: hidden;
+}
+
+html[data-pwa="true"] .order-file-preview-modal-root.modal {
+  --preview-modal-inset-top: var(--pwa-top-safe-area);
+  --preview-modal-inset-bottom: var(--pwa-bottom-safe-area);
+}
+
+.order-file-preview-modal {
+  --preview-modal-gap: 0.5rem;
+  margin: var(--preview-modal-gap) auto;
+  width: 100%;
+  max-width: min(100%, var(--app-max-width));
+}
+
+.order-file-preview-modal .modal-content {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+@media (max-width: 767.98px) {
+  .order-file-preview-modal {
+    height: calc(
+      100dvh - (2 * var(--preview-modal-gap)) - var(--preview-modal-inset-top) -
+        var(--preview-modal-inset-bottom)
+    );
+    max-height: calc(
+      100dvh - (2 * var(--preview-modal-gap)) - var(--preview-modal-inset-top) -
+        var(--preview-modal-inset-bottom)
+    );
+  }
+
+  .order-file-preview-modal .modal-content {
+    height: 100%;
+    max-height: 100%;
+  }
+
+  .order-file-preview-modal .btn-close {
+    width: 2.5rem;
+    height: 2.5rem;
+    margin: 0;
+    padding: 0;
+    opacity: 1;
+  }
+}
+
+@media (min-width: 768px) {
+  .order-file-preview-modal .modal-content {
+    max-height: min(88vh, 920px);
+  }
+}
+
+.order-file-preview-modal .modal-header {
+  flex-shrink: 0;
+  align-items: center;
+  gap: 0.5rem;
+  padding-top: 12px;
+  padding-bottom: 10px;
+}
+
+.order-file-preview-modal .order-file-preview-title {
+  flex: 1 1 auto;
+  min-width: 0;
+  margin-bottom: 0;
+  font-size: 1rem;
+  font-weight: 500;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.order-file-preview-modal .modal-header .btn-close {
+  flex-shrink: 0;
+}
+
 .order-file-preview-modal .modal-body {
-  min-height: min(75vh, 720px);
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
 }
 
 .order-file-preview-frame {
+  display: block;
   flex: 1 1 auto;
-  min-height: min(75vh, 720px);
+  width: 100%;
+  min-height: 0;
+  height: 100%;
   background: #fff;
 }
 
 .order-file-preview-image-wrap {
   flex: 1 1 auto;
-  min-height: min(60vh, 640px);
+  min-height: 0;
   overflow: auto;
+  -webkit-overflow-scrolling: touch;
 }
 
 .order-file-preview-image {
-  max-height: min(75vh, 720px);
+  max-width: 100%;
+  max-height: 100%;
   object-fit: contain;
 }
 
