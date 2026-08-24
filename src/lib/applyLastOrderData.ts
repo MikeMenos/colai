@@ -227,15 +227,18 @@ export function applyLastErpOrderData(
  * Overwrites draft order with values from lastOrderData (e.g. last_order_info or last_web_order from load-last-customer-order-info).
  * Skips null/undefined and excluded keys.
  * When restrictToCustomerAndDoctor is true, only Ασθενής and Ιατρός fields are applied (e.g. last_web_order from patient search).
+ * skipKeys are left unchanged on the draft (used to keep run-ai values after AMKA customer selection).
  */
 export function applyLastOrderData(
   lastOrderData: Record<string, unknown>,
   dispatch: AppDispatch,
   restrictToCustomerAndDoctor?: boolean,
+  skipKeys?: ReadonlySet<keyof Order>,
 ): void {
   for (const [key, value] of Object.entries(lastOrderData)) {
     const orderKey = (KEY_MAP[key] ?? key) as keyof Order;
     if (EXCLUDE_KEYS.has(orderKey)) continue;
+    if (skipKeys?.has(orderKey)) continue;
     if (
       restrictToCustomerAndDoctor &&
       !LAST_CUSTOMER_WEB_ORDER_ALLOW_KEYS.has(orderKey)

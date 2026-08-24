@@ -35,6 +35,7 @@ import type {
 } from "@/types/api/responses";
 import type { RetailPreloadedPriceList } from "@/types/orders";
 import {
+  PRESERVE_AI_FIELDS_ON_CUSTOMER_SELECTION,
   resetDraftForDifferentCustomerSelection,
   shouldResetWizardForCustomerAmkaChange,
 } from "../eopyy/wizard/resetWizardForCustomerSelection";
@@ -259,7 +260,14 @@ export async function applyCustomerFromSearch(
         delete lwoCopy.address_ErpGID;
         delete lwoCopy.preselected_person_GID;
         delete lwoCopy.preselected_address_GID;
-        applyLastOrderData(lwoCopy, dispatch, true);
+        applyLastOrderData(
+          lwoCopy,
+          dispatch,
+          true,
+          options.resetWizardOnDifferentAmka
+            ? PRESERVE_AI_FIELDS_ON_CUSTOMER_SELECTION
+            : undefined,
+        );
         preferredPerson = lwoPerson;
         preferredAddr = lwoAddr;
       } else if (isNonEmptyRecord(leo)) {
@@ -436,7 +444,14 @@ export async function applyLastCustomerWebOrderFromSearch(
   delete lwoCopy.address_ErpGID;
   delete lwoCopy.preselected_person_GID;
   delete lwoCopy.preselected_address_GID;
-  applyLastOrderData(lwoCopy, dispatch, true);
+  applyLastOrderData(
+    lwoCopy,
+    dispatch,
+    true,
+    options.resetWizardOnDifferentAmka
+      ? PRESERVE_AI_FIELDS_ON_CUSTOMER_SELECTION
+      : undefined,
+  );
 
   const customerGid = String(lwo.customer_ErpGID ?? "").trim();
   const customerName = String(lwo.customer_name ?? "").trim();
