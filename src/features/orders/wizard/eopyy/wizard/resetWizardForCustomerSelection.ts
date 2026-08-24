@@ -67,9 +67,6 @@ const CUSTOMER_AND_DELIVERY_FIELDS: (keyof Order)[] = [
   "otherDoctorSuggested_afm",
   "otherDoctorSuggested_domi",
   "otherDoctorSuggested_mobile",
-  "shipMethodId",
-  "shipMethodName",
-  "shipMethod_GID",
   "shipToOtherAddressBool",
   "shouldUpdateRecipientInfos",
   "updateRecipient_amka",
@@ -91,6 +88,9 @@ export const PRESERVE_AI_FIELDS_ON_CUSTOMER_SELECTION = new Set<keyof Order>([
   "customer_tel_otp",
   "deliverySunday",
   "deliveryMorning",
+  "shipMethodId",
+  "shipMethodName",
+  "shipMethod_GID",
 ]);
 
 export function shouldResetWizardForCustomerAmkaChange(
@@ -103,7 +103,7 @@ export function shouldResetWizardForCustomerAmkaChange(
   return baseline !== selected;
 }
 
-/** Clears patient/delivery data for a new AMKA selection; keeps Συνταγή, Υλικά, Συμμετοχή, Ιατρός συνταγής, OTP, delivery flags, order shell, and Γνωμάτευση uploads. */
+/** Clears patient/delivery data for a new AMKA selection; keeps Συνταγή, Υλικά, Συμμετοχή, Ιατρός συνταγής, OTP, Αποστολή, delivery flags, order shell, and Γνωμάτευση uploads. */
 export function resetDraftForDifferentCustomerSelection(
   dispatch: AppDispatch,
 ): void {
