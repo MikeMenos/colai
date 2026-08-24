@@ -9,6 +9,7 @@ import NotFoundView from "@/components/system/NotFoundView";
 import { editDraftAsync, loadCustomerAddressesAsync } from "@/store/orders/ordersSlice";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { store } from "@/store/store";
+import { isAiBatchFailed } from "@/lib/utils/ai";
 import { applyCustomerFieldsFromLoadedAddresses } from "@/features/orders/wizard/eopyy/wizard/bootstrapExistingOrderEdit";
 import type { OrderListOfAddressPersons } from "@/types/orders";
 
@@ -36,7 +37,7 @@ export default function OrderWizardEditPage() {
         const order = store.getState().orders.draft.order;
         const gid = order.customer_ErpGID?.toString().trim();
         const amka = order.customer_amka?.toString().trim();
-        if (gid && amka) {
+        if (gid && amka && !isAiBatchFailed(order.aiBatchStatus)) {
           try {
             const addressResult = await dispatch(
               loadCustomerAddressesAsync({

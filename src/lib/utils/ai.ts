@@ -6,6 +6,10 @@ export type AiStatus = "idle" | "running" | "done" | "error";
 
 export const DEFAULT_AI_CLIENTS: AiClient[] = ["Claude", "Gemini"];
 
+export function isAiBatchFailed(status: string | null | undefined): boolean {
+  return String(status ?? "").trim().toLowerCase() === "failed";
+}
+
 export function getAiClientsByPriority(
   clients?: ApiAvailableAiClient[] | null,
 ): AiClient[] {
