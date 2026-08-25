@@ -117,15 +117,19 @@ export default function FileUploadButton({
           });
       }
 
+      const storedName = data.misc1?.trim() || file.name;
+      const storedIsPdf = storedName.toLowerCase().endsWith(".pdf");
+
       dispatchFileToRedux({
         originalFileName: file.name,
         base64filename: file.name,
-        name: file.name,
+        name: storedName,
+        friendlyName: storedName,
         position,
         document_category,
         documentCategory: document_category,
         fileSize: formatFileSizeMB(file.size),
-        fileType: file.type,
+        fileType: storedIsPdf ? "application/pdf" : file.type,
       });
 
       setStatus("idle");

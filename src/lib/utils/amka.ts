@@ -14,11 +14,14 @@ function getAmkaRaw(value: Maybe<string>): string {
   return String(value ?? "").trim();
 }
 
-const AMKA_R_PREFIX_COMPLETE_PATTERN = /^R\d{10}$/;
 const AMKA_R_PREFIX_PARTIAL_PATTERN = /^R\d*$/;
 
 function isRPrefixAmka(value: string): boolean {
   return value.startsWith("R");
+}
+
+function isRPrefixValidationExempt(value: string): boolean {
+  return AMKA_R_PREFIX_PARTIAL_PATTERN.test(value);
 }
 
 function hasInvalidAmkaCharacters(value: string): boolean {
@@ -28,19 +31,24 @@ function hasInvalidAmkaCharacters(value: string): boolean {
   return /\D/.test(value);
 }
 
-/** AMKAs starting with 80 or R skip greece-amka checksum validation. */
+/** AMKAs starting with 80 or matching R-prefix skip length/checksum validation. */
+function is80PrefixAmka(value: string): boolean {
+  return /^\d+$/.test(value) && value.startsWith("80");
+}
+
+/** AMKAs starting with 80 or R skip length/checksum validation. */
 export function isAmkaValidationExempt(value: Maybe<string>): boolean {
   const raw = getAmkaRaw(value);
-  if (!raw || raw.length !== 11) return false;
-  if (/^\d+$/.test(raw) && raw.startsWith("80")) return true;
-  return AMKA_R_PREFIX_COMPLETE_PATTERN.test(raw);
+  if (!raw) return false;
+  if (is80PrefixAmka(raw)) return true;
+  return isRPrefixValidationExempt(raw);
 }
 
 export function isValidAmka(value: Maybe<string>): boolean {
   const raw = getAmkaRaw(value);
   if (!raw || hasInvalidAmkaCharacters(raw)) return false;
-  if (raw.length !== 11) return false;
   if (isAmkaValidationExempt(raw)) return true;
+  if (raw.length !== 11) return false;
   if (!/^\d+$/.test(raw)) return false;
   return greeceAmka.validate(raw);
 }
@@ -49,8 +57,8 @@ export function getAmkaInlineFieldError(value: Maybe<string>): string | null {
   const raw = getAmkaRaw(value);
   if (!raw) return null;
   if (hasInvalidAmkaCharacters(raw)) return AMKA_ERROR_MESSAGE;
-  if (raw.length !== 11) return AMKA_LENGTH_MESSAGE;
   if (isAmkaValidationExempt(raw)) return null;
+  if (raw.length !== 11) return AMKA_LENGTH_MESSAGE;
   return isValidAmka(raw) ? null : AMKA_ERROR_MESSAGE;
 }
 
@@ -61,8 +69,8 @@ export function getRequiredAmkaError(
   const raw = getAmkaRaw(value);
   if (!raw) return emptyMessage;
   if (hasInvalidAmkaCharacters(raw)) return AMKA_ERROR_MESSAGE;
-  if (raw.length !== 11) return AMKA_LENGTH_MESSAGE;
   if (isAmkaValidationExempt(raw)) return null;
+  if (raw.length !== 11) return AMKA_LENGTH_MESSAGE;
   return isValidAmka(raw) ? null : AMKA_ERROR_MESSAGE;
 }
 

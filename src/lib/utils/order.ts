@@ -35,5 +35,8 @@ export function isPdfFile(name: string, mimeType?: string | null): boolean {
 }
 
 export function isOrderFilePdf(f: OrderFile): boolean {
-  return isPdfFile(getOrderFileDisplayName(f), f.fileType);
+  return isPdfFile(
+    getFileSuffix(f) || getOrderFileDisplayName(f),
+    f.fileType,
+  );
 }
