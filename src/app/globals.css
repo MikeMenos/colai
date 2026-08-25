@@ -789,9 +789,19 @@ html[data-pwa="true"] .order-file-preview-modal-root.modal {
 .order-file-preview-pdf-scroll {
   flex: 1 1 auto;
   min-height: 0;
-  overflow: auto;
-  -webkit-overflow-scrolling: touch;
+  overflow: hidden;
+  touch-action: none;
   background: #fff;
+}
+
+.order-file-preview-pdf-zoom-wrapper {
+  width: 100% !important;
+  height: 100% !important;
+}
+
+.order-file-preview-pdf-zoom-content {
+  width: 100%;
+  align-content: flex-start;
 }
 
 .order-file-preview-pdf-page {
