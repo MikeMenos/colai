@@ -99,6 +99,9 @@ export default function OrderEoppyWizard({
   const submitState = useAppSelector((s) => s.orders.draft.submitState);
   const userInfos = useAppSelector((s) => s.auth.userInfos);
   const actingSellerCode = useAppSelector((s) => s.auth.actingSellerCode);
+  const listOrderEidosEgkrisis = useAppSelector(
+    (s) => s.staticData.list_Order_EidosEgkrisis,
+  );
   const listAddressesPersons = useAppSelector(
     (s) => s.orders.draft.list_AddressesPersons,
   );
@@ -331,7 +334,7 @@ export default function OrderEoppyWizard({
 
     setShowSubmitConfirm(true);
   }
-
+  console.log(draftOrder);
   async function confirmSave() {
     try {
       const result = await dispatch(submitDraftAsync()).unwrap();
@@ -370,6 +373,14 @@ export default function OrderEoppyWizard({
   const submitConfirmOrderAsSeller = React.useMemo(
     () => getActingSellerDisplayLabel(userInfos, actingSellerCode),
     [userInfos, actingSellerCode],
+  );
+
+  const submitConfirmEidosEgkrisis = React.useMemo(
+    () =>
+      listOrderEidosEgkrisis?.find(
+        (item) => item.value == String(draftOrder.eidos_Egkrisis ?? ""),
+      )?.text ?? null,
+    [draftOrder.eidos_Egkrisis, listOrderEidosEgkrisis],
   );
 
   const showWizardNav = step > 0;
@@ -447,6 +458,9 @@ export default function OrderEoppyWizard({
         recipientAddress={submitConfirmRecipientAddress}
         barcode={draftOrder.barcode}
         dateOfSyntagi={draftOrder.dateOfSyntagi}
+        dateIsxyeiApo={draftOrder.dateIsxyeiApo}
+        dateIsxyeiEos={draftOrder.dateIsxyeiEos}
+        eidosEgkrisis={submitConfirmEidosEgkrisis}
         customerIsCompletelyNew={customerIsCompletelyNew === true}
         suggestedDoctorName={submitConfirmSuggestedDoctorName}
         orderAsSeller={submitConfirmOrderAsSeller}
