@@ -4,6 +4,9 @@ export type SubmitOrderConfirmReviewField =
   | "recipientAddress"
   | "amka"
   | "dateOfSyntagi"
+  | "dateIsxyeiApo"
+  | "dateIsxyeiEos"
+  | "eidosEgkrisis"
   | "barcode"
   | "suggestedDoctorName";
 
@@ -17,6 +20,9 @@ export type SubmitOrderConfirmModalProps = {
   recipientAddress?: string | null;
   barcode?: string | null;
   dateOfSyntagi?: string | null;
+  dateIsxyeiApo?: string | null;
+  dateIsxyeiEos?: string | null;
+  eidosEgkrisis?: string | null;
   customerIsCompletelyNew?: boolean;
   suggestedDoctorName?: string | null;
   orderAsSeller?: string | null;

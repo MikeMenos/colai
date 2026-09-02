@@ -13,6 +13,9 @@ const DEFAULT_REVIEW_FIELDS: SubmitOrderConfirmReviewField[] = [
   "recipientAddress",
   "amka",
   "dateOfSyntagi",
+  "dateIsxyeiApo",
+  "dateIsxyeiEos",
+  "eidosEgkrisis",
   "barcode",
 ];
 
@@ -22,6 +25,9 @@ const REVIEW_FIELD_LABELS: Record<SubmitOrderConfirmReviewField, string> = {
   recipientAddress: "Διεύθ. παραλήπτη",
   amka: "ΑΜΚΑ παραλήπτη",
   dateOfSyntagi: "Ημ/νία συνταγής",
+  dateIsxyeiApo: "Ισχύς από",
+  dateIsxyeiEos: "Έως",
+  eidosEgkrisis: "Είδος έγκρισης",
   barcode: "Barcode",
   suggestedDoctorName: "Συστήνων ιατρός",
 };
@@ -124,6 +130,9 @@ export default function SubmitOrderConfirmModal({
   recipientAddress,
   barcode,
   dateOfSyntagi,
+  dateIsxyeiApo,
+  dateIsxyeiEos,
+  eidosEgkrisis,
   customerIsCompletelyNew = false,
   suggestedDoctorName,
   orderAsSeller,
@@ -139,6 +148,9 @@ export default function SubmitOrderConfirmModal({
     recipientAddress,
     amka,
     dateOfSyntagi,
+    dateIsxyeiApo,
+    dateIsxyeiEos,
+    eidosEgkrisis,
     barcode,
     suggestedDoctorName,
   };

@@ -48,6 +48,9 @@ export default function OrderCard({
   const userInfo = useAppSelector((s) => s.auth.userInfos);
   const list_order_types = useAppSelector((s) => s.staticData.list_Order_Types);
   const list_group_eoppy = useAppSelector((s) => s.staticData.list_GroupEoppy);
+  const list_order_eidos_egkrisis = useAppSelector(
+    (s) => s.staticData.list_Order_EidosEgkrisis,
+  );
 
   const isDesktop = useIsDesktop();
   const canDelete = order.statusId === 0 && userInfo?.isSeller;
@@ -233,6 +236,10 @@ export default function OrderCard({
     list_group_eoppy?.find((g) => g.value == String(order.group_EOPPY_id))
       ?.text ?? "";
   const dateInText = formatCompactUIDateTime(order.dateIn);
+  const eidosEgkrisisText =
+    list_order_eidos_egkrisis?.find(
+      (item) => item.value == String(order.eidos_Egkrisis ?? ""),
+    )?.text ?? "";
 
   const doctorLabel =
     order.has_suggested_doctor == 2 ? "Συστήνων ιατρός" : "Ιατρός";
@@ -350,6 +357,11 @@ export default function OrderCard({
             >
               <i className="bi bi-clock-history" />
               <span className="fw-semibold">{dateInText}</span>
+            </span>
+          ) : null}
+          {eidosEgkrisisText ? (
+            <span style={chipStyle} title={`Είδος έγκρισης: ${eidosEgkrisisText}`}>
+              <span className="fw-semibold">{eidosEgkrisisText}</span>
             </span>
           ) : null}
           {aiFailed ? aiBatchBadge : null}
