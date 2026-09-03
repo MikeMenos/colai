@@ -3,12 +3,13 @@ import type { wcCalendar } from "@/types/wc";
 export const WC_STATUS_TITLE_EPISOULETHIKE = "ΕΠΟΥΛΩΘΗΚΕ";
 export const WC_STATUS_TITLE_APEBIWSE = "ΑΠΕΒΙΩΣΕ";
 
-export type WcStatusFilterKey = "all" | "e" | "a";
+export type WcStatusFilterKey = "all" | "active" | "e" | "a";
 
-export const WC_STATUS_FILTER_DEFAULT: WcStatusFilterKey[] = ["all"];
+export const WC_STATUS_FILTER_DEFAULT: WcStatusFilterKey[] = ["active"];
 
 export type WcStatusFilterMode =
   | "everything"
+  | "active"
   | "only-e"
   | "only-a"
   | "everything-except-a"
@@ -35,13 +36,15 @@ export function wcStatusTitleForFilterKey(key: "e" | "a"): string {
 }
 
 export function parseWcStatusFilterKeys(param: string): WcStatusFilterKey[] {
-  return param
+  const keys = param
     .split(",")
     .map((part) => part.trim())
     .filter(
       (key): key is WcStatusFilterKey =>
-        key === "all" || key === "e" || key === "a",
+        key === "all" || key === "active" || key === "e" || key === "a",
     );
+
+  return keys.length > 0 ? keys : [...WC_STATUS_FILTER_DEFAULT];
 }
 
 export function serializeWcStatusFilterKeys(keys: WcStatusFilterKey[]): string {
@@ -52,9 +55,11 @@ export function resolveWcStatusFilterMode(
   keys: WcStatusFilterKey[],
 ): WcStatusFilterMode {
   const hasAll = keys.includes("all");
+  const hasActive = keys.includes("active");
   const hasE = keys.includes("e");
   const hasA = keys.includes("a");
 
+  if (hasActive && !hasAll && !hasE && !hasA) return "active";
   if (hasAll && hasE && hasA) return "everything";
   if (hasAll && !hasE && !hasA) return "everything";
   if (hasAll && hasE && !hasA) return "everything-except-a";
@@ -67,13 +72,15 @@ export function resolveWcStatusFilterMode(
 }
 
 export function isDefaultWcStatusFilter(keys: WcStatusFilterKey[]): boolean {
-  return resolveWcStatusFilterMode(keys) === "everything";
+  return resolveWcStatusFilterMode(keys) === "active";
 }
 
 export function describeWcStatusFilter(keys: WcStatusFilterKey[]): string {
   switch (resolveWcStatusFilterMode(keys)) {
     case "everything":
       return "Όλες οι εγγραφές";
+    case "active":
+      return "Ενεργά";
     case "only-e":
       return WC_STATUS_TITLE_EPISOULETHIKE;
     case "only-a":
@@ -112,6 +119,8 @@ export function toggleWcStatusFilterKey(
     switch (mode) {
       case "everything":
         return keys;
+      case "active":
+        return ["all"];
       case "everything-except-a":
         return ["e"];
       case "everything-except-e":
@@ -127,6 +136,13 @@ export function toggleWcStatusFilterKey(
     }
   }
 
+  if (key === "active") {
+    if (keys.includes("active")) {
+      return ["all"];
+    }
+    return ["active"];
+  }
+
   if (key === "e") {
     if (keys.includes("e")) {
       return [...WC_STATUS_FILTER_DEFAULT];
@@ -134,6 +150,8 @@ export function toggleWcStatusFilterKey(
 
     switch (mode) {
       case "everything":
+        return ["e"];
+      case "active":
         return ["e"];
       case "everything-except-e":
         return ["all", "e"];
@@ -151,6 +169,8 @@ export function toggleWcStatusFilterKey(
 
     switch (mode) {
       case "everything":
+        return ["a"];
+      case "active":
         return ["a"];
       case "everything-except-a":
         return ["all", "a"];
@@ -184,6 +204,8 @@ export function rowMatchesWcStatusFilterMode(
   switch (mode) {
     case "everything":
       return true;
+    case "active":
+      return rowKey !== "e" && rowKey !== "a";
     case "only-e":
       return rowKey === "e";
     case "only-a":
