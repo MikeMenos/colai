@@ -11,7 +11,7 @@ import WCDiadikasiaGroupedList from "@/features/orders/components/diadikasia/WCD
 import OrderSellerScopeToggle from "@/features/orders/components/OrderSellerScopeToggle";
 import { useSellerScope } from "@/hooks/useSellerScope";
 import { fetchWCCalendar } from "@/store/wcDiadikasia/wcDiadikasiaSlice";
-import { Alert, Button, FormSelect, Modal } from "react-bootstrap";
+import { Alert, Offcanvas } from "react-bootstrap";
 import { parseOrderDate } from "@/features/orders/diadikasia/groupWcCalendarByLastOrderDate";
 import {
   describeWcStatusFilter,
@@ -40,7 +40,7 @@ export default function DiadikasiaWC() {
   const refreshing = useAppSelector((s) => s.wcDiadiaksia.refreshingList);
   const error = useAppSelector((s) => s.wcDiadiaksia.error);
 
-  const [showFilters, setShowFilters] = React.useState(false);
+  const [filtersOpen, setFiltersOpen] = React.useState(false);
   const [expandAllNonce, setExpandAllNonce] = React.useState(0);
   const [expandAllOpen, setExpandAllOpen] = React.useState(false);
   const [allTilesExpanded, setAllTilesExpanded] = React.useState(false);
@@ -125,11 +125,13 @@ export default function DiadikasiaWC() {
     if (!active) return `${base} btn-outline-secondary opacity-50`;
     if (key === "e") return `${base} btn-success border-success`;
     if (key === "a") return `${base} btn-danger border-danger`;
+    if (key === "active") return `${base} btn-primary border-primary`;
     return `${base} btn-primary border-primary`;
   };
 
   const wcStatusFilterButtonTitle = (key: WcStatusFilterKey): string => {
     if (key === "all") return "Όλες οι εγγραφές";
+    if (key === "active") return "Ενεργές εγγραφές (χωρίς Ε και Α)";
     if (key === "e") return WC_STATUS_TITLE_EPISOULETHIKE;
     return WC_STATUS_TITLE_APEBIWSE;
   };
@@ -163,10 +165,6 @@ export default function DiadikasiaWC() {
       }),
     );
   }, [dispatch, sellerCodeFilter, urlSearch]);
-
-  const applyFilters = () => {
-    setShowFilters(false);
-  };
 
   const onRefresh = React.useCallback(async () => {
     await dispatch(
@@ -211,15 +209,21 @@ export default function DiadikasiaWC() {
     urlSearch.length > 0 ? "Αναζήτηση…" : "Φόρτωση WC διαδικασίας…";
 
   const hasActiveStatusFilter = !isDefaultWcStatusFilter(activeStatusFilters);
+  const hasNonDefaultFilters =
+    hasActiveStatusFilter || onlyNext10Days || monthOrder !== "desc";
   const statusFilterDescription = describeWcStatusFilter(activeStatusFilters);
   const allFilterActive = isWcStatusFilterKeyActive(activeStatusFilters, "all");
+  const activeFilterActive = isWcStatusFilterKeyActive(
+    activeStatusFilters,
+    "active",
+  );
   const eFilterActive = isWcStatusFilterKeyActive(activeStatusFilters, "e");
   const aFilterActive = isWcStatusFilterKeyActive(activeStatusFilters, "a");
 
   const renderMonthSortButton = () => (
     <button
       type="button"
-      className="btn btn-sm btn-outline-secondary d-inline-flex align-items-center flex-shrink-0 gap-1"
+      className="btn btn-sm btn-outline-secondary d-inline-flex align-items-center gap-1"
       onClick={toggleMonthSort}
       title="Πατήστε για εναλλαγή σειράς μηνών"
       aria-pressed={monthOrder === "asc"}
@@ -235,6 +239,53 @@ export default function DiadikasiaWC() {
       />
       <span className="text-nowrap">Μήνας</span>
     </button>
+  );
+
+  const renderStatusFilterButtons = () => (
+    <>
+      <button
+        type="button"
+        className={wcStatusFilterButtonClass("all", allFilterActive)}
+        style={{ minWidth: 56 }}
+        aria-pressed={allFilterActive}
+        title={wcStatusFilterButtonTitle("all")}
+        onClick={() => toggleStatusFilter("all")}
+      >
+        {allFilterActive ? <i className="bi bi-check2" aria-hidden /> : null}
+        Όλα
+      </button>
+      <button
+        type="button"
+        className={wcStatusFilterButtonClass("active", activeFilterActive)}
+        style={{ minWidth: 72 }}
+        aria-pressed={activeFilterActive}
+        title={wcStatusFilterButtonTitle("active")}
+        onClick={() => toggleStatusFilter("active")}
+      >
+        {activeFilterActive ? <i className="bi bi-check2" aria-hidden /> : null}
+        Ενεργά
+      </button>
+      <button
+        type="button"
+        className={wcStatusFilterButtonClass("e", eFilterActive)}
+        style={{ minWidth: 48 }}
+        aria-pressed={eFilterActive}
+        title={wcStatusFilterButtonTitle("e")}
+        onClick={() => toggleStatusFilter("e")}
+      >
+        {eFilterActive ? <i className="bi bi-check2" aria-hidden /> : null}E
+      </button>
+      <button
+        type="button"
+        className={wcStatusFilterButtonClass("a", aFilterActive)}
+        style={{ minWidth: 48 }}
+        aria-pressed={aFilterActive}
+        title={wcStatusFilterButtonTitle("a")}
+        onClick={() => toggleStatusFilter("a")}
+      >
+        {aFilterActive ? <i className="bi bi-check2" aria-hidden /> : null}A
+      </button>
+    </>
   );
 
   return (
@@ -274,55 +325,22 @@ export default function DiadikasiaWC() {
               {allTilesExpanded ? "Σύμπτυξη όλων" : "Ανάπτυξη όλων"}
             </span>
           </button>
-          <div className="d-md-none">{renderMonthSortButton()}</div>
-        </div>
-        <div
-          className="d-flex align-items-center flex-shrink-0 gap-2"
-          role="group"
-          aria-label={`Φίλτρο κατάστασης: ${statusFilterDescription}`}
-        >
           <button
             type="button"
-            className={wcStatusFilterButtonClass("all", allFilterActive)}
-            style={{ minWidth: 56 }}
-            aria-pressed={allFilterActive}
-            title={wcStatusFilterButtonTitle("all")}
-            onClick={() => toggleStatusFilter("all")}
+            className="btn btn-sm btn-outline-secondary position-relative flex-shrink-0"
+            onClick={() => setFiltersOpen(true)}
+            aria-label="Φίλτρα"
+            title="Φίλτρα"
           >
-            {allFilterActive ? (
-              <i className="bi bi-check2" aria-hidden />
+            <i className="bi bi-funnel" aria-hidden />
+            {hasNonDefaultFilters ? (
+              <span
+                className="position-absolute translate-middle bg-primary border-light rounded-circle start-100 top-0 border p-1"
+                aria-hidden
+              />
             ) : null}
-            Όλα
-          </button>
-          <button
-            type="button"
-            className={wcStatusFilterButtonClass("e", eFilterActive)}
-            style={{ minWidth: 48 }}
-            aria-pressed={eFilterActive}
-            title={wcStatusFilterButtonTitle("e")}
-            onClick={() => toggleStatusFilter("e")}
-          >
-            {eFilterActive ? <i className="bi bi-check2" aria-hidden /> : null}E
-          </button>
-          <button
-            type="button"
-            className={wcStatusFilterButtonClass("a", aFilterActive)}
-            style={{ minWidth: 48 }}
-            aria-pressed={aFilterActive}
-            title={wcStatusFilterButtonTitle("a")}
-            onClick={() => toggleStatusFilter("a")}
-          >
-            {aFilterActive ? <i className="bi bi-check2" aria-hidden /> : null}A
           </button>
         </div>
-        <button
-          type="button"
-          className={`btn btn-sm flex-shrink-0 ${onlyNext10Days ? "btn-primary" : "btn-outline-primary"}`}
-          onClick={() => applyNext10FilterToUrl(!onlyNext10Days)}
-        >
-          {onlyNext10Days ? "Προβολή όλων" : "10 ημέρες μετά"}
-        </button>
-        <div className="d-none d-md-inline-flex">{renderMonthSortButton()}</div>
       </div>
 
       <PullToRefresh onRefresh={onRefresh} isRefreshing={refreshing}>
@@ -349,37 +367,44 @@ export default function DiadikasiaWC() {
         )}
       </PullToRefresh>
 
-      {/* <Button
-                onClick={() => setShowFilters(true)}
-                className="app-fab btn btn-primary rounded-circle shadow d-flex align-items-center justify-content-center"
-                style={{ width: 56, height: 56 }}
-            >
-                <i className={`bi bi-filter`} style={{ fontSize: "1.25rem" }} />
-            </Button> */}
-      <Modal show={showFilters} onHide={() => setShowFilters(false)}>
-        <Modal.Header closeButton>
-          <Modal.Title>Φίλτρα WC</Modal.Title>
-        </Modal.Header>
-        <Modal.Body>
-          <label className="form-label small text-secondary mb-2">
-            Area-Team
-          </label>
-          <FormSelect aria-label="Area-Team">
-            {/* <option value="4">WC</option> */}
-          </FormSelect>
-          <label className="form-label small text-secondary mb-2">
-            Πωλητής
-          </label>
-          <FormSelect aria-label="Πωλητής">
-            {/* <option value="4">WC</option> */}
-          </FormSelect>
-        </Modal.Body>
-        <Modal.Footer>
-          <Button variant="success" onClick={applyFilters}>
-            Εφαρμογή
-          </Button>
-        </Modal.Footer>
-      </Modal>
+      <Offcanvas
+        show={filtersOpen}
+        onHide={() => setFiltersOpen(false)}
+        placement="end"
+        className="wc-filters-offcanvas"
+      >
+        <Offcanvas.Header closeButton>
+          <div>
+            <Offcanvas.Title>Φίλτρα</Offcanvas.Title>
+            <p className="small text-secondary mb-0">{statusFilterDescription}</p>
+          </div>
+        </Offcanvas.Header>
+        <Offcanvas.Body>
+          <section
+            className="wc-filters-drawer__section"
+            role="group"
+            aria-label={`Φίλτρο κατάστασης: ${statusFilterDescription}`}
+          >
+            <p className="wc-filters-drawer__label">Κατάσταση</p>
+            <div className="wc-filters-drawer__buttons">
+              {renderStatusFilterButtons()}
+            </div>
+          </section>
+          <section className="wc-filters-drawer__section">
+            <p className="wc-filters-drawer__label">Ημερομηνία</p>
+            <div className="wc-filters-drawer__buttons">
+              <button
+                type="button"
+                className={`btn btn-sm ${onlyNext10Days ? "btn-primary" : "btn-outline-primary"}`}
+                onClick={() => applyNext10FilterToUrl(!onlyNext10Days)}
+              >
+                {onlyNext10Days ? "Προβολή όλων" : "10 ημέρες μετά"}
+              </button>
+              {renderMonthSortButton()}
+            </div>
+          </section>
+        </Offcanvas.Body>
+      </Offcanvas>
     </>
   );
 }

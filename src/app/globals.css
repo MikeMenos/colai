@@ -1193,3 +1193,34 @@ html[data-bs-theme="dark"] .leave-order-modal__icon {
   min-width: 0;
   padding-top: 0.125rem;
 }
+
+.wc-filters-offcanvas {
+  --bs-offcanvas-width: min(100vw, 320px);
+}
+
+.wc-filters-drawer__section {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.wc-filters-drawer__section + .wc-filters-drawer__section {
+  margin-top: 1.25rem;
+  padding-top: 1.25rem;
+  border-top: 1px solid var(--app-surface-border);
+}
+
+.wc-filters-drawer__label {
+  margin: 0;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--app-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.wc-filters-drawer__buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
