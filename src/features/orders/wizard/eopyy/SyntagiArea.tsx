@@ -7,6 +7,7 @@ import { FormSelect } from "react-bootstrap";
 import BarcodeField from "./BarcodeField";
 import OrderField from "@/components/ui/OrderField";
 import type { SyntagiAreaProps } from "./componentProps";
+import { getDateOfSyntagiInlineFieldWarning } from "./wizard/dateOfSyntagiValidation";
 
 function Field({
   label,
@@ -33,6 +34,10 @@ const SyntagiArea = ({ errors, clearError }: SyntagiAreaProps) => {
     useAppSelector((s) => s.staticData.list_Order_EidosEgkrisis) ?? [];
   const katigoriesParoxis =
     useAppSelector((s) => s?.orders?.draft?.list_KatigoriesParoxis) ?? [];
+  const dateOfSyntagiWarning = React.useMemo(
+    () => getDateOfSyntagiInlineFieldWarning(data.dateOfSyntagi),
+    [data.dateOfSyntagi],
+  );
 
   const handleDateInput = (key: keyof Order, value: string) => {
     if (value.length == 1 && parseInt(value) > 3) return;
@@ -83,7 +88,10 @@ const SyntagiArea = ({ errors, clearError }: SyntagiAreaProps) => {
         />
         <div className="row g-2">
           <div className="col-12">
-            <OrderField label="Ημερομηνία συνταγής">
+            <OrderField
+              label="Ημερομηνία συνταγής"
+              warning={dateOfSyntagiWarning}
+            >
               <input
                 className="form-control"
                 inputMode="numeric"

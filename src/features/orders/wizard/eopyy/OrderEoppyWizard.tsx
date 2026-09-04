@@ -35,10 +35,6 @@ import {
 } from "./wizard/amkaValidation";
 import { getDraftBarcodeFieldErrors } from "./wizard/barcodeValidation";
 import {
-  getDraftDateOfSyntagiFieldErrors,
-  hasDraftDateOfSyntagiErrors,
-} from "./wizard/dateOfSyntagiValidation";
-import {
   hasCustomerFieldErrors,
   isCustomerTouchdownOnlyField,
 } from "./wizard/customerFieldValidation";
@@ -149,34 +145,18 @@ export default function OrderEoppyWizard({
     [draftOrder],
   );
 
-  const dateOfSyntagiErrorsByField = React.useMemo(
-    () => getDraftDateOfSyntagiFieldErrors(draftOrder),
-    [draftOrder],
-  );
-
   const fieldErrorsByField = React.useMemo(() => {
     return {
       ...amkaErrorsByField,
       ...barcodeErrorsByField,
-      ...dateOfSyntagiErrorsByField,
       ...getWizardFieldErrors(issues, {
         include: (issue) => !isCustomerTouchdownOnlyField(issue.field),
       }),
     };
-  }, [
-    amkaErrorsByField,
-    barcodeErrorsByField,
-    dateOfSyntagiErrorsByField,
-    issues,
-  ]);
+  }, [amkaErrorsByField, barcodeErrorsByField, issues]);
 
   const hasAmkaErrors = React.useMemo(
     () => hasDraftAmkaErrors(draftOrder),
-    [draftOrder],
-  );
-
-  const hasDateOfSyntagiErrors = React.useMemo(
-    () => hasDraftDateOfSyntagiErrors(draftOrder),
     [draftOrder],
   );
 
@@ -434,7 +414,6 @@ export default function OrderEoppyWizard({
                 (!isTempSave &&
                   (hasValidationIssues ||
                     hasAmkaErrors ||
-                    hasDateOfSyntagiErrors ||
                     hasEmptyCustomerFields ||
                     consentBlocksProgress))
               }
