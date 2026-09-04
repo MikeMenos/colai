@@ -6,6 +6,8 @@
 
   --app-max-width: 560px;
   --app-nav-height: 72px;
+  --app-header-inner-height: 50px;
+  --app-header-height: calc(var(--app-header-inner-height) + var(--safe-top));
   --order-wizard-nav-height: 56px;
   --list-pagination-height: 108px;
   --app-bottom-nav-total-height: calc(var(--app-nav-height) + var(--safe-bottom));
@@ -49,6 +51,7 @@ html[data-pwa="true"] {
   --safe-right: 0px;
   --pwa-top-safe-area: env(safe-area-inset-top);
   --pwa-bottom-safe-area: env(safe-area-inset-bottom);
+  --app-header-height: calc(var(--app-header-inner-height) + var(--pwa-top-safe-area));
   --app-bottom-nav-total-height: calc(var(--app-nav-height) + var(--pwa-bottom-safe-area));
 }
 
@@ -1196,6 +1199,15 @@ html[data-bs-theme="dark"] .leave-order-modal__icon {
 
 .wc-filters-offcanvas {
   --bs-offcanvas-width: min(100vw, 320px);
+  top: var(--app-header-height);
+  bottom: 0;
+  height: auto;
+  max-height: calc(100dvh - var(--app-header-height));
+}
+
+.wc-filters-offcanvas-backdrop {
+  top: var(--app-header-height);
+  height: calc(100dvh - var(--app-header-height));
 }
 
 .wc-filters-drawer__section {

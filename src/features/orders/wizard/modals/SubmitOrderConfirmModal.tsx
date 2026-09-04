@@ -24,13 +24,21 @@ const REVIEW_FIELD_LABELS: Record<SubmitOrderConfirmReviewField, string> = {
   recipientName: "Παραλήπτης",
   recipientAddress: "Διεύθ. παραλήπτη",
   amka: "ΑΜΚΑ παραλήπτη",
-  dateOfSyntagi: "Ημ/νία συνταγής",
+  dateOfSyntagi: "Ημερομηνία συνταγής",
   dateIsxyeiApo: "Ισχύς από",
   dateIsxyeiEos: "Έως",
   eidosEgkrisis: "Είδος έγκρισης",
   barcode: "Barcode",
   suggestedDoctorName: "Συστήνων ιατρός",
 };
+
+const PROMINENT_REVIEW_FIELDS = new Set<SubmitOrderConfirmReviewField>([
+  "barcode",
+  "dateOfSyntagi",
+  "eidosEgkrisis",
+  "dateIsxyeiApo",
+  "dateIsxyeiEos",
+]);
 
 function SummaryRow({
   label,
@@ -45,6 +53,88 @@ function SummaryRow({
     <div className="d-flex justify-content-between border-bottom gap-3 py-2">
       <span className="text-secondary">{label}</span>
       <span className="fw-semibold text-break text-end">{displayValue}</span>
+    </div>
+  );
+}
+
+function PrescriptionReviewHighlight({
+  barcode,
+  dateOfSyntagi,
+  eidosEgkrisis,
+  dateIsxyeiApo,
+  dateIsxyeiEos,
+}: {
+  barcode?: string | null;
+  dateOfSyntagi?: string | null;
+  eidosEgkrisis?: string | null;
+  dateIsxyeiApo?: string | null;
+  dateIsxyeiEos?: string | null;
+}) {
+  const displayValue = (value?: string | null) =>
+    value?.trim() ? value.trim() : "—";
+
+  return (
+    <div
+      className="rounded-3 mb-3 p-3"
+      style={{
+        background: "rgba(var(--bs-primary-rgb), 0.06)",
+        border: "1px solid rgba(var(--bs-primary-rgb), 0.18)",
+      }}
+    >
+      <div
+        className="text-primary text-uppercase fw-semibold mb-3"
+        style={{ fontSize: 11, letterSpacing: "0.04em" }}
+      >
+        Στοιχεια συνταγης
+      </div>
+
+      <div className="d-flex flex-column gap-3">
+        <div>
+          <div className="small text-secondary mb-1">
+            {REVIEW_FIELD_LABELS.barcode}
+          </div>
+          <div className="fw-bold text-break" style={{ fontSize: "1.1rem" }}>
+            {displayValue(barcode)}
+          </div>
+        </div>
+
+        <div>
+          <div className="small text-secondary mb-1">
+            {REVIEW_FIELD_LABELS.dateOfSyntagi}
+          </div>
+          <div className="fw-bold" style={{ fontSize: "1.1rem" }}>
+            {displayValue(dateOfSyntagi)}
+          </div>
+        </div>
+
+        <div>
+          <div className="small text-secondary mb-1">
+            {REVIEW_FIELD_LABELS.eidosEgkrisis}
+          </div>
+          <div className="fw-semibold" style={{ fontSize: "1rem" }}>
+            {displayValue(eidosEgkrisis)}
+          </div>
+        </div>
+
+        <div className="row g-3">
+          <div className="col-6">
+            <div className="small text-secondary mb-1">
+              {REVIEW_FIELD_LABELS.dateIsxyeiApo}
+            </div>
+            <div className="fw-semibold" style={{ fontSize: "1rem" }}>
+              {displayValue(dateIsxyeiApo)}
+            </div>
+          </div>
+          <div className="col-6">
+            <div className="small text-secondary mb-1">
+              {REVIEW_FIELD_LABELS.dateIsxyeiEos}
+            </div>
+            <div className="fw-semibold" style={{ fontSize: "1rem" }}>
+              {displayValue(dateIsxyeiEos)}
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
@@ -142,7 +232,10 @@ export default function SubmitOrderConfirmModal({
   onClose,
   onConfirm,
 }: SubmitOrderConfirmModalProps) {
-  const reviewValues: Record<SubmitOrderConfirmReviewField, string | null | undefined> = {
+  const reviewValues: Record<
+    SubmitOrderConfirmReviewField,
+    string | null | undefined
+  > = {
     otp,
     recipientName,
     recipientAddress,
@@ -158,6 +251,12 @@ export default function SubmitOrderConfirmModal({
     customerIsCompletelyNew && !reviewFields.includes("suggestedDoctorName")
       ? [...reviewFields, "suggestedDoctorName" as const]
       : reviewFields;
+  const standardReviewFields = visibleReviewFields.filter(
+    (field) => !PROMINENT_REVIEW_FIELDS.has(field),
+  );
+  const showPrescriptionHighlight = visibleReviewFields.some((field) =>
+    PROMINENT_REVIEW_FIELDS.has(field),
+  );
 
   return (
     <Modal
@@ -195,13 +294,10 @@ export default function SubmitOrderConfirmModal({
             <div className="fw-semibold mb-1">
               Είστε σίγουροι ότι θέλετε να υποβάλετε την παραγγελία;
             </div>
-            <div className="text-secondary small">
-              Βεβαιωθείτε ότι όλα τα πεδία έχουν συμπληρωθεί σωστά.
-            </div>
           </div>
         </div>
 
-        <div className="app-card-soft mt-3 p-3">
+        <div className="app-card-soft mt-1 p-3">
           {orderAsSeller ? (
             <OrderAsSellerHighlight value={orderAsSeller} />
           ) : null}
@@ -209,7 +305,16 @@ export default function SubmitOrderConfirmModal({
             isPaid={isPaid}
             showPaymentMethodInfo={showPaymentMethodInfo}
           />
-          {visibleReviewFields.map((field) => (
+          {showPrescriptionHighlight ? (
+            <PrescriptionReviewHighlight
+              barcode={barcode}
+              dateOfSyntagi={dateOfSyntagi}
+              eidosEgkrisis={eidosEgkrisis}
+              dateIsxyeiApo={dateIsxyeiApo}
+              dateIsxyeiEos={dateIsxyeiEos}
+            />
+          ) : null}
+          {standardReviewFields.map((field) => (
             <SummaryRow
               key={field}
               label={REVIEW_FIELD_LABELS[field]}

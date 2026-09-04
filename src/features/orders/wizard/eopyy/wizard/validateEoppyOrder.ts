@@ -2,7 +2,6 @@ import { isBlank } from "@/lib/utils/string";
 import type { Order } from "@/types/orders";
 import { getDraftAmkaWizardIssues } from "./amkaValidation";
 import { getDraftBarcodeWizardIssues } from "./barcodeValidation";
-import { getDraftDateOfSyntagiWizardIssues } from "./dateOfSyntagiValidation";
 import { getCustomerFieldWizardIssues } from "./customerFieldValidation";
 import {
   getOtherSuggestedDoctorFieldWizardIssues,
@@ -193,10 +192,6 @@ export function validateEoppyOrder({
     }
 
     for (const issue of getDraftBarcodeWizardIssues(draftOrder)) {
-      issues.push(issue);
-    }
-
-    for (const issue of getDraftDateOfSyntagiWizardIssues(draftOrder)) {
       issues.push(issue);
     }
 

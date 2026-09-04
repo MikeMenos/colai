@@ -372,11 +372,14 @@ export default function DiadikasiaWC() {
         onHide={() => setFiltersOpen(false)}
         placement="end"
         className="wc-filters-offcanvas"
+        backdropClassName="wc-filters-offcanvas-backdrop"
       >
         <Offcanvas.Header closeButton>
           <div>
             <Offcanvas.Title>Φίλτρα</Offcanvas.Title>
-            <p className="small text-secondary mb-0">{statusFilterDescription}</p>
+            <p className="small text-secondary mb-0">
+              {statusFilterDescription}
+            </p>
           </div>
         </Offcanvas.Header>
         <Offcanvas.Body>
@@ -385,13 +388,13 @@ export default function DiadikasiaWC() {
             role="group"
             aria-label={`Φίλτρο κατάστασης: ${statusFilterDescription}`}
           >
-            <p className="wc-filters-drawer__label">Κατάσταση</p>
+            <p className="wc-filters-drawer__label">Κατασταση</p>
             <div className="wc-filters-drawer__buttons">
               {renderStatusFilterButtons()}
             </div>
           </section>
           <section className="wc-filters-drawer__section">
-            <p className="wc-filters-drawer__label">Ημερομηνία</p>
+            <p className="wc-filters-drawer__label">Ημερομηνια</p>
             <div className="wc-filters-drawer__buttons">
               <button
                 type="button"

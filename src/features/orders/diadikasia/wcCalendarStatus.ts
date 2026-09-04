@@ -30,9 +30,7 @@ export function rowHasMappedStatusEa(row: wcCalendar): boolean {
 }
 
 export function wcStatusTitleForFilterKey(key: "e" | "a"): string {
-  return key === "e"
-    ? WC_STATUS_TITLE_EPISOULETHIKE
-    : WC_STATUS_TITLE_APEBIWSE;
+  return key === "e" ? WC_STATUS_TITLE_EPISOULETHIKE : WC_STATUS_TITLE_APEBIWSE;
 }
 
 export function parseWcStatusFilterKeys(param: string): WcStatusFilterKey[] {
