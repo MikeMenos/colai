@@ -44,6 +44,7 @@ export type Order = {
   person_erpid?: Nullable<string>;
   person_ErpGID: Nullable<string>;
   address_ErpGID: Nullable<string>;
+  personErp_name?: Nullable<string>;
   shipTo_other_address: number;
   customer_other_address: string;
   customer_other_city: string;

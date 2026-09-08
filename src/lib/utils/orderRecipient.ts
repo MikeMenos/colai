@@ -24,6 +24,37 @@ export function hasOrderRecipientInfo(order: Partial<Order>): boolean {
   ].some((value) => text(value) !== "");
 }
 
+function normalizeComparableName(value: unknown): string {
+  return text(value).toLocaleLowerCase("el-GR");
+}
+
+export function hasDifferentPersonErpRecipient(order: Partial<Order>): boolean {
+  if (hasOrderRecipientInfo(order)) return false;
+
+  const customerName = normalizeComparableName(order.customer_name);
+  const personErpName = normalizeComparableName(order.personErp_name);
+
+  if (!customerName || !personErpName) return false;
+
+  return customerName !== personErpName;
+}
+
+export function shouldShowOrderRecipientSection(order: Partial<Order>): boolean {
+  return hasOrderRecipientInfo(order) || hasDifferentPersonErpRecipient(order);
+}
+
+export function getOrderRecipientDisplayName(order: Partial<Order>): string {
+  if (hasOrderRecipientInfo(order)) {
+    return text(order.recipient_name);
+  }
+
+  if (hasDifferentPersonErpRecipient(order)) {
+    return text(order.personErp_name);
+  }
+
+  return "";
+}
+
 export function formatRecipientAddress(order: Partial<Order>): string {
   return [order.recipient_address, order.recipient_city, order.recipient_tk]
     .map(text)

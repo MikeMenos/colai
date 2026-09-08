@@ -10,9 +10,15 @@ import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { deleteOrderAsync } from "@/store/orders/ordersSlice";
 import { useRouter } from "next/navigation";
 import { formatCurrencyGR } from "@/lib/utils/number";
+import { AddressMapFields, AddressMapLink } from "@/components/ui/AddressMapLink";
+import { PhoneLink, PhoneLinks } from "@/components/ui/PhoneLink";
+import { usePersonErpContactLookup } from "@/hooks/usePersonErpContactLookup";
 import {
   formatRecipientAddress,
+  getOrderRecipientDisplayName,
+  hasDifferentPersonErpRecipient,
   hasOrderRecipientInfo,
+  shouldShowOrderRecipientSection,
 } from "@/lib/utils/orderRecipient";
 
 const ACTION_WIDTH = 88;
@@ -252,14 +258,16 @@ export default function OrderCard({
       ? order.doctorSuggested_amka
       : order.doctor_amka;
   const sellerName = order.sellerName?.trim();
-  const showRecipientInfo = hasOrderRecipientInfo(order);
+  const showRecipientInfo = shouldShowOrderRecipientSection(order);
+  const showPersonErpRecipient = hasDifferentPersonErpRecipient(order);
   const recipientAddress = formatRecipientAddress(order);
   const customerMobile = order.customer_mobile?.trim();
   const customerTel = order.customer_tel?.trim();
   const customerPhones = [
     ...new Set([customerMobile, customerTel].filter(Boolean)),
   ].join(" / ");
-  const recipientName = order.recipient_name?.trim();
+  const recipientName = getOrderRecipientDisplayName(order);
+  const showRecipientDetails = hasOrderRecipientInfo(order);
   const recipientAmka = order.recipient_amka?.trim();
   const recipientMobile = order.recipient_mobile?.trim();
   const recipientOtherContact = [order.recipient_mobile2, order.recipient_tel]
@@ -270,6 +278,11 @@ export default function OrderCard({
     .map((value) => value?.trim())
     .filter(Boolean)
     .join(" • ");
+  const { contact: personErpContact, loading: personErpContactLoading } =
+    usePersonErpContactLookup(
+      order.person_ErpGID,
+      open && showPersonErpRecipient,
+    );
 
   const chipStyle: React.CSSProperties = {
     display: "inline-flex",
@@ -622,7 +635,7 @@ export default function OrderCard({
                     <div className="col-6 col-md-4" style={statCellStyle}>
                       <div className="small text-secondary">Κινητό Πελάτη</div>
                       <div className="fw-medium" style={statValueStyle}>
-                        {customerPhones}
+                        <PhoneLinks value={customerPhones} />
                       </div>
                     </div>
                   ) : null}
@@ -665,29 +678,70 @@ export default function OrderCard({
                       {recipientName ? (
                         <div className="fw-medium">{recipientName}</div>
                       ) : null}
-                      {recipientAmka ? (
+                      {showPersonErpRecipient && personErpContactLoading ? (
+                        <div className="text-secondary small">
+                          Φόρτωση στοιχείων παραλήπτη…
+                        </div>
+                      ) : null}
+                      {showPersonErpRecipient && personErpContact?.amka ? (
+                        <div className="text-secondary small">
+                          AMKA: {personErpContact.amka}
+                        </div>
+                      ) : null}
+                      {showPersonErpRecipient && personErpContact?.phone ? (
+                        <div className="text-secondary small">
+                          Κινητό:{" "}
+                          <PhoneLinks
+                            value={personErpContact.phone}
+                            className="fw-medium"
+                          />
+                        </div>
+                      ) : null}
+                      {showPersonErpRecipient && personErpContact?.address ? (
+                        <div className="text-secondary small">
+                          <AddressMapLink
+                            address={personErpContact.address}
+                            mapQuery={personErpContact.addressMapQuery}
+                            inline
+                          />
+                        </div>
+                      ) : null}
+                      {showRecipientDetails && recipientAmka ? (
                         <div className="text-secondary small">
                           AMKA: {recipientAmka}
                         </div>
                       ) : null}
-                      {recipientMobile ? (
+                      {showRecipientDetails && recipientMobile ? (
                         <div className="text-secondary small">
-                          Κινητό: {recipientMobile}
+                          Κινητό:{" "}
+                          <PhoneLink
+                            phone={recipientMobile}
+                            className="fw-medium"
+                          />
                         </div>
                       ) : null}
-                      {recipientSummary ? (
+                      {showRecipientDetails && recipientSummary ? (
                         <div className="text-secondary small">
                           {recipientSummary}
                         </div>
                       ) : null}
-                      {recipientOtherContact ? (
+                      {showRecipientDetails && recipientOtherContact ? (
                         <div className="text-secondary small">
-                          Τηλ: {recipientOtherContact}
+                          Τηλ:{" "}
+                          <PhoneLinks
+                            value={recipientOtherContact}
+                            className="fw-medium"
+                          />
                         </div>
                       ) : null}
-                      {recipientAddress ? (
+                      {showRecipientDetails && recipientAddress ? (
                         <div className="text-secondary small">
-                          {recipientAddress}
+                          <AddressMapFields
+                            address={order.recipient_address}
+                            city={order.recipient_city}
+                            postalCode={order.recipient_tk}
+                            inline
+                          />
                         </div>
                       ) : null}
                     </div>
