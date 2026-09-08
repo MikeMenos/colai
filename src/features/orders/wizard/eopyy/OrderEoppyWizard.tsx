@@ -314,7 +314,7 @@ export default function OrderEoppyWizard({
 
     setShowSubmitConfirm(true);
   }
-  console.log(draftOrder);
+
   async function confirmSave() {
     try {
       const result = await dispatch(submitDraftAsync()).unwrap();

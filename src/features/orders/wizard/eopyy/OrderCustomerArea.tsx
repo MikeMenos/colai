@@ -18,7 +18,9 @@ import FormErrorsContext from "@/components/ui/FormErrorContect";
 import OrderField from "@/components/ui/OrderField";
 import OtpInput from "@/components/ui/OTPInput";
 import { isValidAmka } from "@/lib/utils/amka";
+import { canShowCustomerAmkaInlineSearch } from "@/lib/customerUtils";
 import WizardStepBarcodeHint from "../components/WizardStepBarcodeHint";
+import ShipMethodSuggestions from "../components/ShipMethodSuggestions";
 import {
   CustomerNameLabel,
   CustomerStatusBadges,
@@ -59,16 +61,25 @@ export default function OrderCustomerArea({
   const customerAmkaGateCompleted = useAppSelector(
     (s) => s.orders.draft.customerAmkaGateCompleted,
   );
+  const customerDraftMeta = useAppSelector((s) => ({
+    customerIsCompletelyNew: s.orders.draft.customerIsCompletelyNew,
+    lastOrderInfoDateIn: s.orders.draft.lastOrderInfoDateIn,
+    customerProsEbs: s.orders.draft.customerProsEbs,
+    customerSelectedFromList: s.orders.draft.customerSelectedFromList,
+  }));
   const showAmkaGate = !aiCalculated && customerAmkaGateCompleted !== true;
   const [amkaEditedByUser, setAmkaEditedByUser] = React.useState(false);
   const [amkaSearchOpen, setAmkaSearchOpen] = React.useState(false);
   const amkaSearchAnchorRef = React.useRef<HTMLDivElement | null>(null);
   const baselineCustomerAmkaRef = React.useRef<string | null>(null);
+  const allowsAmkaStatusSearch = canShowCustomerAmkaInlineSearch(
+    customerDraftMeta,
+    data.customer_ErpGID,
+  );
   const showInlineAmkaSearch =
-    aiCalculated &&
-    amkaEditedByUser &&
     amkaSearchOpen &&
-    isValidAmka(data.customer_amka ?? "");
+    isValidAmka(data.customer_amka ?? "") &&
+    ((aiCalculated && amkaEditedByUser) || allowsAmkaStatusSearch);
 
   const savedRecipientSelectionRef = React.useRef<{
     person_ErpGID: string | null;
@@ -368,7 +379,14 @@ export default function OrderCustomerArea({
         <div ref={amkaSearchAnchorRef}>
           <div className="row g-2">
             <div className="col-6">
-              <OrderField label="ΑΜΚΑ">
+              <OrderField
+                label="ΑΜΚΑ"
+                hint={
+                  allowsAmkaStatusSearch
+                    ? "Η αναζήτηση ξεκινά αυτόματα με έγκυρο ΑΜΚΑ."
+                    : undefined
+                }
+              >
                 <input
                   className="form-control"
                   name="customer_amka"
@@ -558,6 +576,11 @@ export default function OrderCustomerArea({
               />
             </OrderField>
           </div>
+          <div className="col-12">
+            {data.has_other_recipient != 1 && data.shipTo_other_address != 1 ? (
+              <ShipMethodSuggestions placement="customer_tk" />
+            ) : null}
+          </div>
         </div>
 
         <OrderField label="Σχόλια για το τμήμα παραγγελιών">
@@ -583,14 +606,13 @@ export default function OrderCustomerArea({
           <FormSelect
             name="shipMethodId"
             value={data.shipMethodId ?? ""}
-            onChange={(e) =>
-              dispatch(
-                setDraftProperty({
-                  key: "shipMethodId",
-                  value: e.target.value,
-                }),
-              )
-            }
+            onChange={(e) => {
+              const value = e.target.value;
+              const label = e.target.selectedOptions[0]?.text ?? "";
+              dispatch(setDraftProperty({ key: "shipMethodId", value }));
+              dispatch(setDraftProperty({ key: "shipMethodName", value: label }));
+              dispatch(setDraftProperty({ key: "shipMethod_GID", value }));
+            }}
           >
             {listTropoiApostolis.map((x) => (
               <option key={x.value} value={x.value}>
@@ -982,6 +1004,9 @@ export default function OrderCustomerArea({
                 </OrderField>
               </div>
             </div>
+            <div className="col-12">
+              <ShipMethodSuggestions placement="recipient_tk" />
+            </div>
             <OrderField label="Σχόλια για το τμήμα παραγγελιών">
               <textarea
                 className="form-control"
@@ -1116,6 +1141,7 @@ export default function OrderCustomerArea({
                 </OrderField>
               </div>
             </div>
+            <ShipMethodSuggestions placement="customer_other_tk" />
           </>
         )}
       </FormErrorsContext.Provider>

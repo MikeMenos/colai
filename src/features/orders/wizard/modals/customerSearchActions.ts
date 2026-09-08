@@ -1,3 +1,7 @@
+import {
+  getCustomerSearchResultDisplayName,
+  getCustomerSearchResultName,
+} from "@/lib/customerUtils";
 import { parseProxyJson } from "@/lib/api/client";
 import {
   applyLastErpOrderData,
@@ -292,7 +296,7 @@ export async function applyCustomerFromSearch(
   }
 
   dispatch(setDraftProperty({ key: "customer_ErpGID", value: c.tR_GID }));
-  dispatch(setDraftProperty({ key: "customer_name", value: c.pE_NAME }));
+  dispatch(setDraftProperty({ key: "customer_name", value: getCustomerSearchResultName(c) }));
   dispatch(
     setDraftProperty({ key: "customer_amka", value: c.tR_StringField5 }),
   );
@@ -351,7 +355,7 @@ export async function applyCustomerFromSearch(
     const addressResult = await dispatch(
       loadCustomerAddressesAsync({
         customer_ErpGID: c.tR_GID,
-        customer_name: c.pE_NAME ?? undefined,
+        customer_name: getCustomerSearchResultName(c) || undefined,
         customer_amka: c.tR_StringField5 ?? undefined,
         customer_address: c.peS_Address1 ?? undefined,
         preferredPersonErpGID: preferredPerson,

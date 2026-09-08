@@ -6,7 +6,10 @@ import type {
 } from "./CustomerAmkaSearchPanel.types";
 import React from "react";
 import AppLoader from "@/components/ui/AppLoader";
-import { formatLastCustomerWebOrderRow } from "@/lib/customerUtils";
+import {
+  formatLastCustomerWebOrderRow,
+  getCustomerSearchResultDisplayName,
+} from "@/lib/customerUtils";
 import { isValidAmka, normalizeAmka } from "@/lib/utils/amka";
 import { useAppDispatch } from "@/store/hooks";
 import { setCustomerAmkaGateCompleted } from "@/store/orders/ordersSlice";
@@ -195,7 +198,9 @@ function AmkaSearchDropdownItem({
           <i className={`bi ${icon}`} />
         </span>
         <span className="min-w-0 flex-grow-1">
-          <span className="d-block fw-semibold mb-1">{title}</span>
+          <span className="amka-search-dropdown-item__title d-block fw-semibold mb-1">
+            {title}
+          </span>
           {lines.map((line, idx) => (
             <span key={idx} className="d-block small text-secondary">
               {line}
@@ -239,7 +244,7 @@ function AmkaSearchDropdownContent({
             <AmkaSearchDropdownItem
               key={`${r.tR_GID ?? idx}`}
               icon="bi-person-fill"
-              title={r.pE_NAME || "—"}
+              title={getCustomerSearchResultDisplayName(r)}
               lines={[
                 <>AMKA: {r.tR_StringField5 || "—"}</>,
                 <>
@@ -337,6 +342,10 @@ export function CustomerAmkaSearchPanel({
     !search.error &&
     search.results.length === 0 &&
     !lastWebOrderRow;
+  const hasSelectableResults =
+    !search.loading &&
+    !search.error &&
+    (search.results.length > 0 || Boolean(lastWebOrderRow));
 
   const content = (
     <AmkaSearchDropdownContent
@@ -353,7 +362,16 @@ export function CustomerAmkaSearchPanel({
       aria-label="Αποτελέσματα αναζήτησης ΑΜΚΑ"
     >
       <div className="amka-search-panel-topbar">
-        <span className="amka-search-panel-title">Αποτελέσματα αναζήτησης</span>
+        <div className="amka-search-panel-topbar-text">
+          <span className="amka-search-panel-title text-primary">
+            Αποτελέσματα αναζήτησης
+          </span>
+          {hasSelectableResults ? (
+            <p className="amka-search-panel-hint">
+              Επιλέξτε ένα αποτέλεσμα για να συμπληρωθούν τα στοιχεία ασθενή.
+            </p>
+          ) : null}
+        </div>
         {onDismiss ? (
           <button
             type="button"

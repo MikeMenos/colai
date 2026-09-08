@@ -1,4 +1,5 @@
 import type { DraftState } from "@/store/orders/ordersSlice";
+import type { CustomerSearchResult } from "@/types/api/responses";
 import { isDateOlderThanMonths } from "@/lib/utils/date";
 
 export type CustomerOrderRecencyBadge = "Νέο" | "Επαναλ.";
@@ -52,6 +53,43 @@ export function shouldShowSuggestedDoctorChangeToggle(
 ): boolean {
   if (!String(customerErpGID ?? "").trim()) return false;
   return isSuggestedDoctorChoiceLocked(draft);
+}
+
+/** True when the customer row shows a Νέος / Νέο status badge. */
+export function canShowCustomerAmkaInlineSearch(
+  draft: Pick<
+    DraftState,
+    | "customerIsCompletelyNew"
+    | "lastOrderInfoDateIn"
+    | "customerProsEbs"
+    | "customerSelectedFromList"
+  >,
+  customerErpGID: string | null | undefined,
+): boolean {
+  const isProsEbs = isCustomerProsEbs(draft);
+  const selectedFromList = isCustomerSelectedFromList(draft);
+  const completelyNew = isCompletelyNewCustomer(draft);
+  const isExistingCustomer = !!String(customerErpGID ?? "").trim();
+
+  if (selectedFromList || (!isProsEbs && !completelyNew && isExistingCustomer)) {
+    return getCustomerOrderRecencyBadge(draft.lastOrderInfoDateIn) === "Νέο";
+  }
+
+  if (isProsEbs) return false;
+
+  return completelyNew || !isExistingCustomer;
+}
+
+export function getCustomerSearchResultName(
+  customer: Pick<CustomerSearchResult, "pE_NAME" | "tR_Name">,
+): string {
+  return String(customer.pE_NAME ?? customer.tR_Name ?? "").trim();
+}
+
+export function getCustomerSearchResultDisplayName(
+  customer: Pick<CustomerSearchResult, "pE_NAME" | "tR_Name">,
+): string {
+  return getCustomerSearchResultName(customer) || "—";
 }
 
 export function formatLastCustomerWebOrderRow(lwo: Record<string, unknown>) {

@@ -7,6 +7,7 @@ import type { AppDispatch } from "@/store/store";
 import { OrderListOfAddressPersons } from "@/types/orders";
 import React from "react";
 import { FormSelect } from "react-bootstrap";
+import ShipMethodSuggestions from "../components/ShipMethodSuggestions";
 import type {
   RecipientSelection,
   ResolveSavedRecipientSelectionInput,
@@ -167,6 +168,12 @@ export default function SavedRecipientFields() {
               ))}
             </FormSelect>
           </OrderField>
+        )}
+      {data.shipTo_other_address != 1 &&
+        data.person_ErpGID &&
+        data.person_ErpGID != "" &&
+        selectedPersonAddresses.length > 0 && (
+          <ShipMethodSuggestions placement="saved_address" />
         )}
     </>
   );
