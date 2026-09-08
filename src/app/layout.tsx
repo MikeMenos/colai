@@ -57,7 +57,13 @@ const runtimeInitScript = `(() => {
       (window.matchMedia && (window.matchMedia("(display-mode: standalone)").matches || window.matchMedia("(display-mode: fullscreen)").matches)) ||
       (window.navigator && window.navigator.standalone === true);
 
-    document.documentElement.setAttribute("data-pwa", isStandalone ? "true" : "false");
+    const isCapacitorNative =
+      typeof window.Capacitor !== "undefined" &&
+      typeof window.Capacitor.isNativePlatform === "function" &&
+      window.Capacitor.isNativePlatform();
+
+    document.documentElement.setAttribute("data-pwa", isStandalone || isCapacitorNative ? "true" : "false");
+    document.documentElement.setAttribute("data-native", isCapacitorNative ? "true" : "false");
 
     const color = theme === "dark" ? "#0b1220" : "#ffffff";
     let meta = document.querySelector('meta[name="theme-color"]');

@@ -3,7 +3,10 @@
 import React from "react";
 import { Modal } from "react-bootstrap";
 import { useAppDispatch } from "@/store/hooks";
-import { formatLastCustomerWebOrderRow } from "@/lib/customerUtils";
+import {
+  formatLastCustomerWebOrderRow,
+  getCustomerSearchResultDisplayName,
+} from "@/lib/customerUtils";
 import type { CustomerSearchResult } from "@/types/api/responses";
 import AppLoader from "@/components/ui/AppLoader";
 import {
@@ -156,7 +159,9 @@ export default function CustomerLookupModal({
                   onClick={() => void applyCustomer(r)}
                   disabled={applying}
                 >
-                  <div className="fw-semibold">{r.pE_NAME || "—"}</div>
+                  <div className="fw-semibold">
+                    {getCustomerSearchResultDisplayName(r)}
+                  </div>
                   <div className="small text-secondary">
                     AMKA: {r.tR_StringField5 || "—"}
                   </div>

@@ -823,9 +823,22 @@ export type EopyDocument = {
   address_erpid?: Nullable<string>;
   last_order_info?: Nullable<OrderPlatformPreviousDto>;
   loaded_custinfo_from?: Nullable<string>;
-  /** Present in some responses; not in swagger but used by the app. */
   last_web_order?: OrderPlatformPreviousDto | Record<string, unknown> | null;
   customer_tel?: Nullable<string>;
+  suggested_shipmethod_id?: Nullable<number>;
+  suggested_shipmethod_name?: Nullable<string>;
+};
+
+export type SuggestShipMethodItem = {
+  id: number;
+  name: string;
+};
+
+export type SuggestShipMethodResponse = {
+  statusCode?: Nullable<number>;
+  message?: Nullable<string>;
+  detailedMessage?: Nullable<string>;
+  data?: Nullable<SuggestShipMethodItem | SuggestShipMethodItem[]>;
 };
 
 export type ReadEoppyDoc_Response = {

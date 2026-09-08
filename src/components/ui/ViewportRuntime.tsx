@@ -1,26 +1,32 @@
 "use client";
 
+import { Capacitor } from "@capacitor/core";
 import { useEffect } from "react";
 
-function setPwaAttr() {
+function setViewportAttrs() {
   const standalone =
     window.matchMedia?.("(display-mode: standalone)")?.matches ||
     window.matchMedia?.("(display-mode: fullscreen)")?.matches ||
     (window.navigator as Navigator & { standalone?: boolean })?.standalone ===
       true;
+  const isNative = Capacitor.isNativePlatform();
 
   document.documentElement.setAttribute(
     "data-pwa",
-    standalone ? "true" : "false",
+    standalone || isNative ? "true" : "false",
+  );
+  document.documentElement.setAttribute(
+    "data-native",
+    isNative ? "true" : "false",
   );
 }
 
 export function ViewportRuntime() {
   useEffect(() => {
-    setPwaAttr();
+    setViewportAttrs();
 
     const mq = window.matchMedia("(display-mode: standalone)");
-    const onDisplayModeChange = () => setPwaAttr();
+    const onDisplayModeChange = () => setViewportAttrs();
     mq.addEventListener("change", onDisplayModeChange);
 
     return () => mq.removeEventListener("change", onDisplayModeChange);

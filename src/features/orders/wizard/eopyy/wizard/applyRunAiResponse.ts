@@ -18,6 +18,7 @@ import {
   clearDraftAddressesList,
   loadCustomerAddressesAsync,
   setAIMaterials,
+  setCustomerTkFromAi,
   setDraftFiles,
   setDraftProperty,
   setDraftYlika,
@@ -41,6 +42,7 @@ import {
   getCustomerMobileFromAddressPerson,
   getCustomerPassportFromAddressPerson,
 } from "./customerAddressesUtils";
+import { applyShipMethodToDraft } from "../../shipMethodUtils";
 import type { OrderListOfAddressPersons } from "@/types/orders";
 
 export async function applyRunAiResponse(
@@ -280,6 +282,16 @@ export async function applyRunAiResponse(
         value: jsonDoc.tk_eksetazomenou,
       }),
     );
+  if (jsonDoc.tk_eksetazomenou) {
+    dispatch(setCustomerTkFromAi(true));
+  }
+  if (jsonDoc.suggested_shipmethod_id != null) {
+    applyShipMethodToDraft(
+      dispatch,
+      jsonDoc.suggested_shipmethod_id,
+      jsonDoc.suggested_shipmethod_name,
+    );
+  }
   jsonDoc.tilefono_eksetazomenou &&
     dispatch(
       setDraftProperty({

@@ -179,6 +179,8 @@ export interface DraftState {
   lastWebOrderFromLoadInfo?: Record<string, unknown> | null;
   /** Step 2 AMKA gate completed (manual flow without AI). */
   customerAmkaGateCompleted?: boolean;
+  /** TK was set by run-AI; skip postal-code ship-method suggestion API. */
+  customerTkFromAi?: boolean;
   /** Backend-driven Συναίνεση step visibility for EOPYY flows. */
   showConsentForm?: boolean;
 }
@@ -662,6 +664,8 @@ function loadStateFromLocalStorage(): OrdersState | null {
         customerAmkaGateCompleted:
           parsed?.customerAmkaGateCompleted ??
           initialStateBase.draft.customerAmkaGateCompleted,
+        customerTkFromAi:
+          parsed?.customerTkFromAi ?? initialStateBase.draft.customerTkFromAi,
         showConsentForm:
           parsed?.showConsentForm ?? initialStateBase.draft.showConsentForm,
       },
@@ -692,6 +696,7 @@ function persistStateToLocalStorage(state: OrdersState) {
     customerIsCompletelyNew: state.draft.customerIsCompletelyNew,
     lastWebOrderFromLoadInfo: state.draft.lastWebOrderFromLoadInfo,
     customerAmkaGateCompleted: state.draft.customerAmkaGateCompleted,
+    customerTkFromAi: state.draft.customerTkFromAi,
     showConsentForm: state.draft.showConsentForm,
   };
 
@@ -754,6 +759,7 @@ const ordersSlice = createSlice({
       state.draft.customerIsCompletelyNew = true;
       state.draft.lastWebOrderFromLoadInfo = undefined;
       state.draft.customerAmkaGateCompleted = undefined;
+      state.draft.customerTkFromAi = undefined;
       state.draft.showConsentForm = undefined;
       persistStateToLocalStorage(state);
     },
@@ -771,6 +777,10 @@ const ordersSlice = createSlice({
         ...state.draft.order,
         [action.payload.key]: action.payload.value,
       };
+
+      if (action.payload.key === "customer_tk") {
+        state.draft.customerTkFromAi = false;
+      }
 
       if (
         [
@@ -890,6 +900,10 @@ const ordersSlice = createSlice({
       action: PayloadAction<boolean | undefined>,
     ) {
       state.draft.customerAmkaGateCompleted = action.payload;
+      persistStateToLocalStorage(state);
+    },
+    setCustomerTkFromAi(state, action: PayloadAction<boolean | undefined>) {
+      state.draft.customerTkFromAi = action.payload;
       persistStateToLocalStorage(state);
     },
     setShowConsentForm(state, action: PayloadAction<boolean | undefined>) {
@@ -1350,6 +1364,7 @@ export const {
   setCustomerIsCompletelyNew,
   setLastWebOrderFromLoadInfo,
   setCustomerAmkaGateCompleted,
+  setCustomerTkFromAi,
   setShowConsentForm,
   resetEntireDraft,
   resetOrdersListCache,

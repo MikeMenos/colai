@@ -9,6 +9,7 @@ import React from "react";
 import { FormSelect } from "react-bootstrap";
 import OrderField from "@/components/ui/OrderField";
 import WizardStepBarcodeHint from "../components/WizardStepBarcodeHint";
+import ShipMethodSuggestions from "../components/ShipMethodSuggestions";
 import { getAmkaInlineFieldError } from "@/lib/utils/amka";
 import {
   getRetailCustomerPriceBadge,
@@ -500,6 +501,11 @@ export default function OrderRetailCustomerArea({
             />
           </Field>
         </div>
+        <div className="col-12">
+          {data.has_other_recipient != 1 && data.shipTo_other_address != 1 ? (
+            <ShipMethodSuggestions placement="customer_tk" />
+          ) : null}
+        </div>
       </div>
 
       <OrderField label="Σχόλια για το τμήμα παραγγελιών">
@@ -525,14 +531,13 @@ export default function OrderRetailCustomerArea({
         <FormSelect
           name="shipMethodId"
           value={data.shipMethodId ?? ""}
-          onChange={(e) =>
-            dispatch(
-              setDraftProperty({
-                key: "shipMethodId",
-                value: e.target.value,
-              }),
-            )
-          }
+          onChange={(e) => {
+            const value = e.target.value;
+            const label = e.target.selectedOptions[0]?.text ?? "";
+            dispatch(setDraftProperty({ key: "shipMethodId", value }));
+            dispatch(setDraftProperty({ key: "shipMethodName", value: label }));
+            dispatch(setDraftProperty({ key: "shipMethod_GID", value }));
+          }}
         >
           {listTropoiApostolis.map((x) => (
             <option key={x.value} value={x.value}>
@@ -678,6 +683,16 @@ export default function OrderRetailCustomerArea({
               ))}
             </FormSelect>
           </Field>
+        )}
+
+      {!data.shipToOtherAddressBool &&
+        data.has_other_recipient != 1 &&
+        data.shipTo_other_address != 1 &&
+        listAddressesPersons.length > 0 &&
+        data.person_ErpGID &&
+        data.person_ErpGID != "" &&
+        selectedPersonAddresses.length > 0 && (
+          <ShipMethodSuggestions placement="saved_address" />
         )}
 
       {data.has_other_recipient == 1 && (
@@ -889,6 +904,7 @@ export default function OrderRetailCustomerArea({
               </OrderField>
             </div>
           </div>
+          <ShipMethodSuggestions placement="recipient_tk" />
         </>
       )}
 
@@ -1006,6 +1022,7 @@ export default function OrderRetailCustomerArea({
               </Field>
             </div>
           </div>
+          <ShipMethodSuggestions placement="customer_other_tk" />
         </>
       )}
 

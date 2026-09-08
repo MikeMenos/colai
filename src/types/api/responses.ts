@@ -32,6 +32,7 @@ import type {
   SearchAddresses_Response,
   SearchCustomers_Response,
   SearchErpContactsResponse,
+  SuggestShipMethodResponse,
   StaticDataResp,
   WCdiadikasiaGetDataVM,
 } from "./schemas";
@@ -72,6 +73,11 @@ export type LoadLastCustomerOrderInfoResponse =
 
 /** `GET /api/search-erp-contacts` — raw backend body (no `ok` wrapper). */
 export type SearchErpContactsApiResponse = SearchErpContactsResponse;
+
+/** `POST /api/suggest-ship-method` */
+export type SuggestShipMethodApiResponse =
+  | ApiSuccess<SuggestShipMethodResponse>
+  | ApiFailure;
 
 /** `GET /api/search-customer-tels` */
 export type SearchCustomerTelsResponse =
