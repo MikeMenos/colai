@@ -338,6 +338,15 @@ export default function OrderCard({
     </span>
   ) : null;
 
+  const statCellStyle: React.CSSProperties = {
+    minWidth: 0,
+  };
+
+  const statValueStyle: React.CSSProperties = {
+    fontVariantNumeric: "tabular-nums",
+    overflowWrap: "anywhere",
+  };
+
   const headerContent = (
     <>
       <div style={{ minWidth: 0 }}>
@@ -585,45 +594,47 @@ export default function OrderCard({
 
               <div style={{ padding: "14px 14px 14px" }}>
                 <div className="row g-3">
-                  <div className="col-4">
+                  <div className="col-6 col-md-4" style={statCellStyle}>
                     <div className="small text-secondary">Ημ/νία Συνταγής</div>
-                    <div className="fw-medium">
+                    <div className="fw-medium" style={statValueStyle}>
                       {formatUIDate(order.dateOfSyntagi)}
                     </div>
                   </div>
-                  <div className="col-4">
+                  <div className="col-6 col-md-4" style={statCellStyle}>
                     <div className="small text-secondary">Αξία συνταγής</div>
-                    <div className="fw-medium">
+                    <div className="fw-medium" style={statValueStyle}>
                       {formatCurrencyGR(order.kostos)} €
                     </div>
                   </div>
-                  <div className="col-4">
+                  <div className="col-6 col-md-4" style={statCellStyle}>
                     <div className="small text-secondary">Συμμετοχή</div>
-                    <div className="fw-medium">
+                    <div className="fw-medium" style={statValueStyle}>
                       {formatCurrencyGR(order.posoSymmetoxis)} €
                     </div>
                   </div>
-                  <div className="col-4">
+                  <div className="col-6 col-md-4" style={statCellStyle}>
                     <div className="small text-secondary">ΑΜΚΑ Πελάτη</div>
-                    <div className="fw-medium" style={{ letterSpacing: 0.3 }}>
+                    <div className="fw-medium" style={statValueStyle}>
                       {order.customer_amka}
                     </div>
                   </div>
                   {customerPhones ? (
-                    <div className="col-4">
+                    <div className="col-6 col-md-4" style={statCellStyle}>
                       <div className="small text-secondary">Κινητό Πελάτη</div>
-                      <div className="fw-medium">{customerPhones}</div>
+                      <div className="fw-medium" style={statValueStyle}>
+                        {customerPhones}
+                      </div>
                     </div>
                   ) : null}
-                  <div className="col-4">
+                  <div className="col-6 col-md-4" style={statCellStyle}>
                     <div className="small text-secondary">Έκπτωση</div>
-                    <div className="fw-medium">
+                    <div className="fw-medium" style={statValueStyle}>
                       {formatCurrencyGR(order.calculatedDiscPercent)} %
                     </div>
                   </div>
-                  <div className="col-4">
+                  <div className="col-6 col-md-4" style={statCellStyle}>
                     <div className="small text-secondary">Πληρωτέο</div>
-                    <div className="fw-medium">
+                    <div className="fw-medium" style={statValueStyle}>
                       {formatCurrencyGR(order.posoDiscounted)} €
                     </div>
                   </div>

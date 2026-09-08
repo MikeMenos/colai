@@ -1197,7 +1197,7 @@ html[data-bs-theme="dark"] .leave-order-modal__icon {
   padding-top: 0.125rem;
 }
 
-.wc-filters-offcanvas {
+.wc-filters-offcanvas.offcanvas.offcanvas-end {
   --bs-offcanvas-width: min(100vw, 320px);
   top: var(--app-header-height);
   bottom: 0;
@@ -1205,7 +1205,7 @@ html[data-bs-theme="dark"] .leave-order-modal__icon {
   max-height: calc(100dvh - var(--app-header-height));
 }
 
-.wc-filters-offcanvas-backdrop {
+.offcanvas-backdrop.wc-filters-offcanvas-backdrop {
   top: var(--app-header-height);
   height: calc(100dvh - var(--app-header-height));
 }
