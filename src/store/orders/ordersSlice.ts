@@ -21,6 +21,7 @@ import type {
 } from "@/types/api/responses";
 import type { PagingResults } from "@/types/api/common";
 import { parseProxyJson } from "@/lib/api/client";
+import { toShipMethodIdNumber } from "@/features/orders/wizard/shipMethodUtils";
 import {
   buildOrderListSearchParams,
   DEFAULT_ORDER_LIST_PAGE,
@@ -436,6 +437,7 @@ export const submitDraftAsync = createAsyncThunk<
   const payload = {
     order: {
       ...order,
+      shipMethodId: toShipMethodIdNumber(order.shipMethodId) ?? order.shipMethodId,
       dateOfSyntagi: formatStringToISODDateTime(order.dateOfSyntagi),
       dateIsxyeiApo: formatStringToISODDateTime(order.dateIsxyeiApo),
       dateIsxyeiEos: formatStringToISODDateTime(order.dateIsxyeiEos),
@@ -775,7 +777,10 @@ const ordersSlice = createSlice({
     ) {
       state.draft.order = {
         ...state.draft.order,
-        [action.payload.key]: action.payload.value,
+        [action.payload.key]:
+          action.payload.key === "shipMethodId"
+            ? (toShipMethodIdNumber(action.payload.value) ?? action.payload.value)
+            : action.payload.value,
       };
 
       if (action.payload.key === "customer_tk") {

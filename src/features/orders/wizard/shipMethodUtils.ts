@@ -138,16 +138,24 @@ export function isValidShipMethodPostalCode(value: string): boolean {
   return POSTAL_CODE_PATTERN.test(value.trim());
 }
 
+export function toShipMethodIdNumber(
+  value: number | string | null | undefined,
+): number | null | undefined {
+  if (value == null || value === "") return value == null ? undefined : null;
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : undefined;
+}
+
 export function applyShipMethodToDraft(
   dispatch: AppDispatch,
   id: number | string | null | undefined,
   name?: string | null,
 ) {
-  if (id == null || id === "") return;
+  const shipMethodId = toShipMethodIdNumber(id);
+  if (shipMethodId == null) return;
 
-  const shipMethodId = String(id);
   const list = store.getState().orders.draft.list_TroposApostolis ?? [];
-  const match = list.find((item) => String(item.value) === shipMethodId);
+  const match = list.find((item) => String(item.value) === String(shipMethodId));
   const resolvedName = match?.text ?? (hasText(name) ? trimmedString(name) : "");
 
   dispatch(setDraftProperty({ key: "shipMethodId", value: shipMethodId }));
@@ -155,12 +163,6 @@ export function applyShipMethodToDraft(
     setDraftProperty({
       key: "shipMethodName",
       value: resolvedName,
-    }),
-  );
-  dispatch(
-    setDraftProperty({
-      key: "shipMethod_GID",
-      value: match?.value ?? shipMethodId,
     }),
   );
 }

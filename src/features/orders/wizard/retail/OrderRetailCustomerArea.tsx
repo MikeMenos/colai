@@ -10,6 +10,7 @@ import { FormSelect } from "react-bootstrap";
 import OrderField from "@/components/ui/OrderField";
 import WizardStepBarcodeHint from "../components/WizardStepBarcodeHint";
 import ShipMethodSuggestions from "../components/ShipMethodSuggestions";
+import { applyShipMethodToDraft } from "../shipMethodUtils";
 import { getAmkaInlineFieldError } from "@/lib/utils/amka";
 import {
   getRetailCustomerPriceBadge,
@@ -532,11 +533,8 @@ export default function OrderRetailCustomerArea({
           name="shipMethodId"
           value={data.shipMethodId ?? ""}
           onChange={(e) => {
-            const value = e.target.value;
             const label = e.target.selectedOptions[0]?.text ?? "";
-            dispatch(setDraftProperty({ key: "shipMethodId", value }));
-            dispatch(setDraftProperty({ key: "shipMethodName", value: label }));
-            dispatch(setDraftProperty({ key: "shipMethod_GID", value }));
+            applyShipMethodToDraft(dispatch, e.target.value, label);
           }}
         >
           {listTropoiApostolis.map((x) => (
