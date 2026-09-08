@@ -24,6 +24,7 @@ const ALLOWED_TYPOS = new Set<ColaiSearchAmkaTypos>([
   "AMKA",
   "TELEPHONE",
   "TR_GID",
+  "PERSON_GID",
 ]);
 
 function normalizeTypos(value: unknown): ColaiSearchAmkaTypos | null {
@@ -57,7 +58,11 @@ export async function POST(req: Request) {
   const sea = String(body.sea ?? "").trim();
   if (!typos) {
     return NextResponse.json(
-      { ok: false, message: "Invalid typos. Use NAME, AMKA, TELEPHONE, or TR_GID." },
+      {
+        ok: false,
+        message:
+          "Invalid typos. Use NAME, AMKA, TELEPHONE, TR_GID, or PERSON_GID.",
+      },
       { status: 400, headers: WC_SQL_NO_CACHE_HEADERS },
     );
   }

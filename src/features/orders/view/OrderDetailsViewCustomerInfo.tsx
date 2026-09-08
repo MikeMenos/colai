@@ -10,11 +10,17 @@ import {
 import {
   isDocumentCategory,
 } from "@/lib/utils/order";
+import { AddressMapFields, AddressMapLink } from "@/components/ui/AddressMapLink";
 import { OrderFilePreviewButtons, ORDER_FILE_PREVIEW_BUTTON_STYLE } from "@/components/ui/OrderFilePreviewButton";
+import { PhoneLink, PhoneLinks } from "@/components/ui/PhoneLink";
+import { usePersonErpContactLookup } from "@/hooks/usePersonErpContactLookup";
 import {
   formatRecipientAddress,
   formatRecipientContact,
+  getOrderRecipientDisplayName,
+  hasDifferentPersonErpRecipient,
   hasOrderRecipientInfo,
+  shouldShowOrderRecipientSection,
 } from "@/lib/utils/orderRecipient";
 
 export default function OrderDetailsViewCustomerInfo({
@@ -29,7 +35,15 @@ export default function OrderDetailsViewCustomerInfo({
   const consentFiles = files.filter((f) =>
     isDocumentCategory(f, "consent_form"),
   );
-  const showRecipientInfo = hasOrderRecipientInfo(order);
+  const showRecipientInfo = shouldShowOrderRecipientSection(order);
+  const showRecipientDetails = hasOrderRecipientInfo(order);
+  const showPersonErpRecipient = hasDifferentPersonErpRecipient(order);
+  const recipientName = getOrderRecipientDisplayName(order);
+  const { contact: personErpContact, loading: personErpContactLoading } =
+    usePersonErpContactLookup(
+      order.person_ErpGID,
+      customerOpen && showPersonErpRecipient,
+    );
   const recipientAddress = formatRecipientAddress(order);
   const recipientContact = formatRecipientContact(order);
   const customerPhones = [
@@ -87,7 +101,12 @@ export default function OrderDetailsViewCustomerInfo({
 
           <div className="col-6">
             <div className="small text-secondary">Διεύθυνση</div>
-            <div className="fw-medium">{order.customer_address}</div>
+            <AddressMapFields
+              address={order.customer_address}
+              city={order.customer_city}
+              postalCode={order.customer_tk}
+              className="fw-medium"
+            />
           </div>
 
           <div className="col-6">
@@ -101,12 +120,16 @@ export default function OrderDetailsViewCustomerInfo({
           </div>
           <div className="col-6">
             <div className="small text-secondary">OTP</div>
-            <div className="fw-medium">{order.customer_tel_otp}</div>
+            <div className="fw-medium">
+              <PhoneLink phone={order.customer_tel_otp ?? ""} />
+            </div>
           </div>
 
           <div className="col-6">
             <div className="small text-secondary">Τηλέφωνο</div>
-            <div className="fw-medium">{customerPhones}</div>
+            <div className="fw-medium">
+              <PhoneLinks value={customerPhones} />
+            </div>
           </div>
 
           <div className="col-6">
@@ -127,63 +150,105 @@ export default function OrderDetailsViewCustomerInfo({
                 <div className="fw-semibold">Παραλήπτης</div>
               </div>
 
-              {order.recipient_name ? (
+              {recipientName ? (
                 <div className="col-12">
                   <div className="small text-secondary">Ονοματεπώνυμο</div>
-                  <div className="fw-medium">{order.recipient_name}</div>
+                  <div className="fw-medium">{recipientName}</div>
                 </div>
               ) : null}
 
-              {order.recipient_reason ? (
+              {showPersonErpRecipient && personErpContactLoading ? (
+                <div className="col-12">
+                  <div className="small text-secondary">
+                    Φόρτωση στοιχείων παραλήπτη…
+                  </div>
+                </div>
+              ) : null}
+
+              {showPersonErpRecipient && personErpContact?.amka ? (
+                <div className="col-6">
+                  <div className="small text-secondary">ΑΜΚΑ</div>
+                  <div className="fw-medium">{personErpContact.amka}</div>
+                </div>
+              ) : null}
+
+              {showPersonErpRecipient && personErpContact?.phone ? (
+                <div className="col-6">
+                  <div className="small text-secondary">Τηλέφωνο</div>
+                  <div className="fw-medium">
+                    <PhoneLinks value={personErpContact.phone} />
+                  </div>
+                </div>
+              ) : null}
+
+              {showPersonErpRecipient && personErpContact?.address ? (
+                <div className="col-12">
+                  <div className="small text-secondary">Διεύθυνση</div>
+                  <AddressMapLink
+                    address={personErpContact.address}
+                    mapQuery={personErpContact.addressMapQuery}
+                    className="fw-medium"
+                  />
+                </div>
+              ) : null}
+
+              {showRecipientDetails && order.recipient_reason ? (
                 <div className="col-6">
                   <div className="small text-secondary">Αιτία παραλαβής</div>
                   <div className="fw-medium">{order.recipient_reason}</div>
                 </div>
               ) : null}
 
-              {order.recipient_relation ? (
+              {showRecipientDetails && order.recipient_relation ? (
                 <div className="col-6">
                   <div className="small text-secondary">Σχέση</div>
                   <div className="fw-medium">{order.recipient_relation}</div>
                 </div>
               ) : null}
 
-              {order.recipient_amka ? (
+              {showRecipientDetails && order.recipient_amka ? (
                 <div className="col-6">
                   <div className="small text-secondary">ΑΜΚΑ</div>
                   <div className="fw-medium">{order.recipient_amka}</div>
                 </div>
               ) : null}
 
-              {order.recipient_afm ? (
+              {showRecipientDetails && order.recipient_afm ? (
                 <div className="col-6">
                   <div className="small text-secondary">ΑΦΜ</div>
                   <div className="fw-medium">{order.recipient_afm}</div>
                 </div>
               ) : null}
 
-              {order.recipient_passport ? (
+              {showRecipientDetails && order.recipient_passport ? (
                 <div className="col-6">
                   <div className="small text-secondary">ΑΤ/Διαβατήριο</div>
                   <div className="fw-medium">{order.recipient_passport}</div>
                 </div>
               ) : null}
 
-              {recipientContact ? (
+              {showRecipientDetails && recipientContact ? (
                 <div className="col-6">
                   <div className="small text-secondary">Τηλέφωνο</div>
-                  <div className="fw-medium">{recipientContact}</div>
+                  <div className="fw-medium">
+                    <PhoneLinks value={recipientContact} />
+                  </div>
                 </div>
               ) : null}
 
-              {recipientAddress ? (
+              {showRecipientDetails && recipientAddress ? (
                 <div className="col-12">
                   <div className="small text-secondary">Διεύθυνση</div>
-                  <div className="fw-medium">{recipientAddress}</div>
+                  <AddressMapFields
+                    address={order.recipient_address}
+                    city={order.recipient_city}
+                    postalCode={order.recipient_tk}
+                    className="fw-medium"
+                  />
                 </div>
               ) : null}
 
-              {order.recipient_Notes ? (
+              {showRecipientDetails && order.recipient_Notes ? (
                 <div className="col-12">
                   <div className="small text-secondary">Σχόλια</div>
                   <div className="fw-medium">{order.recipient_Notes}</div>
