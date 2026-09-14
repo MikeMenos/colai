@@ -186,7 +186,11 @@ function SaleExpandedDetails({ sale }: { sale: SellerSalesWC }) {
   return (
     <div className="d-flex flex-column">
       {hasTrackingNumber(trackingNo) ? (
-        <TrackingTraceAccordion voucher={trackingNo} showDivider />
+        <TrackingTraceAccordion
+          voucher={trackingNo}
+          fShippingMethodCode={sale.fShippingMethodCode}
+          showDivider
+        />
       ) : (
         <DetailRow
           icon="bi-truck"

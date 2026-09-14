@@ -2,6 +2,17 @@ import { parseLocalDateTime } from "@/lib/utils/date";
 import { parseLocaleNumber } from "@/lib/utils/number";
 import type { SellerSalesWC } from "@/types/api";
 
+export const SHIPPING_METHOD_GENERAL = "Γενική Ταχυδρομική";
+export const SHIPPING_METHOD_ACS = "ACS";
+
+export function getShippingMethodLabel(
+  fShippingMethodCode: unknown,
+): string {
+  const code = String(fShippingMethodCode ?? "");
+  if (code.includes("ACS")) return SHIPPING_METHOD_ACS;
+  return SHIPPING_METHOD_GENERAL;
+}
+
 export const SALES_WC_PAGE_SIZE = 30;
 
 export function toDateInputValue(date: Date): string {
