@@ -2,17 +2,21 @@
 
 import React from "react";
 
+import { getShippingMethodLabel } from "./salesWcFilters";
 import TrackTraceDetailsModal from "./trackTrace/TrackTraceDetailsModal";
 import TrackTraceExpandedContent from "./trackTrace/TrackTraceExpandedContent";
 import { useGtTrackAndTrace } from "./trackTrace/useGtTrackAndTrace";
 
 export default function TrackingTraceAccordion({
   voucher,
+  fShippingMethodCode,
   showDivider = true,
 }: {
   voucher: string;
+  fShippingMethodCode?: string;
   showDivider?: boolean;
 }) {
+  const shippingMethodLabel = getShippingMethodLabel(fShippingMethodCode);
   const [open, setOpen] = React.useState(false);
   const [modalOpen, setModalOpen] = React.useState(false);
   const { state, loadTrace, prepareLoad } = useGtTrackAndTrace(voucher, open);
@@ -45,7 +49,7 @@ export default function TrackingTraceAccordion({
             style={{ fontSize: 12 }}
           >
             <i className="bi bi-truck" aria-hidden />
-            <span>Γενική Ταχυδρομική</span>
+            <span>{shippingMethodLabel}</span>
           </div>
           <div
             className="fw-medium text-break ms-auto text-end"
@@ -79,6 +83,7 @@ export default function TrackingTraceAccordion({
         show={modalOpen}
         onHide={() => setModalOpen(false)}
         voucher={voucher}
+        carrierLabel={shippingMethodLabel}
         state={state}
       />
     </>

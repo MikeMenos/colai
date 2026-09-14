@@ -5,6 +5,7 @@ export interface SellerSalesWC {
   ADCode: string;
   ReferenceDocument: string;
   TrackingNo: string;
+  fShippingMethodCode?: string;
   Doctor: string;
   CustomerName: string;
   COLAI: string;
